@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="RadioConsole.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:RadioConsole.Views"
+    Title="Radio Console"
+    FlyoutBehavior="Flyout">
+
+    <!-- Material Design 3 Color Scheme -->
+    <Shell.Resources>
+        <ResourceDictionary>
+            <Color x:Key="Primary">#6750A4</Color>
+            <Color x:Key="OnPrimary">#FFFFFF</Color>
+            <Color x:Key="PrimaryContainer">#EADDFF</Color>
+            <Color x:Key="OnPrimaryContainer">#21005D</Color>
+            <Color x:Key="Secondary">#625B71</Color>
+            <Color x:Key="OnSecondary">#FFFFFF</Color>
+            <Color x:Key="SecondaryContainer">#E8DEF8</Color>
+            <Color x:Key="OnSecondaryContainer">#1D192B</Color>
+            <Color x:Key="Tertiary">#7D5260</Color>
+            <Color x:Key="OnTertiary">#FFFFFF</Color>
+            <Color x:Key="Surface">#FFFBFE</Color>
+            <Color x:Key="OnSurface">#1C1B1F</Color>
+            <Color x:Key="Background">#FFFBFE</Color>
+            <Color x:Key="OnBackground">#1C1B1F</Color>
+        </ResourceDictionary>
+    </Shell.Resources>
+
+    <!-- Flyout Menu -->
+    <FlyoutItem Title="Audio Control" Icon="play_circle.png">
+        <ShellContent
+            Title="Audio Control"
+            ContentTemplate="{DataTemplate local:AudioControlPage}"
+            Route="audiocontrol" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="History" Icon="history.png">
+        <ShellContent
+            Title="History"
+            ContentTemplate="{DataTemplate local:HistoryPage}"
+            Route="history" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Favorites" Icon="favorite.png">
+        <ShellContent
+            Title="Favorites"
+            ContentTemplate="{DataTemplate local:FavoritesPage}"
+            Route="favorites" />
+    </FlyoutItem>
+
+</Shell>
