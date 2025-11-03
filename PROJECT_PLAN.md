@@ -1,12 +1,14 @@
 # Modern Raspberry Pi 5 Console Radio Audio System Project Plan
 
 ## Project Overview
-This project involves building a modern audio system inside an old console radio cabinet using a Raspberry Pi 5 and C# modern development. The system will support multiple audio input sources and output devices with a flexible, extensible architecture and a rich touchscreen user interface.
+This project involves building a modern audio system inside an old console radio cabinet using a Raspberry Pi 5 with ASP.NET Core backend and React/TypeScript frontend. The system will support multiple audio input sources and output devices with a flexible, extensible architecture and a rich touchscreen web interface.
 
 ## Project Goals
 - Support audio inputs: SW/AM/FM radio (Raddy RF320), vinyl, Wyze doorbell, Google broadcast, Spotify, Bluetooth, MP3 files on local network
 - Support audio outputs: wired soundbar, Chromecast, Bluetooth speaker
-- Touchscreen UI with history, favorites, audio controls, configuration, and metadata display
+- Modern web-based UI with Material Design 3, dark/light mode toggle
+- Touchscreen interface with history, favorites, audio controls, configuration, and metadata display
+- RESTful API with real-time WebSocket updates
 - Extensible interfaces for inputs/outputs and state management with datastore
 - Simulation mode for non-Raspberry Pi development
 
@@ -14,16 +16,19 @@ This project involves building a modern audio system inside an old console radio
 
 ### Phase 1: Requirements & Architecture Design
 - Define detailed requirements for each input and output
-- Decide on overall software architecture patterns (e.g., MVVM)
+- Decide on overall software architecture patterns (RESTful API with React frontend)
 - Define input/output interfaces and data models
-- Choose datastore technology (e.g., SQLite, LiteDB, or JSON with filesystem)
+- Choose datastore technology (JSON-based storage for settings and history)
+- Design API endpoints and WebSocket integration for real-time updates
 - Setup repository and CI/CD pipeline with GitHub
 
 ### Phase 2: Basic Raspberry Pi Setup and Project Initialization
-- Setup Raspberry Pi 5 with required OS and .NET 8.0/9.0 runtime
-- Initialize C# project and solution structure (e.g., using .NET MAUI for UI)
+- Setup Raspberry Pi 5 with required OS, .NET 9.0 runtime, and Node.js
+- Initialize ASP.NET Core Web API project structure
+- Initialize React/TypeScript frontend with Vite
 - Develop simulation mode for non-RPi environment
 - Define project skeleton with interfaces and modules
+- Setup Material-UI with Material Design 3 theme
 
 ### Phase 3: Core Audio Input and Output Interfaces
 - Implement abstractions for audio inputs and outputs
@@ -45,12 +50,14 @@ This project involves building a modern audio system inside an old console radio
 - Implement output switching and configuration mechanisms
 
 ### Phase 6: User Interface Development
-- Develop touchscreen UI for source selection and controls
-- Implement history and favorites views
-- Integrate metadata and real-time clock display
+- Develop React-based web UI with routing and navigation
+- Create Material-UI components for audio control, history, and favorites
+- Implement dark/light mode toggle with persistent preferences
+- Integrate real-time updates via WebSocket/SignalR
 - Add configuration sections per input/output
 - Implement individual player controls (radio tuning, Spotify playback, MP3/Bluetooth controls)
-- Apply UI styling and layout suitable for console radio display
+- Apply responsive design suitable for console radio touchscreen display
+- Ensure accessibility and touch-friendly interactions
 
 ### Phase 7: State Management and Persistency
 - Implement saving/loading of favorites, history, and configurations using chosen datastore

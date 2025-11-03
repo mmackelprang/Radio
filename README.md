@@ -1,6 +1,6 @@
 # Radio Console - Modern Raspberry Pi 5 Audio System
 
-A modern audio system built with C# .NET MAUI for Raspberry Pi 5, designed to bring new life to vintage console radios. This project provides a flexible, extensible architecture for managing multiple audio inputs and outputs with a rich touchscreen interface.
+A modern audio system built with ASP.NET Core and React/TypeScript for Raspberry Pi 5, designed to bring new life to vintage console radios. This project provides a flexible, extensible architecture for managing multiple audio inputs and outputs with a rich touchscreen web interface.
 
 ## 🎯 Project Goals
 
@@ -24,18 +24,22 @@ The Radio Console project aims to create a comprehensive audio management system
 - **Output Switching** - Seamless switching between output devices
 
 ### User Interface
-- **Material Design 3** - Modern, touch-friendly interface
+- **Material Design 3** - Modern, touch-friendly React interface with Material-UI
+- **Dark/Light Mode** - Easily swappable theme for different lighting conditions
 - **Audio Controls** - Source selection, playback controls, volume management
 - **History** - Track recently played content
 - **Favorites** - Save and quick-access favorite stations and playlists
 - **Metadata Display** - Rich information about currently playing audio
 - **Configuration** - Per-device settings and preferences
+- **Responsive Design** - Optimized for touchscreen displays
 
 ### Technical Features
-- **Modular Architecture** - Clean interfaces for extensibility
-- **Simulation Mode** - Develop and test on non-Raspberry Pi environments
+- **Modular Architecture** - Clean separation between backend API and frontend
+- **RESTful API** - ASP.NET Core Web API for audio control and management
+- **React Frontend** - Modern TypeScript-based UI with Material-UI components
+- **Real-time Updates** - WebSocket support for live metadata and status updates
 - **State Management** - Persistent storage of settings, history, and favorites
-- **Cross-Platform** - Built with .NET MAUI for future platform support
+- **Development Mode** - Local development with mock hardware simulation
 
 ## 🏗️ Architecture
 
@@ -67,11 +71,12 @@ Each input and output is implemented as a separate module that inherits from the
 - [x] Setup repository structure
 
 ### Phase 2: Basic Raspberry Pi Setup and Project Initialization ✅
-- [x] Initialize C# .NET MAUI project structure
+- [x] Initialize ASP.NET Core Web API project structure
+- [x] Initialize React/TypeScript frontend project
 - [x] Develop simulation mode for non-RPi environment
 - [x] Define project skeleton with interfaces and modules
 - [x] Create base implementations for inputs and outputs
-- [x] Setup Material Design 3 UI shell with navigation
+- [x] Setup Material Design 3 UI with React and Material-UI
 
 ### Phase 3: Core Audio Input and Output Interfaces 🚧
 - [x] Implement abstractions for audio inputs and outputs
@@ -97,11 +102,12 @@ Each input and output is implemented as a separate module that inherits from the
 - [ ] Implement output switching mechanisms
 
 ### Phase 6: User Interface Development 🚧
-- [x] Develop basic touchscreen UI shell with navigation
-- [x] Create placeholder views for audio control, history, and favorites
+- [x] Develop basic React UI with navigation
+- [x] Create components for audio control, history, and favorites
 - [x] Implement source selection interface
 - [x] Add basic playback controls
-- [ ] Enhance metadata display with real-time updates
+- [x] Implement dark/light mode toggle with Material Design 3
+- [ ] Enhance metadata display with real-time WebSocket updates
 - [ ] Add configuration sections per input/output
 - [ ] Implement individual player controls (radio tuning, Spotify controls)
 - [ ] Apply final UI styling for console radio display
@@ -130,10 +136,12 @@ Each input and output is implemented as a separate module that inherits from the
 
 ### Prerequisites
 - .NET 9.0 SDK or later
+- Node.js 20.x or later with npm
 - For Raspberry Pi deployment:
   - Raspberry Pi 5 with Raspberry Pi OS
   - .NET runtime installed
-  - Touchscreen display
+  - Node.js runtime installed
+  - Touchscreen display with web browser
   - Audio hardware (soundbar, radio receiver, etc.)
 
 ### Development Setup (Simulation Mode)
@@ -144,16 +152,23 @@ Each input and output is implemented as a separate module that inherits from the
    cd Radio
    ```
 
-2. **Build the project**
+2. **Build and run the backend**
    ```bash
-   cd src/RadioConsole
-   dotnet build
-   ```
-
-3. **Run in simulation mode**
-   ```bash
+   cd src/RadioConsole.Api
+   dotnet restore
    dotnet run
    ```
+   
+   The API will start on http://localhost:5000 (or https://localhost:5001)
+
+3. **Build and run the frontend** (in a new terminal)
+   ```bash
+   cd src/RadioConsole.Web
+   npm install
+   npm start
+   ```
+   
+   The web interface will open at http://localhost:3000
 
    The application will automatically detect that it's not running on a Raspberry Pi and enable simulation mode, allowing you to develop and test on any platform.
 
@@ -163,42 +178,66 @@ Deployment instructions will be added in Phase 8.
 
 ## 🛠️ Technology Stack
 
-- **Framework**: .NET 9.0 / .NET MAUI
+### Backend
+- **Framework**: ASP.NET Core 9.0 Web API
 - **Language**: C# 12.0
-- **UI Framework**: .NET MAUI with Material Design 3
-- **MVVM**: CommunityToolkit.Mvvm
+- **API**: RESTful endpoints with SignalR for real-time updates
 - **Storage**: JSON-based file storage
 - **Target Platform**: Raspberry Pi 5 (Linux ARM64)
-- **Development**: Cross-platform (Windows, macOS, Linux)
+
+### Frontend
+- **Framework**: React 18.x
+- **Language**: TypeScript 5.x
+- **UI Library**: Material-UI (MUI) v5 with Material Design 3
+- **State Management**: React Context API / Redux Toolkit
+- **Theming**: Custom Material Design 3 theme with dark/light mode
+- **Build Tool**: Vite
+
+### Development
+- **Cross-platform development**: Windows, macOS, Linux
+- **API Testing**: Swagger/OpenAPI
+- **Hot Reload**: Backend and frontend hot reload support
 
 ## 📂 Project Structure
 
 ```
 Radio/
 ├── src/
-│   └── RadioConsole/              # Main MAUI application
-│       ├── Interfaces/            # Core interfaces
-│       │   ├── IAudioInput.cs
-│       │   ├── IAudioOutput.cs
-│       │   ├── IDisplay.cs
-│       │   ├── IConfiguration.cs
-│       │   └── IStorage.cs
-│       ├── Modules/
-│       │   ├── Inputs/           # Audio input implementations
-│       │   │   ├── BaseAudioInput.cs
-│       │   │   ├── RadioInput.cs
-│       │   │   └── SpotifyInput.cs
-│       │   └── Outputs/          # Audio output implementations
-│       │       ├── BaseAudioOutput.cs
-│       │       ├── WiredSoundbarOutput.cs
-│       │       └── ChromecastOutput.cs
-│       ├── Services/             # Core services
-│       │   ├── EnvironmentService.cs
-│       │   └── JsonStorageService.cs
-│       ├── ViewModels/           # MVVM view models
-│       ├── Views/                # XAML views
-│       ├── Converters/           # Value converters
-│       └── Resources/            # Images, styles, fonts
+│   ├── RadioConsole.Api/          # ASP.NET Core Web API
+│   │   ├── Controllers/           # API controllers
+│   │   ├── Interfaces/            # Core interfaces
+│   │   │   ├── IAudioInput.cs
+│   │   │   ├── IAudioOutput.cs
+│   │   │   ├── IDisplay.cs
+│   │   │   ├── IConfiguration.cs
+│   │   │   └── IStorage.cs
+│   │   ├── Modules/
+│   │   │   ├── Inputs/           # Audio input implementations
+│   │   │   │   ├── BaseAudioInput.cs
+│   │   │   │   ├── RadioInput.cs
+│   │   │   │   └── SpotifyInput.cs
+│   │   │   └── Outputs/          # Audio output implementations
+│   │   │       ├── BaseAudioOutput.cs
+│   │   │       ├── WiredSoundbarOutput.cs
+│   │   │       └── ChromecastOutput.cs
+│   │   ├── Services/             # Core services
+│   │   │   ├── EnvironmentService.cs
+│   │   │   └── JsonStorageService.cs
+│   │   ├── Hubs/                 # SignalR hubs for real-time updates
+│   │   └── Models/               # Data models and DTOs
+│   └── RadioConsole.Web/         # React/TypeScript frontend
+│       ├── src/
+│       │   ├── components/       # React components
+│       │   │   ├── AudioControl.tsx
+│       │   │   ├── History.tsx
+│       │   │   └── Favorites.tsx
+│       │   ├── contexts/         # React contexts
+│       │   ├── hooks/            # Custom React hooks
+│       │   ├── services/         # API service clients
+│       │   ├── theme/            # Material-UI theme configuration
+│       │   └── App.tsx           # Main app component
+│       ├── public/               # Static assets
+│       └── package.json          # npm dependencies
 ├── PROJECT_PLAN.md               # Detailed project plan
 ├── README.md                     # This file
 └── LICENSE                       # Project license
@@ -214,16 +253,17 @@ See the [LICENSE](LICENSE) file for details.
 
 ## 🎵 Current Status
 
-**Project Status**: Phase 2 Complete - Initial project structure established
+**Project Status**: Phase 2 Complete - ASP.NET Core + React architecture established
 
-The project has completed the initial setup with:
-- ✅ Full project structure with modular architecture
+The project has completed the migration to modern web architecture with:
+- ✅ ASP.NET Core Web API backend with modular architecture
+- ✅ React/TypeScript frontend with Material-UI
 - ✅ Core interfaces defined (IAudioInput, IAudioOutput, IDisplay, IConfiguration, IStorage)
 - ✅ Simulation mode support for cross-platform development
 - ✅ Base modules for Radio and Spotify inputs
 - ✅ Base modules for Wired Soundbar and Chromecast outputs
-- ✅ Material Design 3 UI shell with navigation
-- ✅ Placeholder views for Audio Control, History, and Favorites
+- ✅ Material Design 3 UI with dark/light mode support
+- ✅ React components for Audio Control, History, and Favorites
 
 **Next Steps**: Phase 3 - Integrate actual hardware and implement real audio streaming capabilities.
 
