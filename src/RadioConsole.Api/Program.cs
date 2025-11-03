@@ -1,5 +1,7 @@
 using RadioConsole.Api.Services;
 using RadioConsole.Api.Interfaces;
+using RadioConsole.Api.Modules.Inputs;
+using RadioConsole.Api.Modules.Outputs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,13 +30,27 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
 
-// Register audio modules (will be populated as we add them)
-// builder.Services.AddSingleton<IAudioInput, RadioInput>();
-// builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
-// builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
-// builder.Services.AddSingleton<IAudioOutput, ChromecastOutput>();
+// Register audio modules
+builder.Services.AddSingleton<IAudioInput, RadioInput>();
+builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
+builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
+builder.Services.AddSingleton<IAudioOutput, ChromecastOutput>();
 
 var app = builder.Build();
+
+// Initialize all audio modules
+var inputs = app.Services.GetServices<IAudioInput>();
+var outputs = app.Services.GetServices<IAudioOutput>();
+
+foreach (var input in inputs)
+{
+    await input.InitializeAsync();
+}
+
+foreach (var output in outputs)
+{
+    await output.InitializeAsync();
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
