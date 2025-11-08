@@ -69,3 +69,30 @@ public class VolumeRequest
 {
     public int Volume { get; set; }
 }
+
+/// <summary>
+/// Request model for updating audio priority configuration
+/// </summary>
+public class AudioPriorityConfigRequest
+{
+    /// <summary>
+    /// Volume reduction level (0.0 = mute, 1.0 = no change)
+    /// </summary>
+    public double? VolumeReductionLevel { get; set; }
+    
+    /// <summary>
+    /// Whether to mute background audio
+    /// </summary>
+    public bool? MuteBackgroundAudio { get; set; }
+}
+
+/// <summary>
+/// Request model for triggering an event
+/// </summary>
+public class TriggerEventRequest
+{
+    /// <summary>
+    /// Optional metadata for the event
+    /// </summary>
+    public Dictionary<string, string> Metadata { get; set; } = new();
+}

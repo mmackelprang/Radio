@@ -1,6 +1,22 @@
 namespace RadioConsole.Api.Interfaces;
 
 /// <summary>
+/// Type of audio input
+/// </summary>
+public enum AudioInputType
+{
+    /// <summary>
+    /// Music/streaming input (radio, spotify, etc.)
+    /// </summary>
+    Music,
+    
+    /// <summary>
+    /// Event-driven input (doorbell, timer, etc.)
+    /// </summary>
+    Event
+}
+
+/// <summary>
 /// Base interface for all audio input sources
 /// </summary>
 public interface IAudioInput
@@ -9,6 +25,11 @@ public interface IAudioInput
     /// Unique identifier for this input
     /// </summary>
     string Id { get; }
+    
+    /// <summary>
+    /// Type of this audio input
+    /// </summary>
+    AudioInputType InputType { get; }
 
     /// <summary>
     /// Display name for this input

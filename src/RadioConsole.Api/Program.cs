@@ -30,9 +30,21 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
 
-// Register audio modules
+// Register audio priority manager
+builder.Services.AddSingleton<IAudioPriorityManager, AudioPriorityManager>();
+
+// Register music audio input modules
 builder.Services.AddSingleton<IAudioInput, RadioInput>();
 builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
+
+// Register event audio input modules
+builder.Services.AddSingleton<IAudioInput, DoorbellEventInput>();
+builder.Services.AddSingleton<IAudioInput, TelephoneRingingEventInput>();
+builder.Services.AddSingleton<IAudioInput, GoogleBroadcastEventInput>();
+builder.Services.AddSingleton<IAudioInput, TimerExpiredEventInput>();
+builder.Services.AddSingleton<IAudioInput, ReminderEventInput>();
+
+// Register audio output modules
 builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
 builder.Services.AddSingleton<IAudioOutput, ChromecastOutput>();
 
@@ -50,6 +62,16 @@ foreach (var input in inputs)
 foreach (var output in outputs)
 {
     await output.InitializeAsync();
+}
+
+// Register event inputs with the priority manager
+var priorityManager = app.Services.GetRequiredService<IAudioPriorityManager>();
+foreach (var input in inputs)
+{
+    if (input is IEventAudioInput eventInput)
+    {
+        priorityManager.RegisterEventInput(eventInput);
+    }
 }
 
 // Configure the HTTP request pipeline
