@@ -7,15 +7,22 @@ A modern audio system built with ASP.NET Core and React/TypeScript for Raspberry
 The Radio Console project aims to create a comprehensive audio management system with the following features:
 
 ### Audio Inputs
+
+#### Music Inputs
 - **SW/AM/FM Radio** - Integration with Raddy RF320 radio receiver
 - **Vinyl Turntable** - Analog to digital conversion via USB sound card
 - **Network Streaming**
   - Spotify integration with playback controls
   - MP3 files from local network shares
-- **Smart Home Integration**
-  - Wyze doorbell audio notifications
-  - Google broadcast receiver
 - **Bluetooth** - Pair and receive audio from Bluetooth devices
+
+#### Event-Driven Inputs (High Priority Audio)
+- **Doorbell Ring** - Audio notifications from smart doorbells (e.g., Wyze)
+- **Telephone Ring** - Phone ringing notifications
+- **Google Broadcast** - Google Home broadcast message receiver
+- **Timer Expired** - Kitchen timer and other timer notifications
+- **Reminders** - Calendar and scheduled reminder notifications
+- **Priority Management** - Automatic volume reduction/restoration during events
 
 ### Audio Outputs
 - **Wired Soundbar** - Direct wired connection
@@ -27,6 +34,7 @@ The Radio Console project aims to create a comprehensive audio management system
 - **Material Design 3** - Modern, touch-friendly React interface with Material-UI
 - **Dark/Light Mode** - Easily swappable theme for different lighting conditions
 - **Audio Controls** - Source selection, playback controls, volume management
+- **Event Notifications** - High-priority audio notifications with automatic volume management
 - **History** - Track recently played content
 - **Favorites** - Save and quick-access favorite stations and playlists
 - **Metadata Display** - Rich information about currently playing audio
@@ -36,6 +44,7 @@ The Radio Console project aims to create a comprehensive audio management system
 ### Technical Features
 - **Modular Architecture** - Clean separation between backend API and frontend
 - **RESTful API** - ASP.NET Core Web API for audio control and management
+- **Event-Driven Audio** - Priority-based audio event system with automatic volume ducking
 - **React Frontend** - Modern TypeScript-based UI with Material-UI components
 - **Real-time Updates** - WebSocket support for live metadata and status updates
 - **State Management** - Persistent storage of settings, history, and favorites
@@ -78,20 +87,28 @@ Each input and output is implemented as a separate module that inherits from the
 - [x] Create base implementations for inputs and outputs
 - [x] Setup Material Design 3 UI with React and Material-UI
 
-### Phase 3: Core Audio Input and Output Interfaces 🚧
+### Phase 3: Core Audio Input and Output Interfaces ✅
 - [x] Implement abstractions for audio inputs and outputs
 - [x] Create base module implementations with simulation support
 - [x] Setup Radio input module (Raddy RF320) - *Simulation mode ready*
 - [x] Setup Spotify input module - *Simulation mode ready*
 - [x] Setup Wired Soundbar output - *Simulation mode ready*
 - [x] Setup Chromecast output - *Simulation mode ready*
+- [x] Implement event-driven audio input system
+- [x] Create AudioPriorityManager for managing high-priority audio events
+- [x] Add event input modules (doorbell, telephone, timer, reminder, broadcast)
 - [ ] Integrate actual hardware for Raddy RF320 radio
 - [ ] Implement vinyl turntable input interface
 - [ ] Add support for MP3 playback from network shares
 
-### Phase 4: Advanced Input Sources and Event-driven Audio 📝
-- [ ] Integrate Wyze doorbell event-driven input
-- [ ] Integrate Google broadcast receiver for audio
+### Phase 4: Advanced Input Sources and Event-driven Audio ✅
+- [x] Design and implement event-driven audio architecture
+- [x] Create AudioPriorityManager service with volume ducking
+- [x] Implement base event audio input classes
+- [x] Add doorbell, telephone, timer, reminder, and broadcast event inputs
+- [x] Create example API endpoints for testing event functionality
+- [ ] Integrate Wyze doorbell webhook for real events
+- [ ] Integrate Google broadcast receiver for real audio
 - [ ] Implement full Spotify streaming integration
 - [ ] Add Bluetooth audio input support and pairing UI
 

@@ -20,16 +20,23 @@ The Radio Console application follows a clean, modular architecture with a clear
 The foundation of the system, defining contracts for all major components:
 
 #### IAudioInput
-- Represents any audio input source (radio, streaming, etc.)
+- Represents any audio input source (radio, streaming, events, etc.)
 - Methods: `InitializeAsync()`, `StartAsync()`, `StopAsync()`, `GetAudioStreamAsync()`
-- Properties: `Id`, `Name`, `Description`, `IsAvailable`, `IsActive`
-- Provides: `IConfiguration` and `IDisplay` interfaces
+- Properties: `Id`, `Name`, `Description`, `IsAvailable`, `IsActive`, `InputType`
+- InputType: Distinguishes between `Music` and `Event` inputs
+- Provides: `IDeviceConfiguration` and `IDisplay` interfaces
+
+#### IEventAudioInput
+- Extends `IAudioInput` for event-driven audio (doorbells, timers, etc.)
+- Additional Properties: `Priority` (Low/Medium/High/Critical), `Duration`
+- Event: `AudioEventTriggered` - fires when event audio should play
+- Enables priority-based audio interruption system
 
 #### IAudioOutput
 - Represents any audio output device (speakers, streaming, etc.)
 - Methods: `InitializeAsync()`, `StartAsync()`, `StopAsync()`, `SendAudioAsync()`, `SetVolumeAsync()`
 - Properties: Same as IAudioInput
-- Provides: `IConfiguration` and `IDisplay` interfaces
+- Provides: `IDeviceConfiguration` and `IDisplay` interfaces
 
 #### IDisplay
 - Provides metadata and status information for UI display
@@ -89,6 +96,19 @@ Core services that support the application:
 - Enables automatic simulation mode
 - Platform-agnostic development
 
+#### AudioPriorityManager
+- Manages multiple audio sources with priority-based playback
+- Monitors registered event audio inputs
+- Handles high-priority audio event interruption:
+  - Saves current volume states
+  - Reduces/mutes background audio during events
+  - Plays event audio
+  - Restores original volumes
+- Uses async/await patterns for all operations
+- Provides comprehensive exception handling
+- Configurable volume reduction level (0.0 = mute, 1.0 = no change)
+- Designed for Raspberry Pi 5 with PulseAudio
+
 #### JsonStorageService
 - JSON-based persistent storage
 - Stores data in app data directory
@@ -99,11 +119,12 @@ Core services that support the application:
 Concrete implementations of inputs and outputs:
 
 #### Base Classes
-- `BaseAudioInput` - Common functionality for all inputs
+- `BaseAudioInput` - Common functionality for all music inputs
+- `BaseEventAudioInput` - Common functionality for all event inputs
 - `BaseAudioOutput` - Common functionality for all outputs
 - Includes embedded `BaseDisplay` and `BaseConfiguration` implementations
 
-#### Input Modules
+#### Music Input Modules
 - **RadioInput** - Raddy RF320 radio integration
   - Supports FM/AM/SW bands
   - Hardware detection with simulation fallback
@@ -111,6 +132,28 @@ Concrete implementations of inputs and outputs:
 - **SpotifyInput** - Spotify streaming
   - API integration ready
   - Playback control support
+
+#### Event Input Modules
+- **DoorbellEventInput** - Doorbell ring notifications
+  - High priority (interrupts music)
+  - 3 second duration
+  - Integration ready for Wyze doorbell
+
+- **TelephoneRingingEventInput** - Phone ring notifications
+  - High priority
+  - 5 second duration
+
+- **GoogleBroadcastEventInput** - Google Home broadcasts
+  - Medium priority
+  - Variable duration
+
+- **TimerExpiredEventInput** - Timer notifications
+  - Medium priority
+  - 3 second duration
+
+- **ReminderEventInput** - Calendar/scheduled reminders
+  - Medium priority
+  - 2 second duration
 
 #### Output Modules
 - **WiredSoundbarOutput** - Direct wired audio
