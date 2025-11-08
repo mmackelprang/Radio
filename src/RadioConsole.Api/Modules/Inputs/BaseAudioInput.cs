@@ -1,6 +1,5 @@
 using RadioConsole.Api.Interfaces;
 using RadioConsole.Api.Services;
-using RadioConsole.Api.Services;
 
 namespace RadioConsole.Api.Modules.Inputs;
 
@@ -12,6 +11,11 @@ public abstract class BaseAudioInput : IAudioInput
     public abstract string Id { get; }
     public abstract string Name { get; }
     public abstract string Description { get; }
+    
+    /// <summary>
+    /// Type of audio input - defaults to Music for backward compatibility
+    /// </summary>
+    public virtual AudioInputType InputType => AudioInputType.Music;
     
     public virtual bool IsAvailable { get; protected set; }
     public virtual bool IsActive { get; protected set; }

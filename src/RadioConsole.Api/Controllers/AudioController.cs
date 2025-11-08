@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RadioConsole.Api.Interfaces;
 using RadioConsole.Api.Models;
+using RadioConsole.Api.Services;
 
 namespace RadioConsole.Api.Controllers;
 
@@ -10,6 +11,7 @@ public class AudioController : ControllerBase
 {
     private readonly IEnumerable<IAudioInput> _audioInputs;
     private readonly IEnumerable<IAudioOutput> _audioOutputs;
+    private readonly IAudioPriorityManager _priorityManager;
     private readonly ILogger<AudioController> _logger;
 
     // Current playback state (in a real implementation, this would be managed by a service)
@@ -21,10 +23,12 @@ public class AudioController : ControllerBase
     public AudioController(
         IEnumerable<IAudioInput> audioInputs,
         IEnumerable<IAudioOutput> audioOutputs,
+        IAudioPriorityManager priorityManager,
         ILogger<AudioController> logger)
     {
         _audioInputs = audioInputs;
         _audioOutputs = audioOutputs;
+        _priorityManager = priorityManager;
         _logger = logger;
     }
 
@@ -37,7 +41,8 @@ public class AudioController : ControllerBase
             i.Name,
             i.Description,
             i.IsAvailable,
-            i.IsActive
+            i.IsActive,
+            i.InputType
         });
 
         return Ok(inputs);
@@ -190,6 +195,116 @@ public class AudioController : ControllerBase
         {
             _logger.LogError(ex, "Error setting volume");
             return StatusCode(500, "Error setting volume");
+        }
+    }
+
+    [HttpGet("priority/state")]
+    public async Task<IActionResult> GetPriorityState()
+    {
+        try
+        {
+            var state = await _priorityManager.GetStateAsync();
+            
+            return Ok(new
+            {
+                isEventPlaying = state.IsEventPlaying,
+                currentEvent = state.CurrentEvent != null ? new
+                {
+                    state.CurrentEvent.Id,
+                    state.CurrentEvent.Name,
+                    state.CurrentEvent.Priority,
+                    state.CurrentEvent.Duration
+                } : null,
+                registeredEventInputs = state.RegisteredEventInputs,
+                volumeReductionLevel = _priorityManager.Config.VolumeReductionLevel,
+                muteBackgroundAudio = _priorityManager.Config.MuteBackgroundAudio
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting priority state");
+            return StatusCode(500, "Error getting priority state");
+        }
+    }
+
+    [HttpPost("priority/config")]
+    public IActionResult UpdatePriorityConfig([FromBody] AudioPriorityConfigRequest request)
+    {
+        try
+        {
+            if (request.VolumeReductionLevel.HasValue)
+            {
+                if (request.VolumeReductionLevel < 0 || request.VolumeReductionLevel > 1)
+                {
+                    return BadRequest("Volume reduction level must be between 0.0 and 1.0");
+                }
+                _priorityManager.Config.VolumeReductionLevel = request.VolumeReductionLevel.Value;
+            }
+
+            if (request.MuteBackgroundAudio.HasValue)
+            {
+                _priorityManager.Config.MuteBackgroundAudio = request.MuteBackgroundAudio.Value;
+            }
+
+            return Ok(new
+            {
+                message = "Priority configuration updated",
+                volumeReductionLevel = _priorityManager.Config.VolumeReductionLevel,
+                muteBackgroundAudio = _priorityManager.Config.MuteBackgroundAudio
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating priority config");
+            return StatusCode(500, "Error updating priority config");
+        }
+    }
+
+    [HttpPost("events/{eventId}/trigger")]
+    public async Task<IActionResult> TriggerEvent(string eventId, [FromBody] TriggerEventRequest? request)
+    {
+        try
+        {
+            var eventInput = _audioInputs.FirstOrDefault(i => 
+                i.Id == eventId && i.InputType == AudioInputType.Event) as IEventAudioInput;
+
+            if (eventInput == null)
+            {
+                return NotFound($"Event input '{eventId}' not found");
+            }
+
+            if (!eventInput.IsAvailable)
+            {
+                return BadRequest("Event input is not available");
+            }
+
+            // Trigger the event with optional metadata
+            var metadata = request?.Metadata ?? new Dictionary<string, string>();
+            
+            // Use reflection to call SimulateTriggerAsync if available
+            var method = eventInput.GetType().GetMethod("SimulateTriggerAsync");
+            if (method != null)
+            {
+                await (Task)method.Invoke(eventInput, new object[] { metadata })!;
+                
+                _logger.LogInformation("Triggered event: {EventName}", eventInput.Name);
+
+                return Ok(new
+                {
+                    message = "Event triggered successfully",
+                    eventId = eventInput.Id,
+                    eventName = eventInput.Name,
+                    priority = eventInput.Priority,
+                    duration = eventInput.Duration?.TotalSeconds
+                });
+            }
+
+            return BadRequest("Event input does not support manual triggering");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error triggering event");
+            return StatusCode(500, "Error triggering event");
         }
     }
 }
