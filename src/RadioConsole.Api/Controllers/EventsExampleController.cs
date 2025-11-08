@@ -56,10 +56,12 @@ public class EventsExampleController : ControllerBase
                 return BadRequest("Doorbell event input is not available");
             }
 
-            _logger.LogInformation("Simulating doorbell ring at {Location}", location);
+            // Sanitize location to prevent log injection
+            var sanitizedLocation = location.Replace("\n", "").Replace("\r", "");
+            _logger.LogInformation("Simulating doorbell ring at {Location}", sanitizedLocation);
 
             // Trigger the doorbell event
-            await doorbellInput.SimulateDoorbellRingAsync(location);
+            await doorbellInput.SimulateDoorbellRingAsync(sanitizedLocation);
 
             return Ok(new
             {
@@ -106,10 +108,12 @@ public class EventsExampleController : ControllerBase
                 return BadRequest("Reminder event input is not available");
             }
 
-            _logger.LogInformation("Simulating reminder: {Message}", message);
+            // Sanitize message to prevent log injection
+            var sanitizedMessage = message.Replace("\n", "").Replace("\r", "");
+            _logger.LogInformation("Simulating reminder: {Message}", sanitizedMessage);
 
             // Trigger the reminder event
-            await reminderInput.SimulateReminderAsync(message);
+            await reminderInput.SimulateReminderAsync(sanitizedMessage);
 
             return Ok(new
             {
