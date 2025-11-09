@@ -2,6 +2,7 @@ using RadioConsole.Api.Services;
 using RadioConsole.Api.Interfaces;
 using RadioConsole.Api.Modules.Inputs;
 using RadioConsole.Api.Modules.Outputs;
+using RadioConsole.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,9 +27,14 @@ builder.Services.AddCors(options =>
         });
 });
 
+// Configure eSpeak TTS settings
+builder.Services.Configure<ESpeakTtsConfig>(
+    builder.Configuration.GetSection("ESpeakTts"));
+
 // Register services
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
+builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
 
 // Register audio priority manager
 builder.Services.AddSingleton<IAudioPriorityManager, AudioPriorityManager>();
@@ -43,6 +49,7 @@ builder.Services.AddSingleton<IAudioInput, TelephoneRingingEventInput>();
 builder.Services.AddSingleton<IAudioInput, GoogleBroadcastEventInput>();
 builder.Services.AddSingleton<IAudioInput, TimerExpiredEventInput>();
 builder.Services.AddSingleton<IAudioInput, ReminderEventInput>();
+builder.Services.AddSingleton<IAudioInput, TextEventInput>();
 
 // Register audio output modules
 builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();

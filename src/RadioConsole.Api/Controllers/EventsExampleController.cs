@@ -188,6 +188,73 @@ public class EventsExampleController : ControllerBase
     }
 
     /// <summary>
+    /// Example: Hello World - Announce text using TTS
+    /// </summary>
+    /// <remarks>
+    /// This demonstrates the TextEventInput with a simple "Hello World" announcement.
+    /// The system will:
+    /// 1. Generate speech from text using eSpeak TTS
+    /// 2. Save current volume levels
+    /// 3. Reduce/mute background audio
+    /// 4. Play the announcement
+    /// 5. Restore original volumes
+    /// </remarks>
+    [HttpPost("text/announce")]
+    public async Task<IActionResult> AnnounceText([FromQuery] string text = "Hello World")
+    {
+        try
+        {
+            var textInput = _audioInputs
+                .OfType<TextEventInput>()
+                .FirstOrDefault();
+
+            if (textInput == null)
+            {
+                return NotFound("Text event input not found");
+            }
+
+            if (!textInput.IsAvailable)
+            {
+                return BadRequest("Text event input is not available - eSpeak TTS may not be configured");
+            }
+
+            // Sanitize text to prevent log injection
+            var sanitizedText = text.Replace("\n", " ").Replace("\r", " ");
+            _logger.LogInformation("Announcing text: {Text}", sanitizedText);
+
+            // Trigger the text announcement
+            await textInput.AnnounceTextAsync(sanitizedText);
+
+            return Ok(new
+            {
+                message = "Text announcement triggered successfully",
+                text,
+                priority = textInput.Priority.ToString(),
+                estimatedDuration = textInput.Duration?.TotalSeconds,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error announcing text");
+            return StatusCode(500, new { error = "Error announcing text", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Example: Hello World - Simple "Hello World" announcement
+    /// </summary>
+    /// <remarks>
+    /// A convenience endpoint that announces "Hello World" using the TextEventInput.
+    /// Perfect for testing eSpeak TTS integration.
+    /// </remarks>
+    [HttpPost("text/helloworld")]
+    public async Task<IActionResult> HelloWorld()
+    {
+        return await AnnounceText("Hello World");
+    }
+
+    /// <summary>
     /// Get current configuration of the audio priority manager
     /// </summary>
     [HttpGet("config")]
