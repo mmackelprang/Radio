@@ -72,6 +72,34 @@ public enum EventPriority
 - **Duration**: 2 seconds
 - **Use Case**: Calendar reminders or scheduled notifications
 
+### 6. TextEventInput
+- **ID**: `text_event`
+- **Priority**: Medium
+- **Duration**: Dynamic (calculated based on text length)
+- **Use Case**: Text-to-speech announcements using eSpeak TTS
+- **TTS Engine**: eSpeak/eSpeak-ng (local, offline TTS)
+- **Special Features**: 
+  - Converts any text to speech
+  - Configurable voice, speed, pitch, and volume
+  - Works offline on Raspberry Pi
+  - Lightweight and fast
+  - Perfect for custom announcements and notifications
+
+**Configuration:**
+TextEventInput requires eSpeak TTS to be installed and configured. See [ESPEAK_TTS_SETUP.md](ESPEAK_TTS_SETUP.md) for detailed setup instructions.
+
+Common configuration parameters (in `appsettings.json`):
+```json
+{
+  "ESpeakTts": {
+    "Voice": "en-us",
+    "Speed": 175,
+    "Pitch": 50,
+    "Volume": 100
+  }
+}
+```
+
 ## How It Works
 
 ### Event Flow
@@ -195,7 +223,55 @@ POST /api/eventsexample/reminder/trigger?message=Take%20medication
 }
 ```
 
-### Example 3: Priority System Test
+### Example 3: Text-to-Speech Announcement (Hello World)
+
+```http
+POST /api/eventsexample/text/helloworld
+```
+
+**What Happens:**
+1. eSpeak TTS generates speech from "Hello World"
+2. Volume states saved
+3. Background audio reduced
+4. Speech plays (duration based on text length)
+5. Volumes restored
+
+**Response:**
+```json
+{
+  "message": "Text announcement triggered successfully",
+  "text": "Hello World",
+  "priority": "Medium",
+  "estimatedDuration": 1.5,
+  "timestamp": "2024-11-09T21:30:00Z"
+}
+```
+
+### Example 4: Custom Text Announcement
+
+```http
+POST /api/eventsexample/text/announce?text=Welcome%20home.%20The%20temperature%20is%2072%20degrees.
+```
+
+**What Happens:**
+1. eSpeak TTS converts the custom text to speech
+2. Audio event system handles the announcement
+3. Background music volume is reduced during announcement
+4. Speech is played through speakers
+5. Original volume restored after completion
+
+**Response:**
+```json
+{
+  "message": "Text announcement triggered successfully",
+  "text": "Welcome home. The temperature is 72 degrees.",
+  "priority": "Medium",
+  "estimatedDuration": 3.8,
+  "timestamp": "2024-11-09T21:35:00Z"
+}
+```
+
+### Example 5: Priority System Test
 
 ```http
 POST /api/eventsexample/test/priority

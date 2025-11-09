@@ -73,7 +73,36 @@ Expected behavior:
 3. Plays reminder notification for 2 seconds
 4. Restores original volumes
 
-### 5. Test Priority System
+### 5. Text-to-Speech Announcement (Hello World)
+
+Test the TextEventInput with a simple "Hello World" announcement:
+
+```bash
+curl -X POST http://localhost:5269/api/eventsexample/text/helloworld
+```
+
+Expected behavior:
+1. eSpeak TTS generates speech from "Hello World"
+2. Saves current audio volume levels
+3. Reduces background audio
+4. Plays the speech announcement
+5. Restores original volumes
+
+### 6. Custom Text Announcement
+
+Announce custom text using TTS:
+
+```bash
+curl -X POST "http://localhost:5269/api/eventsexample/text/announce?text=Welcome%20to%20the%20Radio%20Console%20system"
+```
+
+Expected behavior:
+1. Converts provided text to speech using eSpeak TTS
+2. Duration automatically calculated based on text length
+3. Announcement plays with priority handling
+4. Volumes restored after completion
+
+### 7. Test Priority System
 
 Test multiple events with different priorities:
 
@@ -87,7 +116,7 @@ This triggers:
 
 The response shows the execution order and final state.
 
-### 6. Get Configuration
+### 8. Get Configuration
 
 View current AudioPriorityManager configuration:
 
@@ -95,7 +124,7 @@ View current AudioPriorityManager configuration:
 curl http://localhost:5269/api/eventsexample/config
 ```
 
-### 7. Update Configuration
+### 9. Update Configuration
 
 Change the volume reduction level or mute setting:
 
@@ -112,7 +141,7 @@ Parameters:
 - `volumeReductionLevel`: 0.0 (mute) to 1.0 (no change)
 - `muteBackgroundAudio`: true/false
 
-### 8. Trigger Event via Generic Endpoint
+### 10. Trigger Event via Generic Endpoint
 
 Use the generic event trigger endpoint:
 
@@ -149,6 +178,15 @@ Import the following endpoints into your API testing tool:
 
 3. **POST** Doorbell Ring
    - URL: `http://localhost:5269/api/eventsexample/doorbell/ring?location=Front Door`
+
+4. **POST** Reminder
+   - URL: `http://localhost:5269/api/eventsexample/reminder/trigger?message=Take medication`
+
+5. **POST** Hello World (TTS)
+   - URL: `http://localhost:5269/api/eventsexample/text/helloworld`
+
+6. **POST** Custom Text Announcement (TTS)
+   - URL: `http://localhost:5269/api/eventsexample/text/announce?text=Your custom message here`
 
 4. **POST** Reminder
    - URL: `http://localhost:5269/api/eventsexample/reminder/trigger?message=Take medication`
