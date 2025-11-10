@@ -14,20 +14,32 @@ builder.Services.AddRazorComponents()
 // Add MudBlazor services for Material Design 3
 builder.Services.AddMudServices();
 
+// Add HTTP client for API calls
+builder.Services.AddHttpClient();
+
 // Register core services from RadioConsole.Api
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
+builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
 
-// Register audio input modules
+// Register device factory and registry
+builder.Services.AddSingleton<IDeviceFactory, DeviceFactory>();
+builder.Services.AddSingleton<IDeviceRegistry, DeviceRegistry>();
+
+// Register statically configured audio input modules (for backward compatibility)
 builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
 
-// Register audio output modules
+// Register statically configured audio output modules (for backward compatibility)
 builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
 builder.Services.AddSingleton<IAudioOutput, ChromecastOutput>();
 
 var app = builder.Build();
 
-// Initialize all audio modules
+// Initialize device registry and load configured devices
+var deviceRegistry = app.Services.GetRequiredService<IDeviceRegistry>();
+await deviceRegistry.LoadConfigurationsAsync();
+
+// Initialize all statically registered audio modules
 var inputs = app.Services.GetServices<IAudioInput>();
 var outputs = app.Services.GetServices<IAudioOutput>();
 

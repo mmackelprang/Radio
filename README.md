@@ -34,6 +34,7 @@ The Radio Console project aims to create a comprehensive audio management system
 - **Material Design 3** - Modern, touch-friendly Blazor interface with MudBlazor
 - **Dark/Light Mode** - Easily swappable theme for different lighting conditions
 - **Audio Controls** - Source selection, playback controls, volume management
+- **Device Management** - Add, edit, and remove audio input/output devices through the UI
 - **Event Notifications** - High-priority audio notifications with automatic volume management
 - **History** - Track recently played content
 - **Favorites** - Save and quick-access favorite stations and playlists
@@ -44,10 +45,11 @@ The Radio Console project aims to create a comprehensive audio management system
 ### Technical Features
 - **Modular Architecture** - Clean separation between backend API and frontend
 - **RESTful API** - ASP.NET Core Web API for audio control and management
+- **Dynamic Device Configuration** - Add and configure audio devices at runtime without code changes
 - **Event-Driven Audio** - Priority-based audio event system with automatic volume ducking
 - **Blazor Server UI** - Modern C# Blazor Server interface with Material Design 3
 - **Real-time Updates** - SignalR for live metadata and status updates
-- **State Management** - Persistent storage of settings, history, and favorites
+- **State Management** - Persistent storage of settings, history, favorites, and device configurations
 - **Development Mode** - Local development with mock hardware simulation
 
 ## 🏗️ Architecture
@@ -98,6 +100,8 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 - **ESpeakTtsService** - Text-to-speech using eSpeak
 - **AudioPriorityManager** - Priority-based audio event management
 - **AudioMixer** - Real-time audio mixing service
+- **DeviceRegistry** - Manages configured audio devices with persistent storage
+- **DeviceFactory** - Creates audio device instances from configuration
 
 ## 📋 Development Phases
 
@@ -147,19 +151,20 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 - [ ] Add external Bluetooth speaker output
 - [ ] Implement output switching mechanisms
 
-### Phase 6: User Interface Development 🚧
-- [x] Develop basic React UI with navigation
+### Phase 6: User Interface Development ✅
+- [x] Develop basic Blazor UI with navigation
 - [x] Create components for audio control, history, and favorites
 - [x] Implement source selection interface
 - [x] Add basic playback controls
 - [x] Implement dark/light mode toggle with Material Design 3
+- [x] Add device management UI for configuring audio inputs/outputs
 - [ ] Enhance metadata display with real-time WebSocket updates
-- [ ] Add configuration sections per input/output
 - [ ] Implement individual player controls (radio tuning, Spotify controls)
 - [ ] Apply final UI styling for console radio display
 
-### Phase 7: State Management and Persistency 📝
+### Phase 7: State Management and Persistency ✅
 - [x] Setup JSON-based storage infrastructure
+- [x] Implement device configuration persistence
 - [ ] Implement saving/loading of favorites
 - [ ] Implement history tracking
 - [ ] Add migration and backup capabilities
@@ -171,8 +176,9 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 - [ ] Setup automated deployment for Raspberry Pi
 - [ ] Performance testing and optimization
 
-### Phase 9: Documentation and Final Adjustments 📝
+### Phase 9: Documentation and Final Adjustments 🚧
 - [x] Create comprehensive README
+- [x] Create device configuration guide
 - [ ] Write developer documentation
 - [ ] Record setup and usage instructions
 - [ ] Create troubleshooting guide
@@ -276,7 +282,9 @@ Radio/
 │   │   │   ├── EnvironmentService.cs
 │   │   │   ├── JsonStorageService.cs
 │   │   │   ├── AudioMixer.cs
-│   │   │   └── AudioPriorityManager.cs
+│   │   │   ├── AudioPriorityManager.cs
+│   │   │   ├── DeviceRegistry.cs
+│   │   │   └── DeviceFactory.cs
 │   │   ├── Hubs/                 # SignalR hubs for real-time updates
 │   │   └── Models/               # Data models and DTOs
 │   ├── RadioConsole.Blazor/      # Blazor Server UI (Material Design 3)
@@ -285,9 +293,11 @@ Radio/
 │   │   │   │   ├── MainLayout.razor
 │   │   │   │   └── NavMenu.razor
 │   │   │   └── Pages/            # Blazor pages
-│   │   │       ├── Home.razor           # Audio Control
-│   │   │       ├── History.razor        # Playback History
-│   │   │       └── Favorites.razor      # Favorites
+│   │   │       ├── Home.razor            # Audio Control
+│   │   │       ├── DeviceManagement.razor # Device Configuration
+│   │   │       ├── DeviceDialog.razor    # Device Add/Edit Dialog
+│   │   │       ├── History.razor         # Playback History
+│   │   │       └── Favorites.razor       # Favorites
 │   │   ├── wwwroot/              # Static assets
 │   │   └── Program.cs            # App configuration
 │   └── RadioConsole.Web/         # React/TypeScript frontend (legacy)
@@ -301,6 +311,7 @@ Radio/
 │       └── package.json          # npm dependencies
 ├── tests/
 │   └── RadioConsole.Api.Tests/   # API unit tests
+├── DEVICE_CONFIGURATION_GUIDE.md # Device configuration guide
 ├── PROJECT_PLAN.md               # Detailed project plan
 ├── README.md                     # This file
 └── LICENSE                       # Project license
@@ -316,21 +327,32 @@ See the [LICENSE](LICENSE) file for details.
 
 ## 🎵 Current Status
 
-**Project Status**: Phase 3 Complete - Blazor UI with Material Design 3
+**Project Status**: Phase 6 Complete - Device Management UI
 
-The project has completed the migration from .NET MAUI to Blazor Server with:
+The project has completed the core infrastructure and device management features:
 - ✅ ASP.NET Core Web API backend with modular architecture
 - ✅ Blazor Server UI with Material Design 3 (MudBlazor)
 - ✅ Core interfaces defined (IAudioInput, IAudioOutput, IDisplay, IDeviceConfiguration, IStorage)
 - ✅ Simulation mode support for cross-platform development
-- ✅ Base modules for Spotify input and audio outputs
+- ✅ Base modules for audio inputs (USB, File, TTS, Spotify) and outputs (Wired, Chromecast)
 - ✅ Material Design 3 UI with dark/light mode toggle
-- ✅ Blazor components for Audio Control, History, and Favorites
+- ✅ Blazor pages for Audio Control, Device Management, History, and Favorites
 - ✅ Interactive server-side rendering with real-time updates
+- ✅ **Dynamic device configuration** - Add, edit, and remove audio devices through the UI
+- ✅ **Persistent device storage** - Configurations saved to JSON and loaded on startup
+- ✅ **Device factory pattern** - Create device instances from configurations
 
-**Next Steps**: Phase 4 - Integrate actual hardware and implement real audio streaming capabilities.
+**Next Steps**: 
+- Integrate actual hardware for real audio streaming
+- Implement favorites and history tracking
+- Add real-time metadata display
+- Enhance Spotify integration
 
-**Next Steps**: Phase 3 - Integrate actual hardware and implement real audio streaming capabilities.
+## 📚 Documentation
+
+- [Device Configuration Guide](DEVICE_CONFIGURATION_GUIDE.md) - Complete guide for managing audio devices
+- [Architecture Documentation](ARCHITECTURE.md) - Detailed system architecture
+- [Development Guide](DEVELOPMENT.md) - Setup instructions for developers
 
 ## 📞 Contact
 

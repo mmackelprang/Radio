@@ -1,8 +1,10 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @using RadioConsole.Api.Interfaces
+@using RadioConsole.Api.Services
 @inject IEnumerable<IAudioInput> AudioInputs
 @inject IEnumerable<IAudioOutput> AudioOutputs
+@inject IDeviceRegistry DeviceRegistry
 @inject IEnvironmentService EnvironmentService
 
 <PageTitle>Audio Control</PageTitle>
@@ -103,8 +105,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _audioInputs = AudioInputs.ToList();
-        _audioOutputs = AudioOutputs.ToList();
+        // Combine statically registered and dynamically configured devices
+        _audioInputs = AudioInputs.Concat(DeviceRegistry.GetAllInputs()).ToList();
+        _audioOutputs = AudioOutputs.Concat(DeviceRegistry.GetAllOutputs()).ToList();
 
         // Select first available input and output
         _selectedInput = _audioInputs.FirstOrDefault(i => i.IsAvailable);

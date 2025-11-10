@@ -23,12 +23,18 @@ public class AudioControllerTests
     private readonly Mock<ILogger<AudioController>> _mockLogger;
     private readonly Mock<IAudioPriorityManager> _mockPriorityManager;
     private readonly Mock<ILogger<AudioMixer>> _mockAudioMixerLogger;
+    private readonly Mock<IDeviceRegistry> _mockDeviceRegistry;
 
     public AudioControllerTests()
     {
         _mockLogger = new Mock<ILogger<AudioController>>();
         _mockPriorityManager = new Mock<IAudioPriorityManager>();
         _mockAudioMixerLogger = new Mock<ILogger<AudioMixer>>();
+        _mockDeviceRegistry = new Mock<IDeviceRegistry>();
+        
+        // Setup empty device lists by default
+        _mockDeviceRegistry.Setup(r => r.GetAllInputs()).Returns(Array.Empty<IAudioInput>());
+        _mockDeviceRegistry.Setup(r => r.GetAllOutputs()).Returns(Array.Empty<IAudioOutput>());
     }
 
     #region Single Audio Input Tests
@@ -567,6 +573,7 @@ public class AudioControllerTests
         return new AudioController(
             inputs ?? Array.Empty<IAudioInput>(),
             outputs ?? Array.Empty<IAudioOutput>(),
+            _mockDeviceRegistry.Object,
             priorityManager ?? _mockPriorityManager.Object,
             audioMixer ?? new AudioMixer(Array.Empty<IAudioOutput>(), _mockAudioMixerLogger.Object),
             _mockLogger.Object);
