@@ -1,9 +1,6 @@
 ﻿@inherits LayoutComponentBase
 
-<MudThemeProvider Theme="_theme" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<MudThemeProvider Theme="_theme" IsDarkMode="@_isDarkMode" />
 
 <MudLayout>
     <MudAppBar Elevation="1" Dense="false">
