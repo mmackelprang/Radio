@@ -21,16 +21,14 @@ The foundation of the system, defining contracts for all major components:
 
 #### IAudioInput
 - Represents any audio input source (radio, streaming, events, etc.)
-- Methods: `InitializeAsync()`, `StartAsync()`, `StopAsync()`, `GetAudioStreamAsync()`
-- Properties: `Id`, `Name`, `Description`, `IsAvailable`, `IsActive`, `InputType`
+- Methods: `InitializeAsync()`, `StartAsync()`, `StopAsync()`, `GetAudioStreamAsync()`, `PauseAsync()`, `ResumeAsync()`, `SetVolumeAsync()`
+- Properties: `Id`, `Name`, `Description`, `IsAvailable`, `IsActive`, `InputType`, `Priority`, `Duration`, `AllowConcurrent`
 - InputType: Distinguishes between `Music` and `Event` inputs
+- Event: `AudioDataAvailable` - fires when PCM audio data is available
+- Methods: `SetRepeat()`, `SimulateTriggerAsync()` for event simulation
 - Provides: `IDeviceConfiguration` and `IDisplay` interfaces
 
-#### IEventAudioInput
-- Extends `IAudioInput` for event-driven audio (doorbells, timers, etc.)
-- Additional Properties: `Priority` (Low/Medium/High/Critical), `Duration`
-- Event: `AudioEventTriggered` - fires when event audio should play
-- Enables priority-based audio interruption system
+Note: The `IEventAudioInput` interface has been removed. All event functionality is now integrated into `IAudioInput` with the `InputType` property distinguishing between Music and Event inputs.
 
 #### IAudioOutput
 - Represents any audio output device (speakers, streaming, etc.)
@@ -119,10 +117,14 @@ Core services that support the application:
 Concrete implementations of inputs and outputs:
 
 #### Base Classes
-- `BaseAudioInput` - Common functionality for all music inputs
-- `BaseEventAudioInput` - Common functionality for all event inputs
+- `BaseAudioInput` - Common functionality for all audio inputs (music and events)
+  - Includes event management via `TriggerAudioEventAsync()` and `SimulateTriggerAsync()`
+  - Playback control (pause, resume, volume, repeat)
+  - Embedded `BaseDisplay` and `BaseConfiguration` implementations
 - `BaseAudioOutput` - Common functionality for all outputs
-- Includes embedded `BaseDisplay` and `BaseConfiguration` implementations
+  - Includes embedded `BaseDisplay` and `BaseConfiguration` implementations
+
+Note: The `BaseEventAudioInput` class has been removed. All functionality is now in `BaseAudioInput`.
 
 #### Music Input Modules
 - **RadioInput** - Raddy RF320 radio integration
