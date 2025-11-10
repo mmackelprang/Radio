@@ -14,6 +14,9 @@ builder.Services.AddRazorComponents()
 // Add MudBlazor services for Material Design 3
 builder.Services.AddMudServices();
 
+// Add HTTP client for API calls
+builder.Services.AddHttpClient();
+
 // Register core services from RadioConsole.Api
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
