@@ -6,8 +6,9 @@ namespace RadioConsole.Api.Modules.Inputs;
 /// <summary>
 /// Audio input for text-to-speech announcements using TTS service
 /// </summary>
-public class TtsAudioInput : BaseEventAudioInput
+public class TtsAudioInput : BaseAudioInput
 {
+    public override AudioInputType InputType => AudioInputType.Event;
     private readonly ITtsService _ttsService;
     private string _currentText = string.Empty;
     private Stream? _currentAudioStream;

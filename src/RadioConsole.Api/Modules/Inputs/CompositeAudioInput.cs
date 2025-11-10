@@ -7,8 +7,9 @@ namespace RadioConsole.Api.Modules.Inputs;
 /// Audio input that combines multiple file and TTS inputs to create composite audio
 /// Can play items serially or concurrently with volume levels and repeat instructions
 /// </summary>
-public class CompositeAudioInput : BaseEventAudioInput
+public class CompositeAudioInput : BaseAudioInput
 {
+    public override AudioInputType InputType => AudioInputType.Event;
     private readonly List<IAudioInput> _inputs = new();
     private readonly bool _playSerially;
     private readonly Dictionary<IAudioInput, double> _volumeLevels = new();
