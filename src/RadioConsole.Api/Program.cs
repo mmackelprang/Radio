@@ -40,16 +40,15 @@ builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
 builder.Services.AddSingleton<IAudioPriorityManager, AudioPriorityManager>();
 
 // Register music audio input modules
-builder.Services.AddSingleton<IAudioInput, RadioInput>();
 builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
 
-// Register event audio input modules
-builder.Services.AddSingleton<IAudioInput, DoorbellEventInput>();
-builder.Services.AddSingleton<IAudioInput, TelephoneRingingEventInput>();
-builder.Services.AddSingleton<IAudioInput, GoogleBroadcastEventInput>();
-builder.Services.AddSingleton<IAudioInput, TimerExpiredEventInput>();
-builder.Services.AddSingleton<IAudioInput, ReminderEventInput>();
+// Register TTS audio input module
 builder.Services.AddSingleton<IAudioInput, TtsAudioInput>();
+
+// Note: RadioInput, DoorbellEventInput, TelephoneRingingEventInput, GoogleBroadcastEventInput,
+// TimerExpiredEventInput, and ReminderEventInput have been removed.
+// Use UsbAudioInput, FileAudioInput, and CompositeAudioInput instead.
+// See AUDIO_INPUT_MIGRATION.md for migration guide.
 
 // Register audio output modules
 builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
