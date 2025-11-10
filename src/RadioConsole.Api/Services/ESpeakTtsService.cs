@@ -41,73 +41,65 @@ public class ESpeakTtsService : ITtsService
             }
 
             // Check if eSpeak is available
-            try
+            if (await TryInitializeESpeakAsync(_config.ESpeakExecutablePath))
             {
-                var testProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _config.ESpeakExecutablePath,
-                        Arguments = "--version",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-
-                testProcess.Start();
-                var output = await testProcess.StandardOutput.ReadToEndAsync();
-                await testProcess.WaitForExitAsync();
-
-                if (testProcess.ExitCode == 0)
-                {
-                    _isAvailable = true;
-                    _logger.LogInformation("eSpeak TTS initialized successfully: {Version}", output.Split('\n')[0]);
-                }
-                else
-                {
-                    _isAvailable = false;
-                    _logger.LogWarning("eSpeak not available");
-                }
+                return;
             }
-            catch (Exception ex)
+
+            // Try fallback to older 'espeak' command
+            _logger.LogDebug("Primary eSpeak executable not found, trying fallback to 'espeak'");
+            if (await TryInitializeESpeakAsync("espeak"))
             {
-                _logger.LogWarning(ex, "eSpeak TTS test failed - trying fallback to 'espeak'");
-                
-                // Try fallback to older 'espeak' command
                 _config.ESpeakExecutablePath = "espeak";
-                var fallbackProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "espeak",
-                        Arguments = "--version",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-
-                fallbackProcess.Start();
-                await fallbackProcess.WaitForExitAsync();
-                
-                _isAvailable = fallbackProcess.ExitCode == 0;
-                if (_isAvailable)
-                {
-                    _logger.LogInformation("Fallback to 'espeak' successful");
-                }
-                else
-                {
-                    _logger.LogWarning("Neither espeak-ng nor espeak are available");
-                }
+                return;
             }
+
+            // Neither espeak-ng nor espeak are available
+            _logger.LogInformation("eSpeak TTS is not available (espeak-ng or espeak not installed). Text-to-speech features will be disabled. See ESPEAK_TTS_SETUP.md for installation instructions.");
+            _isAvailable = false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error initializing eSpeak TTS");
+            _logger.LogError(ex, "Unexpected error initializing eSpeak TTS");
             _isAvailable = false;
+        }
+    }
+
+    private async Task<bool> TryInitializeESpeakAsync(string executablePath)
+    {
+        try
+        {
+            var testProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = executablePath,
+                    Arguments = "--version",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            testProcess.Start();
+            var output = await testProcess.StandardOutput.ReadToEndAsync();
+            await testProcess.WaitForExitAsync();
+
+            if (testProcess.ExitCode == 0)
+            {
+                _isAvailable = true;
+                _logger.LogInformation("eSpeak TTS initialized successfully using '{ExecutablePath}': {Version}", 
+                    executablePath, output.Split('\n')[0]);
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception)
+        {
+            // Executable not found or failed to start - this is expected when not installed
+            return false;
         }
     }
 
