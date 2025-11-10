@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RadioConsole system now supports event-driven audio inputs alongside traditional music/streaming inputs. Event-driven inputs are designed for short-duration, high-priority audio notifications such as doorbells, phone rings, timers, and reminders.
+The RadioConsole system supports event-driven audio inputs alongside traditional music/streaming inputs. Event-driven inputs are designed for short-duration, high-priority audio notifications such as doorbells, phone rings, timers, and reminders.
 
 ## Architecture
 
@@ -13,13 +13,25 @@ Distinguishes between different types of audio inputs:
 - **Music**: Traditional streaming sources (Radio, Spotify, etc.)
 - **Event**: Short-duration, priority-based notifications
 
-#### 2. IEventAudioInput Interface
-Extends `IAudioInput` with event-specific functionality:
+#### 2. IAudioInput Interface
+The unified interface for all audio inputs now includes event-specific properties:
+- **InputType**: Distinguishes between Music and Event types
 - **Priority**: Priority level (Low, Medium, High, Critical)
-- **Duration**: Expected duration of the event audio
-- **AudioEventTriggered**: Event that fires when the audio should play
+- **Duration**: Expected duration of the audio
+- **AudioDataAvailable**: Event that fires when PCM audio data is available
+- **AllowConcurrent**: Whether this stream can play concurrently with others
 
-#### 3. AudioPriorityManager Service
+#### 3. BaseAudioInput Class
+Base implementation providing common functionality for all audio inputs:
+- Event management through `TriggerAudioEventAsync()` and `SimulateTriggerAsync()`
+- Playback control (Start, Stop, Pause, Resume)
+- Volume management
+- Repeat/loop configuration
+- Display and configuration interfaces
+
+**Note**: The `BaseEventAudioInput` class has been removed. All event functionality is now integrated into `BaseAudioInput`.
+
+#### 4. AudioPriorityManager Service
 Manages multiple audio sources with priority-based interruption:
 - Monitors registered event inputs
 - Saves volume states when events occur
@@ -42,11 +54,46 @@ public enum EventPriority
 
 ## Available Event Input Modules
 
-### 1. DoorbellEventInput
-- **ID**: `doorbell_event`
-- **Priority**: High
-- **Duration**: 3 seconds
-- **Use Case**: Doorbell ring notifications (e.g., Wyze doorbell integration)
+### Generic Event Inputs
+
+The system uses generic, composable input types that can be configured for any event scenario:
+
+#### 1. FileAudioInput
+Plays audio files (MP3, WAV) for event notifications.
+- **Use Cases**: Doorbell sounds, phone rings, alert tones
+- **Priority**: Configurable (Low to Critical)
+- **Duration**: Determined by file length
+- **Features**: Repeat/loop support, volume control, pause/resume
+
+#### 2. TtsAudioInput
+Text-to-speech audio using eSpeak TTS engine.
+- **Use Cases**: Voice announcements, timer notifications, reminders
+- **Priority**: Configurable (typically Medium)
+- **Duration**: Calculated based on text length
+- **Features**: Offline TTS, configurable voice parameters
+
+#### 3. CompositeAudioInput
+Combines multiple audio sources (files and TTS) into a single event.
+- **Use Cases**: Complex notifications with sound + voice, multi-part announcements
+- **Priority**: Configurable (Low to Critical)
+- **Duration**: Sum of all components (serial) or max duration (concurrent)
+- **Features**: 
+  - Serial or concurrent playback
+  - Per-source volume control
+  - Per-source repeat configuration
+  - Mixed file and TTS inputs
+
+### Legacy Event Inputs (Deprecated)
+
+The following specific event inputs have been deprecated in favor of the generic types above:
+- **DoorbellEventInput** → Use `FileAudioInput` or `CompositeAudioInput`
+- **TelephoneRingingEventInput** → Use `FileAudioInput` or `CompositeAudioInput`
+- **GoogleBroadcastEventInput** → Use `TtsAudioInput` or `CompositeAudioInput`
+- **TimerExpiredEventInput** → Use `FileAudioInput` or `CompositeAudioInput`
+- **ReminderEventInput** → Use `TtsAudioInput` or `CompositeAudioInput`
+- **TextEventInput** → Use `TtsAudioInput`
+
+See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 
 ### 2. TelephoneRingingEventInput
 - **ID**: `telephone_event`
@@ -100,32 +147,112 @@ Common configuration parameters (in `appsettings.json`):
 }
 ```
 
+## Configuration Examples
+
+### Example 1: Doorbell Event with Sound and Announcement
+
+```csharp
+var doorbellEvent = new CompositeAudioInput(
+    "doorbell_event",
+    "Doorbell Ring",
+    EventPriority.High,
+    true, // Serial playback
+    environmentService,
+    storage);
+
+// Add doorbell sound
+doorbellEvent.AddFileInput("/sounds/doorbell.mp3", volume: 1.0);
+
+// Add voice announcement
+doorbellEvent.AddTtsInput("Someone is at the door", ttsService, volume: 0.9);
+
+await doorbellEvent.InitializeAsync();
+```
+
+### Example 2: Timer with Multiple Beeps
+
+```csharp
+var timerEvent = new CompositeAudioInput(
+    "timer_event",
+    "Timer Expired",
+    EventPriority.Medium,
+    false, // Concurrent playback
+    environmentService,
+    storage);
+
+// Add repeating beep sound
+timerEvent.AddFileInput("/sounds/beep.wav", volume: 1.0, repeatCount: 3);
+
+await timerEvent.InitializeAsync();
+```
+
+### Example 3: Emergency Alert
+
+```csharp
+var emergencyAlert = new CompositeAudioInput(
+    "emergency_alert",
+    "Emergency Alert",
+    EventPriority.Critical,
+    true, // Serial playback
+    environmentService,
+    storage);
+
+// Add alarm sound
+emergencyAlert.AddFileInput("/sounds/alarm.mp3", volume: 1.0, repeatCount: 2);
+
+// Add emergency message
+emergencyAlert.AddTtsInput("Emergency alert! Please evacuate immediately!", 
+    ttsService, volume: 1.0);
+
+await emergencyAlert.InitializeAsync();
+```
+
+## TTS Configuration
+
+TtsAudioInput requires eSpeak TTS to be installed and configured. See [ESPEAK_TTS_SETUP.md](ESPEAK_TTS_SETUP.md) for detailed setup instructions.
+
+Common configuration parameters (in `appsettings.json`):
+```json
+{
+  "ESpeakTts": {
+    "Voice": "en-us",
+    "Speed": 175,
+    "Pitch": 50,
+    "Volume": 100
+  }
+}
+```
+
 ## How It Works
 
 ### Event Flow
 
-1. **Event Occurs**: An event input triggers its `AudioEventTriggered` event
-2. **Priority Check**: AudioPriorityManager checks if event can interrupt current audio
-3. **Volume Save**: Current volume levels are saved for all active outputs
-4. **Volume Adjust**: Background audio is reduced or muted (configurable)
-5. **Event Plays**: Event audio plays for its specified duration
-6. **Volume Restore**: Original volumes are restored after completion
+1. **Event Creation**: Create an event input using FileAudioInput, TtsAudioInput, or CompositeAudioInput
+2. **Registration**: Register the event input with AudioPriorityManager
+3. **Trigger**: Trigger the event via `SimulateTriggerAsync()` or automatic triggers
+4. **Priority Check**: AudioPriorityManager checks if event can interrupt current audio
+5. **Volume Save**: Current volume levels are saved for all active outputs
+6. **Volume Adjust**: Background audio is reduced or muted (configurable)
+7. **Event Plays**: Event audio plays for its specified duration
+8. **Volume Restore**: Original volumes are restored after completion
 
 ### Priority Interruption Rules
 
 - Higher priority events interrupt lower priority events
 - Equal or lower priority events are ignored if a higher priority event is playing
 - Events automatically restore volumes after completion
+- Critical priority always interrupts
 
 ## Configuration
 
 ### AudioPriorityManager Configuration
 
-```json
+```csharp
+var config = new AudioPriorityManagerConfig
 {
-  "VolumeReductionLevel": 0.1,  // 0.0 = mute, 1.0 = no change
-  "MuteBackgroundAudio": false   // true = complete mute, false = use VolumeReductionLevel
-}
+    VolumeReductionLevel = 0.1,  // 0.0 = mute, 1.0 = no change
+    MuteBackgroundAudio = false   // true = complete mute, false = use VolumeReductionLevel
+};
 ```
 
 **Default Configuration:**

@@ -9,7 +9,40 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Radio Console API",
+        Version = "v1",
+        Description = @"Radio Console API for managing audio inputs, outputs, and events.
+
+## Audio Input Types
+- **Music**: Traditional streaming sources (Radio, Spotify, USB, Files)
+- **Event**: Priority-based notifications (Doorbells, Timers, Alerts)
+
+## Key Features
+- Multiple audio inputs with priority management
+- Event-driven audio with automatic volume ducking
+- Real-time audio mixing
+- Text-to-speech announcements (eSpeak TTS)
+- Composite audio inputs (combine files and TTS)
+- File-based audio playback (MP3, WAV)
+
+## Event Priorities
+- **Low**: Informational events
+- **Medium**: Standard notifications
+- **High**: Urgent notifications (doorbell, phone)
+- **Critical**: Emergency alerts
+
+See EVENTS_DOCUMENTATION.md for detailed event configuration examples.",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "Radio Console",
+            Url = new Uri("https://github.com/mmackelprang/Radio")
+        }
+    });
+});
 
 // Add SignalR for real-time communication
 builder.Services.AddSignalR();
