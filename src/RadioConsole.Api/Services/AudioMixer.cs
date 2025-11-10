@@ -145,11 +145,15 @@ public class AudioMixer : IDisposable
         if (_activeSources.TryGetValue(inputId, out var state))
         {
             state.Volume = volume;
-            _logger.LogDebug("Set volume for {InputId} to {Volume}", inputId, volume);
+            // Sanitize inputId to prevent log injection
+            var sanitizedInputId = inputId.Replace("\n", "").Replace("\r", "");
+            _logger.LogDebug("Set volume for {InputId} to {Volume}", sanitizedInputId, volume);
         }
         else
         {
-            _logger.LogWarning("Cannot set volume for unknown source: {InputId}", inputId);
+            // Sanitize inputId to prevent log injection
+            var sanitizedInputId = inputId.Replace("\n", "").Replace("\r", "");
+            _logger.LogWarning("Cannot set volume for unknown source: {InputId}", sanitizedInputId);
         }
     }
 
