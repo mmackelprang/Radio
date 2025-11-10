@@ -46,8 +46,10 @@ Five event input modules implemented:
 | TimerExpiredEventInput | `timer_event` | Medium | 3s | Kitchen/other timers |
 | ReminderEventInput | `reminder_event` | Medium | 2s | Calendar reminders |
 
+Note: Legacy event inputs have been deprecated. Use `FileAudioInput`, `TtsAudioInput`, or `CompositeAudioInput` instead.
+
 All modules:
-- Inherit from `BaseEventAudioInput`
+- Inherit from `BaseAudioInput` (BaseEventAudioInput removed)
 - Work in simulation mode for testing
 - Include metadata support
 - Have proper initialization and cleanup
@@ -178,15 +180,15 @@ info: AudioPriorityManager[0]
 
 ## Files Modified/Created
 
-### New Files (13)
-- `src/RadioConsole.Api/Interfaces/IEventAudioInput.cs`
+### New Files (Legacy - see AUDIO_INPUT_MIGRATION.md)
+- `src/RadioConsole.Api/Interfaces/IEventAudioInput.cs` (deprecated)
 - `src/RadioConsole.Api/Services/AudioPriorityManager.cs`
-- `src/RadioConsole.Api/Modules/Inputs/BaseEventAudioInput.cs`
-- `src/RadioConsole.Api/Modules/Inputs/DoorbellEventInput.cs`
-- `src/RadioConsole.Api/Modules/Inputs/TelephoneRingingEventInput.cs`
-- `src/RadioConsole.Api/Modules/Inputs/GoogleBroadcastEventInput.cs`
-- `src/RadioConsole.Api/Modules/Inputs/TimerExpiredEventInput.cs`
-- `src/RadioConsole.Api/Modules/Inputs/ReminderEventInput.cs`
+- `src/RadioConsole.Api/Modules/Inputs/BaseEventAudioInput.cs` (removed - functionality moved to BaseAudioInput)
+- `src/RadioConsole.Api/Modules/Inputs/DoorbellEventInput.cs` (deprecated)
+- `src/RadioConsole.Api/Modules/Inputs/TelephoneRingingEventInput.cs` (deprecated)
+- `src/RadioConsole.Api/Modules/Inputs/GoogleBroadcastEventInput.cs` (deprecated)
+- `src/RadioConsole.Api/Modules/Inputs/TimerExpiredEventInput.cs` (deprecated)
+- `src/RadioConsole.Api/Modules/Inputs/ReminderEventInput.cs` (deprecated)
 - `src/RadioConsole.Api/Controllers/EventsExampleController.cs`
 - `EVENTS_DOCUMENTATION.md`
 - `TESTING_EVENTS.md`
@@ -269,16 +271,24 @@ public async Task<IActionResult> WyzeDoorbellWebhook(
 }
 ```
 
-### Custom Event Input
+### Custom Event Input (Using New Architecture)
 ```csharp
-public class CustomEventInput : BaseEventAudioInput
-{
-    public override string Id => "custom_event";
-    public override EventPriority Priority => EventPriority.Medium;
-    public override TimeSpan? Duration => TimeSpan.FromSeconds(4);
-    
-    // Implement required methods...
-}
+// Use CompositeAudioInput for custom events
+var customEvent = new CompositeAudioInput(
+    "custom_event",
+    "Custom Event",
+    EventPriority.Medium,
+    true, // Serial playback
+    environmentService,
+    storage);
+
+// Add sound file
+customEvent.AddFileInput("/sounds/custom.mp3", volume: 1.0);
+
+// Add voice announcement
+customEvent.AddTtsInput("Custom event triggered", ttsService, volume: 0.9);
+
+await customEvent.InitializeAsync();
 ```
 
 ## Performance Characteristics

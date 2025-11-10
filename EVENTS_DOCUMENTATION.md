@@ -410,14 +410,46 @@ Tests the priority system by triggering multiple events in sequence, demonstrati
 
 ### Integrating a New Event Source
 
-1. **Create Event Input Class**
+The recommended approach is to use the generic `CompositeAudioInput`, `FileAudioInput`, or `TtsAudioInput` classes. However, if you need custom behavior, you can create a new class:
+
+1. **Using CompositeAudioInput (Recommended)**
 
 ```csharp
-public class CustomEventInput : BaseEventAudioInput
+// Create a factory method or service to configure your event
+public static CompositeAudioInput CreateCustomEvent(
+    IEnvironmentService environmentService,
+    IStorage storage,
+    ITtsService ttsService)
+{
+    var customEvent = new CompositeAudioInput(
+        "custom_event",
+        "Custom Event",
+        EventPriority.Medium,
+        true, // Serial playback
+        environmentService,
+        storage);
+
+    // Add sound file
+    customEvent.AddFileInput("/sounds/custom.mp3", volume: 1.0);
+    
+    // Add voice announcement
+    customEvent.AddTtsInput("Custom event triggered", ttsService, volume: 0.9);
+    
+    return customEvent;
+}
+```
+
+2. **Create Custom Event Input Class (Advanced)**
+
+If you need custom behavior beyond what CompositeAudioInput provides:
+
+```csharp
+public class CustomEventInput : BaseAudioInput
 {
     public override string Id => "custom_event";
     public override string Name => "Custom Event";
     public override string Description => "My custom event";
+    public override AudioInputType InputType => AudioInputType.Event;
     public override EventPriority Priority => EventPriority.Medium;
     public override TimeSpan? Duration => TimeSpan.FromSeconds(4);
 
@@ -454,7 +486,7 @@ public class CustomEventInput : BaseEventAudioInput
 }
 ```
 
-2. **Register in Program.cs**
+3. **Register in Program.cs**
 
 ```csharp
 builder.Services.AddSingleton<IAudioInput, CustomEventInput>();
@@ -462,11 +494,11 @@ builder.Services.AddSingleton<IAudioInput, CustomEventInput>();
 
 The AudioPriorityManager will automatically register it during startup.
 
-3. **Trigger the Event**
+4. **Trigger the Event**
 
 ```csharp
 // From within your event input class
-await TriggerAudioEventAsync(metadata);
+await SimulateTriggerAsync(metadata);
 ```
 
 ### Webhook Integration Example
