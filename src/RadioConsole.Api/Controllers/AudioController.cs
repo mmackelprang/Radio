@@ -12,6 +12,7 @@ public class AudioController : ControllerBase
     private readonly IEnumerable<IAudioInput> _audioInputs;
     private readonly IEnumerable<IAudioOutput> _audioOutputs;
     private readonly IAudioPriorityManager _priorityManager;
+    private readonly AudioMixer _audioMixer;
     private readonly ILogger<AudioController> _logger;
 
     // Current playback state (in a real implementation, this would be managed by a service)
@@ -24,11 +25,13 @@ public class AudioController : ControllerBase
         IEnumerable<IAudioInput> audioInputs,
         IEnumerable<IAudioOutput> audioOutputs,
         IAudioPriorityManager priorityManager,
+        AudioMixer audioMixer,
         ILogger<AudioController> logger)
     {
         _audioInputs = audioInputs;
         _audioOutputs = audioOutputs;
         _priorityManager = priorityManager;
+        _audioMixer = audioMixer;
         _logger = logger;
     }
 
@@ -305,6 +308,53 @@ public class AudioController : ControllerBase
         {
             _logger.LogError(ex, "Error triggering event");
             return StatusCode(500, "Error triggering event");
+        }
+    }
+
+    /// <summary>
+    /// Get the current state of the audio mixer
+    /// </summary>
+    [HttpGet("mixer/state")]
+    public IActionResult GetMixerState()
+    {
+        try
+        {
+            var state = _audioMixer.GetState();
+            return Ok(state);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting mixer state");
+            return StatusCode(500, "Error getting mixer state");
+        }
+    }
+
+    /// <summary>
+    /// Set volume for a specific audio source in the mixer
+    /// </summary>
+    [HttpPut("mixer/source/{inputId}/volume")]
+    public IActionResult SetMixerSourceVolume(string inputId, [FromBody] VolumeRequest request)
+    {
+        try
+        {
+            if (request.Volume < 0 || request.Volume > 100)
+            {
+                return BadRequest("Volume must be between 0 and 100");
+            }
+
+            _audioMixer.SetSourceVolume(inputId, request.Volume / 100.0);
+
+            return Ok(new
+            {
+                message = "Source volume updated",
+                inputId,
+                volume = request.Volume
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting source volume");
+            return StatusCode(500, "Error setting source volume");
         }
     }
 }

@@ -39,6 +39,9 @@ builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
 // Register audio priority manager
 builder.Services.AddSingleton<IAudioPriorityManager, AudioPriorityManager>();
 
+// Register audio mixer
+builder.Services.AddSingleton<AudioMixer>();
+
 // Register music audio input modules
 builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
 
@@ -68,6 +71,16 @@ foreach (var input in inputs)
 foreach (var output in outputs)
 {
     await output.InitializeAsync();
+}
+
+// Initialize audio mixer
+var audioMixer = app.Services.GetRequiredService<AudioMixer>();
+await audioMixer.StartAsync();
+
+// Register all inputs with the mixer
+foreach (var input in inputs)
+{
+    audioMixer.RegisterSource(input);
 }
 
 // Register event inputs with the priority manager
