@@ -11,6 +11,7 @@ public class AudioController : ControllerBase
 {
     private readonly IEnumerable<IAudioInput> _audioInputs;
     private readonly IEnumerable<IAudioOutput> _audioOutputs;
+    private readonly IDeviceRegistry _deviceRegistry;
     private readonly IAudioPriorityManager _priorityManager;
     private readonly AudioMixer _audioMixer;
     private readonly ILogger<AudioController> _logger;
@@ -24,12 +25,14 @@ public class AudioController : ControllerBase
     public AudioController(
         IEnumerable<IAudioInput> audioInputs,
         IEnumerable<IAudioOutput> audioOutputs,
+        IDeviceRegistry deviceRegistry,
         IAudioPriorityManager priorityManager,
         AudioMixer audioMixer,
         ILogger<AudioController> logger)
     {
         _audioInputs = audioInputs;
         _audioOutputs = audioOutputs;
+        _deviceRegistry = deviceRegistry;
         _priorityManager = priorityManager;
         _audioMixer = audioMixer;
         _logger = logger;
@@ -38,32 +41,61 @@ public class AudioController : ControllerBase
     [HttpGet("inputs")]
     public IActionResult GetInputs()
     {
-        var inputs = _audioInputs.Select(i => new
+        // Combine statically registered inputs with dynamically configured ones
+        var staticInputs = _audioInputs.Select(i => new
         {
             i.Id,
             i.Name,
             i.Description,
             i.IsAvailable,
             i.IsActive,
-            i.InputType
+            i.InputType,
+            IsStatic = true
         });
 
-        return Ok(inputs);
+        var dynamicInputs = _deviceRegistry.GetAllInputs().Select(i => new
+        {
+            i.Id,
+            i.Name,
+            i.Description,
+            i.IsAvailable,
+            i.IsActive,
+            i.InputType,
+            IsStatic = false
+        });
+
+        var allInputs = staticInputs.Concat(dynamicInputs);
+
+        return Ok(allInputs);
     }
 
     [HttpGet("outputs")]
     public IActionResult GetOutputs()
     {
-        var outputs = _audioOutputs.Select(o => new
+        // Combine statically registered outputs with dynamically configured ones
+        var staticOutputs = _audioOutputs.Select(o => new
         {
             o.Id,
             o.Name,
             o.Description,
             o.IsAvailable,
-            o.IsActive
+            o.IsActive,
+            IsStatic = true
         });
 
-        return Ok(outputs);
+        var dynamicOutputs = _deviceRegistry.GetAllOutputs().Select(o => new
+        {
+            o.Id,
+            o.Name,
+            o.Description,
+            o.IsAvailable,
+            o.IsActive,
+            IsStatic = false
+        });
+
+        var allOutputs = staticOutputs.Concat(dynamicOutputs);
+
+        return Ok(allOutputs);
     }
 
     [HttpPost("start")]
@@ -71,8 +103,11 @@ public class AudioController : ControllerBase
     {
         try
         {
-            var input = _audioInputs.FirstOrDefault(i => i.Id == request.InputId);
-            var output = _audioOutputs.FirstOrDefault(o => o.Id == request.OutputId);
+            // Check both static and dynamic inputs
+            var input = _audioInputs.FirstOrDefault(i => i.Id == request.InputId) 
+                ?? _deviceRegistry.GetInput(request.InputId);
+            var output = _audioOutputs.FirstOrDefault(o => o.Id == request.OutputId)
+                ?? _deviceRegistry.GetOutput(request.OutputId);
 
             if (input == null || output == null)
             {
@@ -268,8 +303,11 @@ public class AudioController : ControllerBase
     {
         try
         {
+            // Check both static and dynamic inputs
             var eventInput = _audioInputs.FirstOrDefault(i => 
-                i.Id == eventId && i.InputType == AudioInputType.Event);
+                i.Id == eventId && i.InputType == AudioInputType.Event)
+                ?? _deviceRegistry.GetAllInputs().FirstOrDefault(i => 
+                    i.Id == eventId && i.InputType == AudioInputType.Event);
 
             if (eventInput == null)
             {
