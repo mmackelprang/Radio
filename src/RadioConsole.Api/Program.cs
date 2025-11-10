@@ -39,17 +39,19 @@ builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
 // Register audio priority manager
 builder.Services.AddSingleton<IAudioPriorityManager, AudioPriorityManager>();
 
+// Register audio mixer
+builder.Services.AddSingleton<AudioMixer>();
+
 // Register music audio input modules
-builder.Services.AddSingleton<IAudioInput, RadioInput>();
 builder.Services.AddSingleton<IAudioInput, SpotifyInput>();
 
-// Register event audio input modules
-builder.Services.AddSingleton<IAudioInput, DoorbellEventInput>();
-builder.Services.AddSingleton<IAudioInput, TelephoneRingingEventInput>();
-builder.Services.AddSingleton<IAudioInput, GoogleBroadcastEventInput>();
-builder.Services.AddSingleton<IAudioInput, TimerExpiredEventInput>();
-builder.Services.AddSingleton<IAudioInput, ReminderEventInput>();
-builder.Services.AddSingleton<IAudioInput, TextEventInput>();
+// Register TTS audio input module
+builder.Services.AddSingleton<IAudioInput, TtsAudioInput>();
+
+// Note: RadioInput, DoorbellEventInput, TelephoneRingingEventInput, GoogleBroadcastEventInput,
+// TimerExpiredEventInput, and ReminderEventInput have been removed.
+// Use UsbAudioInput, FileAudioInput, and CompositeAudioInput instead.
+// See AUDIO_INPUT_MIGRATION.md for migration guide.
 
 // Register audio output modules
 builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
@@ -71,13 +73,23 @@ foreach (var output in outputs)
     await output.InitializeAsync();
 }
 
+// Initialize audio mixer
+var audioMixer = app.Services.GetRequiredService<AudioMixer>();
+await audioMixer.StartAsync();
+
+// Register all inputs with the mixer
+foreach (var input in inputs)
+{
+    audioMixer.RegisterSource(input);
+}
+
 // Register event inputs with the priority manager
 var priorityManager = app.Services.GetRequiredService<IAudioPriorityManager>();
 foreach (var input in inputs)
 {
-    if (input is IEventAudioInput eventInput)
+    if (input.InputType == AudioInputType.Event)
     {
-        priorityManager.RegisterEventInput(eventInput);
+        priorityManager.RegisterEventInput(input);
     }
 }
 

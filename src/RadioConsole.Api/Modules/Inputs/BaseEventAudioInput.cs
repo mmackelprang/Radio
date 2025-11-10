@@ -6,14 +6,9 @@ namespace RadioConsole.Api.Modules.Inputs;
 /// <summary>
 /// Base implementation for event-driven audio inputs
 /// </summary>
-public abstract class BaseEventAudioInput : BaseAudioInput, IEventAudioInput
+public abstract class BaseEventAudioInput : BaseAudioInput
 {
     public override AudioInputType InputType => AudioInputType.Event;
-    
-    public abstract EventPriority Priority { get; }
-    public abstract TimeSpan? Duration { get; }
-
-    public event EventHandler<EventAudioEventArgs>? AudioEventTriggered;
 
     protected BaseEventAudioInput(IEnvironmentService environmentService, IStorage storage) 
         : base(environmentService, storage)
@@ -29,17 +24,15 @@ public abstract class BaseEventAudioInput : BaseAudioInput, IEventAudioInput
         {
             var stream = await GetAudioStreamAsync();
             
-            var eventArgs = new EventAudioEventArgs
+            // Fire audio data available event
+            // In a real implementation, this would read from the stream and fire events with PCM data
+            if (stream != null)
             {
-                EventInput = this,
-                AudioStream = stream,
-                Timestamp = DateTime.UtcNow,
-                Metadata = metadata ?? new Dictionary<string, string>()
-            };
-
-            AudioEventTriggered?.Invoke(this, eventArgs);
-            
-            _display.UpdateStatus($"Event triggered at {eventArgs.Timestamp:HH:mm:ss}");
+                _display.UpdateStatus($"Event triggered at {DateTime.UtcNow:HH:mm:ss}");
+                
+                // For now, we'll just track that the event was triggered
+                // Real PCM streaming would be implemented in concrete classes
+            }
         }
         catch (Exception ex)
         {

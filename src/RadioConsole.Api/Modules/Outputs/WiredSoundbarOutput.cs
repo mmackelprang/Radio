@@ -5,6 +5,9 @@ namespace RadioConsole.Api.Modules.Outputs;
 
 /// <summary>
 /// Wired soundbar output module
+/// 
+/// This output uses the system's default ALSA audio device on Linux/Raspberry Pi.
+/// Audio streams from the AudioMixer are sent directly to the soundbar via ALSA.
 /// </summary>
 public class WiredSoundbarOutput : BaseAudioOutput
 {

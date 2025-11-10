@@ -55,20 +55,49 @@ The Radio Console project aims to create a comprehensive audio management system
 The project follows a modular architecture with clear separation of concerns:
 
 ### Core Interfaces
-- **IAudioInput** - Base interface for all audio input sources
-- **IAudioOutput** - Base interface for all audio output devices
+- **IAudioInput** - Base interface for all audio input sources with new features:
+  - PCM audio streaming via AudioDataAvailable event
+  - Playback control (pause, resume, volume, repeat)
+  - Priority and duration properties for event-based audio
+  - Concurrent playback support
+- **IAudioOutput** - Base interface for all audio output devices (ALSA-compatible on Linux/Raspberry Pi)
 - **IDisplay** - Interface for metadata and status display
 - **IConfiguration** - Interface for device configuration
 - **IStorage** - Interface for data persistence
 
 ### Modules
-Each input and output is implemented as a separate module that inherits from the base interfaces:
-- **Inputs**: `RadioInput`, `SpotifyInput`, etc.
-- **Outputs**: `WiredSoundbarOutput`, `ChromecastOutput`, etc.
+
+#### Audio Inputs
+The system now uses generic, composable input types:
+- **UsbAudioInput** - Captures audio from USB devices (radios, turntables, etc.)
+- **FileAudioInput** - Plays MP3/WAV files using NAudio
+- **CompositeAudioInput** - Combines multiple audio sources with custom timing and volume
+- **TtsAudioInput** - Text-to-speech using eSpeak TTS
+- **SpotifyInput** - Spotify streaming integration
+
+Legacy specific event inputs (DoorbellEventInput, RadioInput, etc.) have been replaced with generic types.
+See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
+
+#### Audio Outputs
+- **WiredSoundbarOutput** - Direct wired connection via ALSA
+- **ChromecastOutput** - Network streaming to Chromecast devices
+- All outputs handle ALSA audio streams on Linux/Raspberry Pi
+
+#### Audio Mixer
+- **AudioMixer** - Advanced PCM audio mixer that:
+  - Mixes multiple audio sources in real-time
+  - Respects priority levels for event-based interruptions
+  - Supports concurrent playback when allowed
+  - Per-source volume control
+  - Sample format consistency
+  - Robust error handling
 
 ### Services
 - **EnvironmentService** - Detects runtime environment and enables simulation mode
 - **JsonStorageService** - JSON-based persistent storage
+- **ESpeakTtsService** - Text-to-speech using eSpeak
+- **AudioPriorityManager** - Priority-based audio event management
+- **AudioMixer** - Real-time audio mixing service
 
 ## 📋 Development Phases
 

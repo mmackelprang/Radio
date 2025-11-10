@@ -5,6 +5,11 @@ namespace RadioConsole.Api.Modules.Outputs;
 
 /// <summary>
 /// Base implementation for audio outputs with common functionality
+/// 
+/// ALSA Support:
+/// On Linux systems (including Raspberry Pi), audio output is handled through ALSA (Advanced Linux Sound Architecture).
+/// NAudio, which is used by the audio inputs, automatically uses ALSA on Linux for playback.
+/// This base class and all derived output classes are compatible with ALSA audio streams.
 /// </summary>
 public abstract class BaseAudioOutput : IAudioOutput
 {

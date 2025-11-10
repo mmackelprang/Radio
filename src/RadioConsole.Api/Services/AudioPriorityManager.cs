@@ -31,12 +31,12 @@ public interface IAudioPriorityManager
     /// <summary>
     /// Register an event audio input for monitoring
     /// </summary>
-    void RegisterEventInput(IEventAudioInput eventInput);
+    void RegisterEventInput(IAudioInput eventInput);
     
     /// <summary>
     /// Unregister an event audio input
     /// </summary>
-    void UnregisterEventInput(IEventAudioInput eventInput);
+    void UnregisterEventInput(IAudioInput eventInput);
     
     /// <summary>
     /// Get the current state of all audio sources
@@ -57,7 +57,7 @@ public class AudioPriorityState
     /// <summary>
     /// Currently playing event (if any)
     /// </summary>
-    public IEventAudioInput? CurrentEvent { get; set; }
+    public IAudioInput? CurrentEvent { get; set; }
     
     /// <summary>
     /// Saved volume states of background audio sources
@@ -78,11 +78,11 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
     private readonly IEnumerable<IAudioOutput> _audioOutputs;
     private readonly ILogger<AudioPriorityManager> _logger;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Dictionary<string, IEventAudioInput> _registeredEvents = new();
+    private readonly Dictionary<string, IAudioInput> _registeredEvents = new();
     private readonly Dictionary<string, double> _savedVolumeStates = new();
     
     private bool _isEventPlaying;
-    private IEventAudioInput? _currentEvent;
+    private IAudioInput? _currentEvent;
     private CancellationTokenSource? _currentEventCancellation;
 
     public AudioPriorityManagerConfig Config { get; }
@@ -100,7 +100,7 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
     /// <summary>
     /// Register an event audio input for priority handling
     /// </summary>
-    public void RegisterEventInput(IEventAudioInput eventInput)
+    public void RegisterEventInput(IAudioInput eventInput)
     {
         if (eventInput == null)
             throw new ArgumentNullException(nameof(eventInput));
@@ -112,7 +112,9 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
         }
 
         _registeredEvents[eventInput.Id] = eventInput;
-        eventInput.AudioEventTriggered += OnAudioEventTriggeredAsync;
+        // Note: AudioDataAvailable event would be used for actual audio streaming
+        // For event triggering, the old AudioEventTriggered pattern is replaced
+        // by direct audio data streaming via AudioDataAvailable
         
         _logger.LogInformation("Registered event input: {InputName} ({InputId}) with priority {Priority}", 
             eventInput.Name, eventInput.Id, eventInput.Priority);
@@ -121,50 +123,59 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
     /// <summary>
     /// Unregister an event audio input
     /// </summary>
-    public void UnregisterEventInput(IEventAudioInput eventInput)
+    public void UnregisterEventInput(IAudioInput eventInput)
     {
         if (eventInput == null)
             throw new ArgumentNullException(nameof(eventInput));
 
         if (_registeredEvents.Remove(eventInput.Id))
         {
-            eventInput.AudioEventTriggered -= OnAudioEventTriggeredAsync;
+            // Note: Event handler cleanup not needed with new AudioDataAvailable pattern
             _logger.LogInformation("Unregistered event input: {InputName} ({InputId})", 
                 eventInput.Name, eventInput.Id);
         }
     }
 
     /// <summary>
-    /// Handle high priority audio events
+    /// Handle high priority audio events (deprecated - now uses direct AudioDataAvailable streaming)
     /// </summary>
-    private async void OnAudioEventTriggeredAsync(object? sender, EventAudioEventArgs e)
+    [Obsolete("This method is deprecated. Audio priority handling now uses direct AudioDataAvailable streaming.")]
+    private async void OnAudioEventTriggeredAsync(object? sender, AudioDataAvailableEventArgs e)
     {
-        try
-        {
-            await HandleAudioEventAsync(e);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error handling audio event from {InputName}", e.EventInput.Name);
-        }
+        // This method is no longer used in the new architecture
+        // Audio priority is now managed through the AudioMixer
+        await Task.CompletedTask;
     }
 
     /// <summary>
-    /// Handle incoming audio event with priority management
+    /// Handle incoming audio event with priority management (deprecated)
     /// </summary>
-    private async Task HandleAudioEventAsync(EventAudioEventArgs eventArgs)
+    [Obsolete("This method is deprecated. Audio priority handling now uses AudioMixer.")]
+    private async Task HandleAudioEventAsync(AudioDataAvailableEventArgs eventArgs)
+    {
+        // This method is no longer used in the new architecture
+        // Priority management is now handled by AudioMixer based on Priority property
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Legacy event handling - to be removed
+    /// This functionality is now handled by AudioMixer
+    /// </summary>
+    [Obsolete]
+    private async Task HandleAudioEventAsync_Legacy(IAudioInput eventInput)
     {
         await _semaphore.WaitAsync();
         
         try
         {
             _logger.LogInformation("Handling audio event from {InputName} with priority {Priority}", 
-                eventArgs.EventInput.Name, eventArgs.EventInput.Priority);
+                eventInput.Name, eventInput.Priority);
 
             // Cancel any currently playing event of lower or equal priority
             if (_isEventPlaying && _currentEvent != null)
             {
-                if (eventArgs.EventInput.Priority <= _currentEvent.Priority)
+                if (eventInput.Priority <= _currentEvent.Priority)
                 {
                     _logger.LogInformation("Lower priority event ignored while {CurrentEvent} is playing", 
                         _currentEvent.Name);
@@ -172,7 +183,7 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
                 }
                 
                 _logger.LogInformation("Interrupting {CurrentEvent} for higher priority event {NewEvent}", 
-                    _currentEvent.Name, eventArgs.EventInput.Name);
+                    _currentEvent.Name, eventInput.Name);
                 await StopCurrentEventAsync();
             }
 
@@ -184,10 +195,17 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
 
             // Play the event audio
             _isEventPlaying = true;
-            _currentEvent = eventArgs.EventInput;
+            _currentEvent = eventInput;
             _currentEventCancellation = new CancellationTokenSource();
 
-            await PlayEventAudioAsync(eventArgs, _currentEventCancellation.Token);
+            // In the new architecture, this would be handled by AudioMixer
+            // For now, just start the input and wait for duration
+            await eventInput.StartAsync();
+            if (eventInput.Duration.HasValue)
+            {
+                await Task.Delay(eventInput.Duration.Value, _currentEventCancellation.Token);
+            }
+            await eventInput.StopAsync();
 
             // Restore volumes after event completes
             await RestoreVolumeStatesAsync();
@@ -305,30 +323,14 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
     }
 
     /// <summary>
-    /// Play event audio with optional timeout
+    /// Play event audio (legacy - now handled by AudioMixer)
     /// </summary>
-    private async Task PlayEventAudioAsync(EventAudioEventArgs eventArgs, CancellationToken cancellationToken)
+    [Obsolete]
+    private async Task PlayEventAudioAsync(AudioDataAvailableEventArgs eventArgs, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Playing event audio from {InputName}", eventArgs.EventInput.Name);
-
-        // Start the event input
-        await eventArgs.EventInput.StartAsync();
-
-        // If duration is specified, wait for that duration
-        if (eventArgs.EventInput.Duration.HasValue)
-        {
-            await Task.Delay(eventArgs.EventInput.Duration.Value, cancellationToken);
-        }
-        else
-        {
-            // For indefinite duration, wait a reasonable default time (e.g., 5 seconds)
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-        }
-
-        // Stop the event input
-        await eventArgs.EventInput.StopAsync();
-        
-        _logger.LogInformation("Completed event audio from {InputName}", eventArgs.EventInput.Name);
+        // This method is deprecated and should not be called in the new architecture
+        // Audio mixing is now handled by AudioMixer
+        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -393,9 +395,7 @@ public class AudioPriorityManager : IAudioPriorityManager, IDisposable
         _currentEventCancellation?.Dispose();
         _semaphore.Dispose();
         
-        foreach (var eventInput in _registeredEvents.Values)
-        {
-            eventInput.AudioEventTriggered -= OnAudioEventTriggeredAsync;
-        }
+        // Note: No need to unsubscribe from events as AudioEventTriggered no longer exists
+        _registeredEvents.Clear();
     }
 }

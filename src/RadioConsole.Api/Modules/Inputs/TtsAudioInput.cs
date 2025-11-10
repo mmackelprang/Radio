@@ -4,17 +4,17 @@ using RadioConsole.Api.Services;
 namespace RadioConsole.Api.Modules.Inputs;
 
 /// <summary>
-/// Event audio input for text-to-speech announcements using Piper TTS
+/// Audio input for text-to-speech announcements using TTS service
 /// </summary>
-public class TextEventInput : BaseEventAudioInput
+public class TtsAudioInput : BaseEventAudioInput
 {
     private readonly ITtsService _ttsService;
     private string _currentText = string.Empty;
     private Stream? _currentAudioStream;
 
-    public override string Id => "text_event";
-    public override string Name => "Text Announcement";
-    public override string Description => "Text-to-speech announcement using eSpeak TTS";
+    public override string Id => "tts_audio";
+    public override string Name => "Text-to-Speech";
+    public override string Description => "Text-to-speech audio using eSpeak TTS";
     public override EventPriority Priority => EventPriority.Medium;
     
     // Duration is dynamic based on text length
@@ -23,7 +23,7 @@ public class TextEventInput : BaseEventAudioInput
             ? TimeSpan.FromSeconds(5) 
             : TimeSpan.FromSeconds(_ttsService.EstimateDuration(_currentText));
 
-    public TextEventInput(
+    public TtsAudioInput(
         IEnvironmentService environmentService, 
         IStorage storage,
         ITtsService ttsService)

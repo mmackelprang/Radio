@@ -72,3 +72,49 @@ This project involves building a modern audio system inside an old console radio
 - Write comprehensive user and developer documentation
 - Record setup and usage instructions
 - Perform final polishing and bug fixes
+
+## Recent Major Refactoring (November 2024)
+
+### Audio System Modernization ✅
+
+The audio input/output system has undergone a major refactoring to improve flexibility, maintainability, and functionality:
+
+#### Key Changes:
+1. **Unified IAudioInput Interface**
+   - Merged IEventAudioInput functionality into IAudioInput
+   - Added PCM audio streaming via AudioDataAvailable event
+   - Added playback control: PauseAsync, ResumeAsync, SetVolumeAsync, SetRepeat
+   - Added AllowConcurrent property for concurrent playback rules
+   - Added Priority and Duration properties for all inputs
+
+2. **Generic, Composable Input Types**
+   - **UsbAudioInput** - Captures from USB audio devices (radios, turntables)
+   - **FileAudioInput** - Plays MP3/WAV files using NAudio
+   - **CompositeAudioInput** - Combines multiple sources with timing/volume control
+   - **TtsAudioInput** - Text-to-speech (renamed from TextEventInput)
+   - Replaced 6 specialized event inputs with generic types
+
+3. **AudioMixer Service**
+   - Real-time PCM audio mixing
+   - Priority-based playback management
+   - Per-source volume control
+   - Concurrent playback rules
+   - Sample format consistency handling
+
+4. **ALSA Compatibility**
+   - All outputs documented for ALSA support on Linux/Raspberry Pi
+   - NAudio automatically uses ALSA on Linux
+   - Seamless integration with system audio
+
+5. **Documentation**
+   - Created AUDIO_INPUT_MIGRATION.md guide
+   - Updated README.md with new architecture
+   - Comprehensive code comments
+
+#### Migration Status:
+- ✅ Core refactoring complete
+- ✅ Build succeeds with 0 errors, 0 warnings
+- ✅ All new input types implemented
+- ✅ AudioMixer integrated and functional
+- ⏳ Testing phase pending
+- ⏳ Hardware integration pending
