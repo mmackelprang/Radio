@@ -1,6 +1,6 @@
 # Radio Console - Modern Raspberry Pi 5 Audio System
 
-A modern audio system built with ASP.NET Core and React/TypeScript for Raspberry Pi 5, designed to bring new life to vintage console radios. This project provides a flexible, extensible architecture for managing multiple audio inputs and outputs with a rich touchscreen web interface.
+A modern audio system built with ASP.NET Core and Blazor for Raspberry Pi 5, designed to bring new life to vintage console radios. This project provides a flexible, extensible architecture for managing multiple audio inputs and outputs with a rich touchscreen web interface.
 
 ## 🎯 Project Goals
 
@@ -31,7 +31,7 @@ The Radio Console project aims to create a comprehensive audio management system
 - **Output Switching** - Seamless switching between output devices
 
 ### User Interface
-- **Material Design 3** - Modern, touch-friendly React interface with Material-UI
+- **Material Design 3** - Modern, touch-friendly Blazor interface with MudBlazor
 - **Dark/Light Mode** - Easily swappable theme for different lighting conditions
 - **Audio Controls** - Source selection, playback controls, volume management
 - **Event Notifications** - High-priority audio notifications with automatic volume management
@@ -45,8 +45,8 @@ The Radio Console project aims to create a comprehensive audio management system
 - **Modular Architecture** - Clean separation between backend API and frontend
 - **RESTful API** - ASP.NET Core Web API for audio control and management
 - **Event-Driven Audio** - Priority-based audio event system with automatic volume ducking
-- **React Frontend** - Modern TypeScript-based UI with Material-UI components
-- **Real-time Updates** - WebSocket support for live metadata and status updates
+- **Blazor Server UI** - Modern C# Blazor Server interface with Material Design 3
+- **Real-time Updates** - SignalR for live metadata and status updates
 - **State Management** - Persistent storage of settings, history, and favorites
 - **Development Mode** - Local development with mock hardware simulation
 
@@ -182,11 +182,9 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 
 ### Prerequisites
 - .NET 9.0 SDK or later
-- Node.js 20.x or later with npm
 - For Raspberry Pi deployment:
   - Raspberry Pi 5 with Raspberry Pi OS
   - .NET runtime installed
-  - Node.js runtime installed
   - Touchscreen display with web browser
   - Audio hardware (soundbar, radio receiver, etc.)
 
@@ -198,25 +196,31 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
    cd Radio
    ```
 
-2. **Build and run the backend**
+2. **Build and run the backend API**
    ```bash
    cd src/RadioConsole.Api
    dotnet restore
    dotnet run
    ```
    
-   The API will start on http://localhost:5000 (or https://localhost:5001)
+   The API will start and log the ports it's listening on:
+   - API endpoint: http://localhost:5000 (or https://localhost:5001)
+   - Swagger UI: http://localhost:5000/swagger
+   - OpenAPI JSON: http://localhost:5000/swagger/v1/swagger.json
 
-3. **Build and run the frontend** (in a new terminal)
+3. **Build and run the Blazor UI** (in a new terminal)
    ```bash
-   cd src/RadioConsole.Web
-   npm install
-   npm start
+   cd src/RadioConsole.Blazor
+   dotnet restore
+   dotnet run
    ```
    
-   The web interface will open at http://localhost:3000
+   The Blazor interface will start and log the port it's listening on.
+   Open your browser to http://localhost:5000 (or the displayed port)
 
    The application will automatically detect that it's not running on a Raspberry Pi and enable simulation mode, allowing you to develop and test on any platform.
+
+**Note**: The React/TypeScript frontend in `src/RadioConsole.Web` is retained for reference but the primary UI is now the Blazor Server application.
 
 ### Raspberry Pi Deployment
 
@@ -232,17 +236,17 @@ Deployment instructions will be added in Phase 8.
 - **Target Platform**: Raspberry Pi 5 (Linux ARM64)
 
 ### Frontend
-- **Framework**: React 18.x
-- **Language**: TypeScript 5.x
-- **UI Library**: Material-UI (MUI) v5 with Material Design 3
-- **State Management**: React Context API / Redux Toolkit
-- **Theming**: Custom Material Design 3 theme with dark/light mode
-- **Build Tool**: Vite
+- **Framework**: Blazor Server with .NET 9.0
+- **Language**: C# 12.0
+- **UI Library**: MudBlazor 8.x with Material Design 3 support
+- **State Management**: Component-based state with SignalR for real-time updates
+- **Theming**: Material Design 3 theme with dark/light mode toggle
+- **Rendering**: Interactive Server-side rendering
 
 ### Development
 - **Cross-platform development**: Windows, macOS, Linux
 - **API Testing**: Swagger/OpenAPI
-- **Hot Reload**: Backend and frontend hot reload support
+- **Hot Reload**: Backend hot reload support
 
 ## 📂 Project Structure
 
@@ -255,35 +259,48 @@ Radio/
 │   │   │   ├── IAudioInput.cs
 │   │   │   ├── IAudioOutput.cs
 │   │   │   ├── IDisplay.cs
-│   │   │   ├── IConfiguration.cs
+│   │   │   ├── IDeviceConfiguration.cs
 │   │   │   └── IStorage.cs
 │   │   ├── Modules/
 │   │   │   ├── Inputs/           # Audio input implementations
 │   │   │   │   ├── BaseAudioInput.cs
-│   │   │   │   ├── RadioInput.cs
-│   │   │   │   └── SpotifyInput.cs
+│   │   │   │   ├── SpotifyInput.cs
+│   │   │   │   ├── UsbAudioInput.cs
+│   │   │   │   ├── FileAudioInput.cs
+│   │   │   │   └── TtsAudioInput.cs
 │   │   │   └── Outputs/          # Audio output implementations
 │   │   │       ├── BaseAudioOutput.cs
 │   │   │       ├── WiredSoundbarOutput.cs
 │   │   │       └── ChromecastOutput.cs
 │   │   ├── Services/             # Core services
 │   │   │   ├── EnvironmentService.cs
-│   │   │   └── JsonStorageService.cs
+│   │   │   ├── JsonStorageService.cs
+│   │   │   ├── AudioMixer.cs
+│   │   │   └── AudioPriorityManager.cs
 │   │   ├── Hubs/                 # SignalR hubs for real-time updates
 │   │   └── Models/               # Data models and DTOs
-│   └── RadioConsole.Web/         # React/TypeScript frontend
+│   ├── RadioConsole.Blazor/      # Blazor Server UI (Material Design 3)
+│   │   ├── Components/
+│   │   │   ├── Layout/           # Layout components
+│   │   │   │   ├── MainLayout.razor
+│   │   │   │   └── NavMenu.razor
+│   │   │   └── Pages/            # Blazor pages
+│   │   │       ├── Home.razor           # Audio Control
+│   │   │       ├── History.razor        # Playback History
+│   │   │       └── Favorites.razor      # Favorites
+│   │   ├── wwwroot/              # Static assets
+│   │   └── Program.cs            # App configuration
+│   └── RadioConsole.Web/         # React/TypeScript frontend (legacy)
 │       ├── src/
 │       │   ├── components/       # React components
-│       │   │   ├── AudioControl.tsx
-│       │   │   ├── History.tsx
-│       │   │   └── Favorites.tsx
 │       │   ├── contexts/         # React contexts
 │       │   ├── hooks/            # Custom React hooks
 │       │   ├── services/         # API service clients
 │       │   ├── theme/            # Material-UI theme configuration
 │       │   └── App.tsx           # Main app component
-│       ├── public/               # Static assets
 │       └── package.json          # npm dependencies
+├── tests/
+│   └── RadioConsole.Api.Tests/   # API unit tests
 ├── PROJECT_PLAN.md               # Detailed project plan
 ├── README.md                     # This file
 └── LICENSE                       # Project license
@@ -299,17 +316,19 @@ See the [LICENSE](LICENSE) file for details.
 
 ## 🎵 Current Status
 
-**Project Status**: Phase 2 Complete - ASP.NET Core + React architecture established
+**Project Status**: Phase 3 Complete - Blazor UI with Material Design 3
 
-The project has completed the migration to modern web architecture with:
+The project has completed the migration from .NET MAUI to Blazor Server with:
 - ✅ ASP.NET Core Web API backend with modular architecture
-- ✅ React/TypeScript frontend with Material-UI
-- ✅ Core interfaces defined (IAudioInput, IAudioOutput, IDisplay, IConfiguration, IStorage)
+- ✅ Blazor Server UI with Material Design 3 (MudBlazor)
+- ✅ Core interfaces defined (IAudioInput, IAudioOutput, IDisplay, IDeviceConfiguration, IStorage)
 - ✅ Simulation mode support for cross-platform development
-- ✅ Base modules for Radio and Spotify inputs
-- ✅ Base modules for Wired Soundbar and Chromecast outputs
-- ✅ Material Design 3 UI with dark/light mode support
-- ✅ React components for Audio Control, History, and Favorites
+- ✅ Base modules for Spotify input and audio outputs
+- ✅ Material Design 3 UI with dark/light mode toggle
+- ✅ Blazor components for Audio Control, History, and Favorites
+- ✅ Interactive server-side rendering with real-time updates
+
+**Next Steps**: Phase 4 - Integrate actual hardware and implement real audio streaming capabilities.
 
 **Next Steps**: Phase 3 - Integrate actual hardware and implement real audio streaming capabilities.
 

@@ -57,4 +57,24 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// Log the URLs the application is listening on
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    var addresses = app.Urls;
+    
+    logger.LogInformation("======================================");
+    logger.LogInformation("Radio Console Blazor UI Started");
+    logger.LogInformation("======================================");
+    
+    foreach (var address in addresses)
+    {
+        logger.LogInformation("Blazor UI listening on: {Address}", address);
+    }
+    
+    logger.LogInformation("======================================");
+    logger.LogInformation("Open your browser to access the Radio Console interface");
+    logger.LogInformation("======================================");
+});
+
 app.Run();
