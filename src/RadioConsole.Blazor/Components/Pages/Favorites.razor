@@ -1,0 +1,108 @@
+@page "/favorites"
+@rendermode InteractiveServer
+
+<PageTitle>Favorites</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Favorites</MudText>
+
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6" GutterBottom="true">Add New Favorite</MudText>
+    <MudTextField @bind-Value="_newFavoriteName" 
+                  Label="Favorite Name" 
+                  Variant="Variant.Outlined"
+                  FullWidth="true"
+                  Class="mb-2" />
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               OnClick="AddFavorite"
+               Disabled="string.IsNullOrWhiteSpace(_newFavoriteName)">
+        Add Favorite
+    </MudButton>
+</MudPaper>
+
+<MudPaper Elevation="2" Class="pa-4">
+    @if (_favorites.Count == 0)
+    {
+        <MudText Typo="Typo.body1" Align="Align.Center" Class="my-8">
+            No favorites saved yet. Add one above!
+        </MudText>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var favorite in _favorites)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="3">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">@favorite.Name</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Default">
+                                @favorite.Type
+                            </MudText>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Text" 
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                                       OnClick="@(() => PlayFavorite(favorite))">
+                                Play
+                            </MudButton>
+                            <MudSpacer />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => RemoveFavorite(favorite))" />
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudPaper>
+
+@code {
+    private List<FavoriteItem> _favorites = new();
+    private string _newFavoriteName = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load favorites from storage
+        // For now, using sample data
+        _favorites = new List<FavoriteItem>
+        {
+            new FavoriteItem { Name = "Morning Jazz", Type = "Spotify Playlist" },
+            new FavoriteItem { Name = "Classic Rock FM", Type = "Radio Station" },
+            new FavoriteItem { Name = "Smooth Jazz", Type = "Radio Station" }
+        };
+    }
+
+    private void AddFavorite()
+    {
+        if (!string.IsNullOrWhiteSpace(_newFavoriteName))
+        {
+            _favorites.Add(new FavoriteItem 
+            { 
+                Name = _newFavoriteName, 
+                Type = "Custom" 
+            });
+            _newFavoriteName = string.Empty;
+        }
+    }
+
+    private void RemoveFavorite(FavoriteItem favorite)
+    {
+        _favorites.Remove(favorite);
+    }
+
+    private void PlayFavorite(FavoriteItem favorite)
+    {
+        // TODO: Implement play favorite
+        // This would navigate to audio control and start playing
+    }
+
+    private class FavoriteItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,78 @@
+@page "/history"
+@rendermode InteractiveServer
+
+<PageTitle>History</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Playback History</MudText>
+
+<MudPaper Elevation="2" Class="pa-4">
+    @if (_historyItems.Count == 0)
+    {
+        <MudText Typo="Typo.body1" Align="Align.Center" Class="my-8">
+            No playback history yet.
+        </MudText>
+    }
+    else
+    {
+        <MudList T="HistoryItem">
+            @foreach (var item in _historyItems)
+            {
+                <MudListItem T="HistoryItem">
+                    <MudGrid>
+                        <MudItem xs="10">
+                            <MudText Typo="Typo.body1">@item.Name</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Default">@item.Timestamp.ToString("g")</MudText>
+                        </MudItem>
+                        <MudItem xs="2" Class="d-flex align-center justify-end">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                           Color="Color.Error" 
+                                           Size="Size.Small"
+                                           OnClick="@(() => RemoveItem(item))" />
+                        </MudItem>
+                    </MudGrid>
+                </MudListItem>
+                <MudDivider />
+            }
+        </MudList>
+        
+        <MudButton Variant="Variant.Outlined" 
+                   Color="Color.Error" 
+                   FullWidth="true" 
+                   Class="mt-4"
+                   OnClick="ClearHistory">
+            Clear All History
+        </MudButton>
+    }
+</MudPaper>
+
+@code {
+    private List<HistoryItem> _historyItems = new();
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load history from storage
+        // For now, using sample data
+        _historyItems = new List<HistoryItem>
+        {
+            new HistoryItem { Name = "Spotify - Rock Playlist", Timestamp = DateTime.Now.AddHours(-2) },
+            new HistoryItem { Name = "Radio - FM 98.5", Timestamp = DateTime.Now.AddHours(-5) },
+            new HistoryItem { Name = "Vinyl - Classic Album", Timestamp = DateTime.Now.AddDays(-1) }
+        };
+    }
+
+    private void RemoveItem(HistoryItem item)
+    {
+        _historyItems.Remove(item);
+    }
+
+    private void ClearHistory()
+    {
+        _historyItems.Clear();
+    }
+
+    private class HistoryItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+}
