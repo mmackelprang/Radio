@@ -1,0 +1,168 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using RadioConsole.Api.Interfaces
+@inject IEnumerable<IAudioInput> AudioInputs
+@inject IEnumerable<IAudioOutput> AudioOutputs
+@inject IEnvironmentService EnvironmentService
+
+<PageTitle>Audio Control</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Audio Control</MudText>
+
+<!-- Status Section -->
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6" GutterBottom="true">Status</MudText>
+    <MudText Typo="Typo.body2">@_statusMessage</MudText>
+</MudPaper>
+
+<!-- Input Selection -->
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6" GutterBottom="true">Audio Input</MudText>
+    <MudSelect T="IAudioInput" 
+               Label="Select Input" 
+               @bind-Value="_selectedInput" 
+               Variant="Variant.Outlined"
+               AnchorOrigin="Origin.BottomCenter">
+        @foreach (var input in _audioInputs)
+        {
+            <MudSelectItem Value="@input">@input.Name</MudSelectItem>
+        }
+    </MudSelect>
+    @if (_selectedInput != null)
+    {
+        <MudText Typo="Typo.body2" Class="mt-2">@_selectedInput.Description</MudText>
+    }
+</MudPaper>
+
+<!-- Output Selection -->
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6" GutterBottom="true">Audio Output</MudText>
+    <MudSelect T="IAudioOutput" 
+               Label="Select Output" 
+               @bind-Value="_selectedOutput" 
+               Variant="Variant.Outlined"
+               AnchorOrigin="Origin.BottomCenter">
+        @foreach (var output in _audioOutputs)
+        {
+            <MudSelectItem Value="@output">@output.Name</MudSelectItem>
+        }
+    </MudSelect>
+    @if (_selectedOutput != null)
+    {
+        <MudText Typo="Typo.body2" Class="mt-2">@_selectedOutput.Description</MudText>
+    }
+</MudPaper>
+
+<!-- Volume Control -->
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6" GutterBottom="true">Volume</MudText>
+    <MudSlider @bind-Value="_volume" 
+               Min="0.0" 
+               Max="1.0" 
+               Step="0.01"
+               Color="Color.Primary"
+               ValueLabel="true">
+        Volume: @(_volume.ToString("P0"))
+    </MudSlider>
+</MudPaper>
+
+<!-- Playback Controls -->
+<MudGrid>
+    <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   FullWidth="true" 
+                   Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.PlayArrow"
+                   OnClick="PlayAsync"
+                   Disabled="_isPlaying">
+            Play
+        </MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Secondary" 
+                   FullWidth="true" 
+                   Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Stop"
+                   OnClick="StopAsync"
+                   Disabled="!_isPlaying">
+            Stop
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<IAudioInput> _audioInputs = new();
+    private List<IAudioOutput> _audioOutputs = new();
+    private IAudioInput? _selectedInput;
+    private IAudioOutput? _selectedOutput;
+    private string _statusMessage = "Ready";
+    private bool _isPlaying = false;
+    private double _volume = 0.5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _audioInputs = AudioInputs.ToList();
+        _audioOutputs = AudioOutputs.ToList();
+
+        // Select first available input and output
+        _selectedInput = _audioInputs.FirstOrDefault(i => i.IsAvailable);
+        _selectedOutput = _audioOutputs.FirstOrDefault(o => o.IsAvailable);
+
+        UpdateStatusMessage();
+    }
+
+    private async Task PlayAsync()
+    {
+        if (_selectedInput == null || _selectedOutput == null)
+        {
+            _statusMessage = "Please select input and output";
+            return;
+        }
+
+        try
+        {
+            await _selectedOutput.StartAsync();
+            await _selectedInput.StartAsync();
+            _isPlaying = true;
+            _statusMessage = $"Playing {_selectedInput.Name} through {_selectedOutput.Name}";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_selectedInput != null)
+            await _selectedInput.StopAsync();
+
+        if (_selectedOutput != null)
+            await _selectedOutput.StopAsync();
+
+        _isPlaying = false;
+        _statusMessage = "Stopped";
+    }
+
+    private async Task OnVolumeChanged()
+    {
+        if (_selectedOutput != null)
+        {
+            await _selectedOutput.SetVolumeAsync(_volume);
+        }
+    }
+
+    private void UpdateStatusMessage()
+    {
+        if (EnvironmentService.IsSimulationMode)
+        {
+            _statusMessage = $"Simulation Mode - {EnvironmentService.PlatformDescription}";
+        }
+        else
+        {
+            _statusMessage = $"Running on {EnvironmentService.PlatformDescription}";
+        }
+    }
+}

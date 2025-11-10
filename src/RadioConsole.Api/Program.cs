@@ -144,4 +144,30 @@ app.MapControllers();
 // Map SignalR hubs (will be added later)
 // app.MapHub<AudioHub>("/hubs/audio");
 
+// Log the URLs the application is listening on
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    var addresses = app.Urls;
+    
+    logger.LogInformation("======================================");
+    logger.LogInformation("Radio Console API Started");
+    logger.LogInformation("======================================");
+    
+    foreach (var address in addresses)
+    {
+        logger.LogInformation("API listening on: {Address}", address);
+        
+        if (app.Environment.IsDevelopment())
+        {
+            // Log Swagger/OpenAPI URLs
+            var httpAddress = address.Replace("https://", "http://");
+            logger.LogInformation("  -> Swagger UI: {Address}/swagger", address);
+            logger.LogInformation("  -> OpenAPI JSON: {Address}/swagger/v1/swagger.json", address);
+        }
+    }
+    
+    logger.LogInformation("======================================");
+});
+
 app.Run();

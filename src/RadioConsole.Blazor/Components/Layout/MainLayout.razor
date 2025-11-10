@@ -1,0 +1,79 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="false">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6">Radio Console</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@(_isDarkMode ? @Icons.Material.Filled.LightMode : @Icons.Material.Filled.DarkMode)" 
+                       Color="Color.Inherit" 
+                       OnClick="@ToggleTheme" />
+    </MudAppBar>
+    
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <NavMenu />
+    </MudDrawer>
+    
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = false;
+    private MudTheme _theme = new MudTheme();
+
+    protected override void OnInitialized()
+    {
+        // Material Design 3 inspired theme
+        _theme = new MudTheme()
+        {
+            PaletteLight = new PaletteLight()
+            {
+                Primary = "#6750A4",
+                Secondary = "#625B71",
+                Tertiary = "#7D5260",
+                AppbarBackground = "#6750A4",
+                Background = "#FFFBFE",
+                Surface = "#FFFBFE",
+                DrawerBackground = "#FFFBFE",
+                DrawerText = "#1C1B1F",
+                DrawerIcon = "#1C1B1F"
+            },
+            PaletteDark = new PaletteDark()
+            {
+                Primary = "#D0BCFF",
+                Secondary = "#CCC2DC",
+                Tertiary = "#EFB8C8",
+                AppbarBackground = "#1C1B1F",
+                Background = "#1C1B1F",
+                Surface = "#1C1B1F",
+                DrawerBackground = "#1C1B1F",
+                DrawerText = "#E6E1E5",
+                DrawerIcon = "#E6E1E5"
+            },
+            LayoutProperties = new LayoutProperties()
+            {
+                DrawerWidthLeft = "260px"
+            }
+        };
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+    }
+}
