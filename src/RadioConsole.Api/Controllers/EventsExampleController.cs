@@ -191,7 +191,7 @@ public class EventsExampleController : ControllerBase
     /// Example: Hello World - Announce text using TTS
     /// </summary>
     /// <remarks>
-    /// This demonstrates the TextEventInput with a simple "Hello World" announcement.
+    /// This demonstrates the TtsAudioInput with a simple "Hello World" announcement.
     /// The system will:
     /// 1. Generate speech from text using eSpeak TTS
     /// 2. Save current volume levels
@@ -205,7 +205,7 @@ public class EventsExampleController : ControllerBase
         try
         {
             var textInput = _audioInputs
-                .OfType<TextEventInput>()
+                .OfType<TtsAudioInput>()
                 .FirstOrDefault();
 
             if (textInput == null)
@@ -245,7 +245,7 @@ public class EventsExampleController : ControllerBase
     /// Example: Hello World - Simple "Hello World" announcement
     /// </summary>
     /// <remarks>
-    /// A convenience endpoint that announces "Hello World" using the TextEventInput.
+    /// A convenience endpoint that announces "Hello World" using the TtsAudioInput.
     /// Perfect for testing eSpeak TTS integration.
     /// </remarks>
     [HttpPost("text/helloworld")]

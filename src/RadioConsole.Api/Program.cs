@@ -49,7 +49,7 @@ builder.Services.AddSingleton<IAudioInput, TelephoneRingingEventInput>();
 builder.Services.AddSingleton<IAudioInput, GoogleBroadcastEventInput>();
 builder.Services.AddSingleton<IAudioInput, TimerExpiredEventInput>();
 builder.Services.AddSingleton<IAudioInput, ReminderEventInput>();
-builder.Services.AddSingleton<IAudioInput, TextEventInput>();
+builder.Services.AddSingleton<IAudioInput, TtsAudioInput>();
 
 // Register audio output modules
 builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
@@ -75,9 +75,9 @@ foreach (var output in outputs)
 var priorityManager = app.Services.GetRequiredService<IAudioPriorityManager>();
 foreach (var input in inputs)
 {
-    if (input is IEventAudioInput eventInput)
+    if (input.InputType == AudioInputType.Event)
     {
-        priorityManager.RegisterEventInput(eventInput);
+        priorityManager.RegisterEventInput(input);
     }
 }
 

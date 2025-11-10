@@ -266,7 +266,7 @@ public class AudioController : ControllerBase
         try
         {
             var eventInput = _audioInputs.FirstOrDefault(i => 
-                i.Id == eventId && i.InputType == AudioInputType.Event) as IEventAudioInput;
+                i.Id == eventId && i.InputType == AudioInputType.Event);
 
             if (eventInput == null)
             {
