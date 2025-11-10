@@ -4,7 +4,11 @@ using RadioConsole.Api.Services;
 namespace RadioConsole.Api.Modules.Outputs;
 
 /// <summary>
-/// Chromecast output module
+/// Chromecast audio output module
+/// 
+/// This output streams audio to Chromecast devices over the network.
+/// While Chromecast uses its own protocol, the audio data originates from ALSA-compatible
+/// sources on Linux/Raspberry Pi and is transcoded as needed for Chromecast streaming.
 /// </summary>
 public class ChromecastOutput : BaseAudioOutput
 {
