@@ -65,7 +65,7 @@
                             <div class="mb-3">
                                 @if (param.DataType == "int")
                                 {
-                                    var value = GetParameterValue<int>(param.Name, (int)(param.DefaultValue ?? 0));
+                                    var value = GetParameterValue<int>(param.Name, GetDefaultValue<int>(param.DefaultValue, 0));
                                     <MudNumericField T="int" 
                                                      Label="@param.DisplayName" 
                                                      Value="@value"
@@ -76,7 +76,7 @@
                                 }
                                 else if (param.DataType == "bool")
                                 {
-                                    var value = GetParameterValue<bool>(param.Name, (bool)(param.DefaultValue ?? false));
+                                    var value = GetParameterValue<bool>(param.Name, GetDefaultValue<bool>(param.DefaultValue, false));
                                     <MudSwitch T="bool" 
                                                Label="@param.DisplayName"
                                                Value="@value"
@@ -86,7 +86,7 @@
                                 }
                                 else
                                 {
-                                    var value = GetParameterValue<string>(param.Name, param.DefaultValue?.ToString() ?? "");
+                                    var value = GetParameterValue<string>(param.Name, GetDefaultValue<string>(param.DefaultValue, ""));
                                     <MudTextField T="string" 
                                                   Label="@param.DisplayName" 
                                                   Value="@value"
@@ -212,6 +212,40 @@
             }
         }
         return defaultValue;
+    }
+
+    private T GetDefaultValue<T>(object? value, T fallback)
+    {
+        if (value == null)
+        {
+            return fallback;
+        }
+
+        if (value is JsonElement jsonElement)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<T>(jsonElement.GetRawText()) ?? fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        if (value is T typedValue)
+        {
+            return typedValue;
+        }
+
+        try
+        {
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+        catch
+        {
+            return fallback;
+        }
     }
 
     private void SetParameterValue(string key, object value)
