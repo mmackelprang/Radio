@@ -6,10 +6,14 @@ namespace RadioConsole.Api.Modules.Inputs;
 
 /// <summary>
 /// Audio input that plays audio from MP3 or WAV files using NAudio
+/// Supports both single files and directories (plays files alphabetically)
 /// </summary>
 public class FileAudioInput : BaseAudioInput
 {
-    private readonly string _filePath;
+    private readonly string _path;
+    private readonly bool _isDirectory;
+    private List<string> _playlist = new();
+    private int _currentFileIndex = 0;
     private AudioFileReader? _audioFileReader;
     private WaveStream? _waveStream;
     private CancellationTokenSource? _playbackCts;
@@ -31,28 +35,38 @@ public class FileAudioInput : BaseAudioInput
     /// <summary>
     /// Create a FileAudioInput for playing MP3 or WAV files
     /// </summary>
-    /// <param name="filePath">Path to the audio file (MP3 or WAV)</param>
+    /// <param name="path">Path to the audio file or directory</param>
     /// <param name="name">Display name for this input</param>
     /// <param name="priority">Priority level for this audio (default: Medium)</param>
     /// <param name="environmentService">Environment service</param>
     /// <param name="storage">Storage service</param>
     public FileAudioInput(
-        string filePath,
+        string path,
         string name,
         EventPriority priority,
         IEnvironmentService environmentService,
         IStorage storage) : base(environmentService, storage)
     {
-        if (string.IsNullOrWhiteSpace(filePath))
+        if (string.IsNullOrWhiteSpace(path))
         {
-            throw new ArgumentException("File path cannot be empty", nameof(filePath));
+            throw new ArgumentException("Path cannot be empty", nameof(path));
         }
 
-        _filePath = filePath;
+        _path = path;
+        _isDirectory = Directory.Exists(path);
         Name = name;
         Priority = priority;
-        Id = $"file_audio_{Path.GetFileNameWithoutExtension(filePath).ToLowerInvariant().Replace(" ", "_")}";
-        Description = $"Audio file: {Path.GetFileName(filePath)}";
+        
+        if (_isDirectory)
+        {
+            Id = $"file_audio_{Path.GetFileName(path).ToLowerInvariant().Replace(" ", "_")}";
+            Description = $"Audio directory: {Path.GetFileName(path)}";
+        }
+        else
+        {
+            Id = $"file_audio_{Path.GetFileNameWithoutExtension(path).ToLowerInvariant().Replace(" ", "_")}";
+            Description = $"Audio file: {Path.GetFileName(path)}";
+        }
     }
 
     public override async Task InitializeAsync()
@@ -61,43 +75,105 @@ public class FileAudioInput : BaseAudioInput
 
         if (_environmentService.IsSimulationMode)
         {
-            // In simulation mode, assume file is available
+            // In simulation mode, assume file/directory is available
             IsAvailable = true;
             Duration = TimeSpan.FromSeconds(5); // Mock duration
             _display.UpdateStatus($"{Name} (Simulation Mode)");
+            
+            if (_isDirectory)
+            {
+                _playlist = new List<string> { "simulated_file1.mp3", "simulated_file2.mp3" };
+            }
         }
         else
         {
-            // Check if file exists and is a supported format
-            if (File.Exists(_filePath))
+            if (_isDirectory)
             {
-                try
+                // Load all supported audio files from directory alphabetically
+                if (Directory.Exists(_path))
                 {
-                    var extension = Path.GetExtension(_filePath).ToLowerInvariant();
-                    if (extension == ".mp3" || extension == ".wav")
+                    try
                     {
-                        // Try to load the file to verify it's valid
-                        using var reader = new AudioFileReader(_filePath);
-                        Duration = reader.TotalTime;
-                        IsAvailable = true;
-                        _display.UpdateStatus($"{Name} Ready");
+                        _playlist = Directory.GetFiles(_path, "*.*", SearchOption.TopDirectoryOnly)
+                            .Where(f => 
+                            {
+                                var ext = Path.GetExtension(f).ToLowerInvariant();
+                                return ext == ".mp3" || ext == ".wav";
+                            })
+                            .OrderBy(f => f)
+                            .ToList();
+
+                        if (_playlist.Count > 0)
+                        {
+                            IsAvailable = true;
+                            // Calculate total duration
+                            Duration = TimeSpan.Zero;
+                            foreach (var file in _playlist)
+                            {
+                                try
+                                {
+                                    using var reader = new AudioFileReader(file);
+                                    Duration = Duration.Value.Add(reader.TotalTime);
+                                }
+                                catch
+                                {
+                                    // Skip files that can't be read
+                                }
+                            }
+                            _display.UpdateStatus($"{Name} Ready ({_playlist.Count} files)");
+                        }
+                        else
+                        {
+                            IsAvailable = false;
+                            _display.UpdateStatus("No audio files found in directory");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
                         IsAvailable = false;
-                        _display.UpdateStatus($"Unsupported format: {extension}");
+                        _display.UpdateStatus($"Error loading directory: {ex.Message}");
                     }
                 }
-                catch (Exception ex)
+                else
                 {
                     IsAvailable = false;
-                    _display.UpdateStatus($"Error loading file: {ex.Message}");
+                    _display.UpdateStatus("Directory not found");
                 }
             }
             else
             {
-                IsAvailable = false;
-                _display.UpdateStatus("File not found");
+                // Single file mode
+                if (File.Exists(_path))
+                {
+                    try
+                    {
+                        var extension = Path.GetExtension(_path).ToLowerInvariant();
+                        if (extension == ".mp3" || extension == ".wav")
+                        {
+                            // Try to load the file to verify it's valid
+                            using var reader = new AudioFileReader(_path);
+                            Duration = reader.TotalTime;
+                            IsAvailable = true;
+                            _playlist = new List<string> { _path };
+                            _display.UpdateStatus($"{Name} Ready");
+                        }
+                        else
+                        {
+                            IsAvailable = false;
+                            _display.UpdateStatus($"Unsupported format: {extension}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        IsAvailable = false;
+                        _display.UpdateStatus($"Error loading file: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    IsAvailable = false;
+                    _display.UpdateStatus("File not found");
+                }
             }
         }
     }
@@ -119,13 +195,16 @@ public class FileAudioInput : BaseAudioInput
             _display.UpdateStatus($"Playing {Name}");
             _display.UpdateMetadata(new Dictionary<string, string>
             {
-                ["File"] = Path.GetFileName(_filePath),
+                ["File"] = _isDirectory ? Path.GetFileName(_path) : Path.GetFileName(_path),
                 ["Status"] = "Playing (Simulation)",
-                ["Duration"] = Duration?.ToString(@"mm\:ss") ?? "N/A"
+                ["Duration"] = Duration?.ToString(@"mm\:ss") ?? "N/A",
+                ["Type"] = _isDirectory ? "Directory" : "File"
             });
         }
         else
         {
+            // Reset to first file
+            _currentFileIndex = 0;
             // Start playback
             await StartPlaybackAsync();
         }
@@ -210,71 +289,80 @@ public class FileAudioInput : BaseAudioInput
     {
         do
         {
-            try
+            // Play all files in playlist
+            for (_currentFileIndex = 0; _currentFileIndex < _playlist.Count; _currentFileIndex++)
             {
-                _audioFileReader = new AudioFileReader(_filePath);
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                var currentFile = _playlist[_currentFileIndex];
                 
-                // Set volume
-                _audioFileReader.Volume = (float)_volume;
-
-                var buffer = new byte[8192];
-                int bytesRead;
-
-                _display.UpdateStatus($"Playing {Name}");
-
-                while ((bytesRead = _audioFileReader.Read(buffer, 0, buffer.Length)) > 0)
+                try
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        break;
+                    _audioFileReader = new AudioFileReader(currentFile);
+                    
+                    // Set volume
+                    _audioFileReader.Volume = (float)_volume;
 
-                    // Wait if paused
-                    while (IsPaused && !cancellationToken.IsCancellationRequested)
+                    var buffer = new byte[8192];
+                    int bytesRead;
+
+                    _display.UpdateStatus($"Playing {Name} - {Path.GetFileName(currentFile)}");
+
+                    while ((bytesRead = _audioFileReader.Read(buffer, 0, buffer.Length)) > 0)
                     {
-                        await Task.Delay(100, cancellationToken);
+                        if (cancellationToken.IsCancellationRequested)
+                            break;
+
+                        // Wait if paused
+                        while (IsPaused && !cancellationToken.IsCancellationRequested)
+                        {
+                            await Task.Delay(100, cancellationToken);
+                        }
+
+                        if (cancellationToken.IsCancellationRequested)
+                            break;
+
+                        // Fire audio data available event
+                        var audioData = new byte[bytesRead];
+                        Array.Copy(buffer, audioData, bytesRead);
+
+                        OnAudioDataAvailable(new AudioDataAvailableEventArgs
+                        {
+                            AudioData = audioData,
+                            SampleRate = _audioFileReader.WaveFormat.SampleRate,
+                            Channels = _audioFileReader.WaveFormat.Channels,
+                            BitsPerSample = _audioFileReader.WaveFormat.BitsPerSample,
+                            Timestamp = DateTime.UtcNow
+                        });
                     }
 
-                    if (cancellationToken.IsCancellationRequested)
-                        break;
-
-                    // Fire audio data available event
-                    var audioData = new byte[bytesRead];
-                    Array.Copy(buffer, audioData, bytesRead);
-
-                    OnAudioDataAvailable(new AudioDataAvailableEventArgs
-                    {
-                        AudioData = audioData,
-                        SampleRate = _audioFileReader.WaveFormat.SampleRate,
-                        Channels = _audioFileReader.WaveFormat.Channels,
-                        BitsPerSample = _audioFileReader.WaveFormat.BitsPerSample,
-                        Timestamp = DateTime.UtcNow
-                    });
+                    _audioFileReader?.Dispose();
+                    _audioFileReader = null;
                 }
+                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    _display.UpdateStatus($"Error playing {Path.GetFileName(currentFile)}: {ex.Message}");
+                    // Continue to next file
+                }
+            }
 
-                _audioFileReader?.Dispose();
-                _audioFileReader = null;
-
-                // Handle repeat
-                if (_repeatCount == 0) // Infinite repeat
+            // Handle repeat for entire playlist
+            if (_repeatCount == 0) // Infinite repeat
+            {
+                continue;
+            }
+            else if (_repeatCount > 0)
+            {
+                _currentRepeatCount++;
+                if (_currentRepeatCount < _repeatCount)
                 {
                     continue;
                 }
-                else if (_repeatCount > 0)
-                {
-                    _currentRepeatCount++;
-                    if (_currentRepeatCount < _repeatCount)
-                    {
-                        continue;
-                    }
-                }
+            }
 
-                // Playback finished
-                break;
-            }
-            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-            {
-                _display.UpdateStatus($"Error: {ex.Message}");
-                break;
-            }
+            // Playback finished
+            break;
         } while (!cancellationToken.IsCancellationRequested);
 
         if (!cancellationToken.IsCancellationRequested)

@@ -1,3 +1,5 @@
+using RadioConsole.Api.Interfaces;
+
 namespace RadioConsole.Api.Models;
 
 /// <summary>
@@ -29,6 +31,11 @@ public class DeviceConfiguration
     /// Device-specific configuration parameters
     /// </summary>
     public Dictionary<string, object> Parameters { get; set; } = new();
+
+    /// <summary>
+    /// Audio input type (Music or Event) - only applicable for input devices
+    /// </summary>
+    public AudioInputType? AudioInputType { get; set; }
 
     /// <summary>
     /// When this device configuration was created
@@ -72,6 +79,11 @@ public class DeviceConfigurationRequest
     public Dictionary<string, object> Parameters { get; set; } = new();
 
     /// <summary>
+    /// Audio input type (Music or Event) - only applicable for input devices
+    /// </summary>
+    public AudioInputType? AudioInputType { get; set; }
+
+    /// <summary>
     /// Whether this device is enabled
     /// </summary>
     public bool IsEnabled { get; set; } = true;
@@ -87,6 +99,7 @@ public class DeviceConfigurationResponse
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public Dictionary<string, object> Parameters { get; set; } = new();
+    public AudioInputType? AudioInputType { get; set; }
     public bool IsEnabled { get; set; }
     public bool IsAvailable { get; set; }
     public DateTime CreatedAt { get; set; }
