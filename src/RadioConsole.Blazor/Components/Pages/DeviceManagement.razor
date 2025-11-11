@@ -13,15 +13,15 @@
 <MudText Typo="Typo.h4" GutterBottom="true">Device Management</MudText>
 <MudText Typo="Typo.body1" Class="mb-4">Configure audio input and output devices</MudText>
 
-<!-- Input Devices Section -->
+<!-- Music Input Devices Section -->
 <MudPaper Elevation="2" Class="pa-4 mb-4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-        <MudText Typo="Typo.h6">Audio Input Devices</MudText>
+        <MudText Typo="Typo.h6">Music Input Devices</MudText>
         <MudButton Variant="Variant.Filled" 
                    Color="Color.Primary" 
                    StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="() => OpenAddInputDialog()">
-            Add Input
+                   OnClick="() => OpenAddMusicInputDialog()">
+            Add Music Input
         </MudButton>
     </MudStack>
 
@@ -29,13 +29,13 @@
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
     }
-    else if (!_inputDevices.Any())
+    else if (!_musicInputDevices.Any())
     {
-        <MudAlert Severity="Severity.Info">No audio input devices configured yet.</MudAlert>
+        <MudAlert Severity="Severity.Info">No music input devices configured yet.</MudAlert>
     }
     else
     {
-        <MudTable Items="_inputDevices" Hover="true" Breakpoint="Breakpoint.Sm">
+        <MudTable Items="_musicInputDevices" Hover="true" Breakpoint="Breakpoint.Sm">
             <HeaderContent>
                 <MudTh>Name</MudTh>
                 <MudTh>Type</MudTh>
@@ -65,7 +65,70 @@
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" 
                                    Size="Size.Small" 
                                    Color="Color.Primary"
-                                   OnClick="() => OpenEditInputDialog(context)" />
+                                   OnClick="() => OpenEditInputDialog(context, AudioInputType.Music)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                   Size="Size.Small" 
+                                   Color="Color.Error"
+                                   OnClick="() => DeleteInput(context.Id)" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+<!-- Prompts (Event Audio) Section -->
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+        <MudText Typo="Typo.h6">Prompts (Event Audio)</MudText>
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Secondary" 
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="() => OpenAddPromptDialog()">
+            Add Prompt
+        </MudButton>
+    </MudStack>
+
+    @if (_loadingInputs)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (!_promptDevices.Any())
+    {
+        <MudAlert Severity="Severity.Info">No prompts configured yet.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_promptDevices" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Type</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Type">@context.DeviceType</MudTd>
+                <MudTd DataLabel="Description">@context.Description</MudTd>
+                <MudTd DataLabel="Status">
+                    @if (context.IsEnabled && context.IsAvailable)
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Available</MudChip>
+                    }
+                    else if (context.IsEnabled)
+                    {
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">Unavailable</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Default" Size="Size.Small">Disabled</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Actions">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                   Size="Size.Small" 
+                                   Color="Color.Primary"
+                                   OnClick="() => OpenEditInputDialog(context, AudioInputType.Event)" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" 
                                    Size="Size.Small" 
                                    Color="Color.Error"
@@ -140,7 +203,8 @@
 </MudPaper>
 
 @code {
-    private List<DeviceConfigurationResponse> _inputDevices = new();
+    private List<DeviceConfigurationResponse> _musicInputDevices = new();
+    private List<DeviceConfigurationResponse> _promptDevices = new();
     private List<DeviceConfigurationResponse> _outputDevices = new();
     private bool _loadingInputs = true;
     private bool _loadingOutputs = true;
@@ -164,8 +228,16 @@
             var inputsTask = client.GetFromJsonAsync<List<DeviceConfigurationResponse>>("/api/devices/inputs");
             var outputsTask = client.GetFromJsonAsync<List<DeviceConfigurationResponse>>("/api/devices/outputs");
 
-            _inputDevices = await inputsTask ?? new();
+            var allInputs = await inputsTask ?? new();
             _outputDevices = await outputsTask ?? new();
+
+            // Separate inputs by type
+            _musicInputDevices = allInputs
+                .Where(d => d.AudioInputType == null || d.AudioInputType == AudioInputType.Music)
+                .ToList();
+            _promptDevices = allInputs
+                .Where(d => d.AudioInputType == AudioInputType.Event)
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -178,22 +250,51 @@
         }
     }
 
-    private async Task OpenAddInputDialog()
+    private async Task OpenAddMusicInputDialog()
     {
         var parameters = new DialogParameters
         {
             ["IsInput"] = true,
-            ["IsEditMode"] = false
+            ["IsEditMode"] = false,
+            ["AudioInputType"] = AudioInputType.Music
         };
 
-        var dialog = await DialogService.ShowAsync<DeviceDialog>("Add Audio Input", parameters, new DialogOptions 
+        var options = new DialogOptions 
         { 
             MaxWidth = MaxWidth.Medium, 
-            FullWidth = true 
-        });
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceDialog>("Add Music Input", parameters, options);
         
         var result = await dialog.Result;
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
+        {
+            await LoadDevices();
+        }
+    }
+
+    private async Task OpenAddPromptDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            ["IsInput"] = true,
+            ["IsEditMode"] = false,
+            ["AudioInputType"] = AudioInputType.Event
+        };
+
+        var options = new DialogOptions 
+        { 
+            MaxWidth = MaxWidth.Medium, 
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceDialog>("Add Prompt", parameters, options);
+        
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
         {
             await LoadDevices();
         }
@@ -207,36 +308,43 @@
             ["IsEditMode"] = false
         };
 
-        var dialog = await DialogService.ShowAsync<DeviceDialog>("Add Audio Output", parameters, new DialogOptions 
+        var options = new DialogOptions 
         { 
             MaxWidth = MaxWidth.Medium, 
-            FullWidth = true 
-        });
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceDialog>("Add Audio Output", parameters, options);
         
         var result = await dialog.Result;
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
         {
             await LoadDevices();
         }
     }
 
-    private async Task OpenEditInputDialog(DeviceConfigurationResponse device)
+    private async Task OpenEditInputDialog(DeviceConfigurationResponse device, AudioInputType inputType)
     {
         var parameters = new DialogParameters
         {
             ["IsInput"] = true,
             ["IsEditMode"] = true,
-            ["Device"] = device
+            ["Device"] = device,
+            ["AudioInputType"] = inputType
         };
 
-        var dialog = await DialogService.ShowAsync<DeviceDialog>($"Edit {device.Name}", parameters, new DialogOptions 
+        var options = new DialogOptions 
         { 
             MaxWidth = MaxWidth.Medium, 
-            FullWidth = true 
-        });
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceDialog>($"Edit {device.Name}", parameters, options);
         
         var result = await dialog.Result;
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
         {
             await LoadDevices();
         }
@@ -251,14 +359,17 @@
             ["Device"] = device
         };
 
-        var dialog = await DialogService.ShowAsync<DeviceDialog>($"Edit {device.Name}", parameters, new DialogOptions 
+        var options = new DialogOptions 
         { 
             MaxWidth = MaxWidth.Medium, 
-            FullWidth = true 
-        });
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceDialog>($"Edit {device.Name}", parameters, options);
         
         var result = await dialog.Result;
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
         {
             await LoadDevices();
         }
