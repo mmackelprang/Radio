@@ -285,7 +285,7 @@
 
     private void Cancel()
     {
-        MudDialog.Close(DialogResult.Cancel());
+        MudDialog?.Close(DialogResult.Cancel());
     }
 
     private async Task Save()
@@ -333,7 +333,7 @@
             if (response.IsSuccessStatusCode)
             {
                 Snackbar.Add($"Device {(IsEditMode ? "updated" : "added")} successfully", Severity.Success);
-                MudDialog.Close(DialogResult.Ok(true));
+                MudDialog?.Close(DialogResult.Ok(true));
             }
             else
             {
