@@ -82,6 +82,7 @@ public class DevicesController : ControllerBase
         Name = config.Name,
         Description = config.Description,
         Parameters = config.Parameters,
+        AudioInputType = config.AudioInputType,
         IsEnabled = config.IsEnabled,
         IsAvailable = loadedDevices.TryGetValue(config.Id, out var device) && device.IsAvailable,
         CreatedAt = config.CreatedAt,
@@ -140,6 +141,7 @@ public class DevicesController : ControllerBase
         Name = config.Name,
         Description = config.Description,
         Parameters = config.Parameters,
+        AudioInputType = config.AudioInputType,
         IsEnabled = config.IsEnabled,
         IsAvailable = device?.IsAvailable ?? false,
         CreatedAt = config.CreatedAt,
@@ -190,6 +192,7 @@ public class DevicesController : ControllerBase
         Name = request.Name,
         Description = request.Description,
         Parameters = request.Parameters,
+        AudioInputType = request.AudioInputType,
         IsEnabled = request.IsEnabled
       };
 
@@ -213,6 +216,7 @@ public class DevicesController : ControllerBase
         Name = added.Name,
         Description = added.Description,
         Parameters = added.Parameters,
+        AudioInputType = added.AudioInputType,
         IsEnabled = added.IsEnabled,
         IsAvailable = device?.IsAvailable ?? false,
         CreatedAt = added.CreatedAt,
@@ -273,6 +277,7 @@ public class DevicesController : ControllerBase
         Name = request.Name,
         Description = request.Description,
         Parameters = request.Parameters,
+        AudioInputType = request.AudioInputType,
         IsEnabled = request.IsEnabled
       };
 
@@ -297,6 +302,7 @@ public class DevicesController : ControllerBase
         Name = updated.Name,
         Description = updated.Description,
         Parameters = updated.Parameters,
+        AudioInputType = updated.AudioInputType,
         IsEnabled = updated.IsEnabled,
         IsAvailable = device?.IsAvailable ?? false,
         CreatedAt = updated.CreatedAt,

@@ -329,7 +329,7 @@ public class FileAudioInputTests
 
         // Assert
         act.Should().Throw<ArgumentException>()
-            .WithMessage("*File path cannot be empty*");
+            .WithMessage("*Path cannot be empty*");
     }
 
     [Fact]

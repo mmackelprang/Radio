@@ -37,6 +37,7 @@ public class DeviceFactory : IDeviceFactory
             "UsbAudioInput" => CreateUsbAudioInput(config),
             "FileAudioInput" => CreateFileAudioInput(config),
             "TtsAudioInput" => CreateTtsAudioInput(config),
+            "CompositeAudioInput" => CreateCompositeAudioInput(config),
             "SpotifyInput" => CreateSpotifyInput(config),
             _ => throw new ArgumentException($"Unknown input device type: {config.DeviceType}")
         };
@@ -82,7 +83,61 @@ public class DeviceFactory : IDeviceFactory
 
     private IAudioInput CreateTtsAudioInput(DeviceConfiguration config)
     {
-        return new TtsAudioInput(_environmentService, _storage, _ttsService);
+        var input = new TtsAudioInput(_environmentService, _storage, _ttsService);
+        
+        // Store text parameter if provided for later use
+        var text = GetParameter<string>(config, "Text", "");
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            config.Parameters["Text"] = text;
+        }
+        
+        return input;
+    }
+
+    private IAudioInput CreateCompositeAudioInput(DeviceConfiguration config)
+    {
+        var priority = GetParameter<string>(config, "Priority", "Medium");
+        var playSerially = GetParameter<bool>(config, "PlaySerially", true);
+        
+        EventPriority eventPriority;
+        if (!Enum.TryParse<EventPriority>(priority, true, out eventPriority))
+        {
+            eventPriority = EventPriority.Medium;
+        }
+        
+        var composite = new CompositeAudioInput(
+            config.Id,
+            config.Name,
+            eventPriority,
+            playSerially,
+            _environmentService,
+            _storage);
+        
+        // Parse items from configuration
+        var items = GetParameter<List<object>>(config, "Items", new List<object>());
+        foreach (var item in items)
+        {
+            if (item is JsonElement jsonElement)
+            {
+                var itemType = jsonElement.GetProperty("Type").GetString();
+                var volume = jsonElement.TryGetProperty("Volume", out var volProp) ? volProp.GetDouble() : 1.0;
+                var repeat = jsonElement.TryGetProperty("Repeat", out var repProp) ? repProp.GetInt32() : -1;
+                
+                if (itemType == "File")
+                {
+                    var filePath = jsonElement.GetProperty("Path").GetString() ?? "";
+                    composite.AddFileInput(filePath, volume, repeat);
+                }
+                else if (itemType == "Tts")
+                {
+                    var text = jsonElement.GetProperty("Text").GetString() ?? "";
+                    composite.AddTtsInput(text, _ttsService, volume, repeat);
+                }
+            }
+        }
+        
+        return composite;
     }
 
     private IAudioInput CreateSpotifyInput(DeviceConfiguration config)
@@ -152,15 +207,15 @@ public class DeviceFactory : IDeviceFactory
             {
                 TypeName = "FileAudioInput",
                 DisplayName = "Audio File",
-                Description = "Plays audio from a file (MP3, WAV, etc.)",
+                Description = "Plays audio from a file or directory (MP3, WAV, etc.)",
                 Category = "Input",
                 Parameters = new List<DeviceParameterInfo>
                 {
                     new()
                     {
                         Name = "FilePath",
-                        DisplayName = "File Path",
-                        Description = "Path to the audio file",
+                        DisplayName = "File or Directory Path",
+                        Description = "Path to the audio file or directory (directory plays files alphabetically)",
                         DataType = "string",
                         Required = true,
                         DefaultValue = ""
@@ -191,7 +246,55 @@ public class DeviceFactory : IDeviceFactory
                 DisplayName = "Text-to-Speech",
                 Description = "Converts text to speech using eSpeak",
                 Category = "Input",
-                Parameters = new List<DeviceParameterInfo>()
+                Parameters = new List<DeviceParameterInfo>
+                {
+                    new()
+                    {
+                        Name = "Text",
+                        DisplayName = "Text to Speak",
+                        Description = "The text that will be converted to speech",
+                        DataType = "string",
+                        Required = true,
+                        DefaultValue = ""
+                    }
+                }
+            },
+            new()
+            {
+                TypeName = "CompositeAudioInput",
+                DisplayName = "Composite Audio",
+                Description = "Combines multiple audio files and TTS prompts",
+                Category = "Input",
+                Parameters = new List<DeviceParameterInfo>
+                {
+                    new()
+                    {
+                        Name = "Priority",
+                        DisplayName = "Priority",
+                        Description = "Priority level (Low, Medium, High, Critical)",
+                        DataType = "string",
+                        Required = false,
+                        DefaultValue = "Medium"
+                    },
+                    new()
+                    {
+                        Name = "PlaySerially",
+                        DisplayName = "Play Sequentially",
+                        Description = "If true, play items one after another; if false, play concurrently",
+                        DataType = "bool",
+                        Required = false,
+                        DefaultValue = true
+                    },
+                    new()
+                    {
+                        Name = "Items",
+                        DisplayName = "Items",
+                        Description = "List of files and TTS items to play",
+                        DataType = "array",
+                        Required = false,
+                        DefaultValue = new List<object>()
+                    }
+                }
             },
             new()
             {
