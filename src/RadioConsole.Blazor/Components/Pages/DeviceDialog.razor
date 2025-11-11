@@ -128,7 +128,7 @@
 
 @code {
     [CascadingParameter] 
-    private IDialogReference MudDialog { get; set; } = null!;
+    private MudBlazor.IDialogReference MudDialog { get; set; } = null!;
 
     [Parameter]
     public bool IsInput { get; set; }
@@ -138,6 +138,9 @@
 
     [Parameter]
     public DeviceConfigurationResponse? Device { get; set; }
+
+    [Parameter]
+    public AudioInputType? AudioInputType { get; set; }
 
     private MudForm _form = null!;
     private bool _isFormValid;
@@ -175,7 +178,34 @@
             client.BaseAddress = new Uri("http://localhost:5000");
 
             var endpoint = IsInput ? "/api/devices/types/inputs" : "/api/devices/types/outputs";
-            _availableTypes = await client.GetFromJsonAsync<List<DeviceTypeInfo>>(endpoint) ?? new();
+            var allTypes = await client.GetFromJsonAsync<List<DeviceTypeInfo>>(endpoint) ?? new();
+            
+            // Filter device types based on AudioInputType
+            if (IsInput && AudioInputType.HasValue)
+            {
+                if (AudioInputType == RadioConsole.Api.Interfaces.AudioInputType.Music)
+                {
+                    // Music: FileAudioInput, SpotifyInput, UsbAudioInput
+                    _availableTypes = allTypes
+                        .Where(t => t.TypeName == "FileAudioInput" || 
+                                   t.TypeName == "SpotifyInput" || 
+                                   t.TypeName == "UsbAudioInput")
+                        .ToList();
+                }
+                else if (AudioInputType == RadioConsole.Api.Interfaces.AudioInputType.Event)
+                {
+                    // Event: FileAudioInput (single file only), TtsAudioInput, CompositeAudioInput
+                    _availableTypes = allTypes
+                        .Where(t => t.TypeName == "FileAudioInput" || 
+                                   t.TypeName == "TtsAudioInput" || 
+                                   t.TypeName == "CompositeAudioInput")
+                        .ToList();
+                }
+            }
+            else
+            {
+                _availableTypes = allTypes;
+            }
         }
         catch (Exception ex)
         {
@@ -255,7 +285,7 @@
 
     private void Cancel()
     {
-        MudDialog?.Close(DialogResult.Cancel());
+        MudDialog.Close(DialogResult.Cancel());
     }
 
     private async Task Save()
@@ -281,6 +311,7 @@
                 Name = _deviceName,
                 Description = _deviceDescription,
                 Parameters = _parameters,
+                AudioInputType = AudioInputType,
                 IsEnabled = _isEnabled
             };
 
@@ -302,7 +333,7 @@
             if (response.IsSuccessStatusCode)
             {
                 Snackbar.Add($"Device {(IsEditMode ? "updated" : "added")} successfully", Severity.Success);
-                MudDialog?.Close(DialogResult.Ok(true));
+                MudDialog.Close(DialogResult.Ok(true));
             }
             else
             {

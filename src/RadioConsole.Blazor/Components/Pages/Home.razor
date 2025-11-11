@@ -1,11 +1,15 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @using RadioConsole.Api.Interfaces
 @using RadioConsole.Api.Services
+@using RadioConsole.Api.Models
+@using System.Net.Http.Json
 @inject IEnumerable<IAudioInput> AudioInputs
 @inject IEnumerable<IAudioOutput> AudioOutputs
 @inject IDeviceRegistry DeviceRegistry
 @inject IEnvironmentService EnvironmentService
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
 
 <PageTitle>Audio Control</PageTitle>
 
@@ -17,15 +21,15 @@
     <MudText Typo="Typo.body2">@_statusMessage</MudText>
 </MudPaper>
 
-<!-- Input Selection -->
+<!-- Music Input Selection -->
 <MudPaper Elevation="2" Class="pa-4 mb-4">
-    <MudText Typo="Typo.h6" GutterBottom="true">Audio Input</MudText>
+    <MudText Typo="Typo.h6" GutterBottom="true">Music Input</MudText>
     <MudSelect T="IAudioInput" 
                Label="Select Input" 
                @bind-Value="_selectedInput" 
                Variant="Variant.Outlined"
                AnchorOrigin="Origin.BottomCenter">
-        @foreach (var input in _audioInputs)
+        @foreach (var input in _musicInputs)
         {
             <MudSelectItem Value="@input">@input.Name</MudSelectItem>
         }
@@ -94,26 +98,89 @@
     </MudItem>
 </MudGrid>
 
+<!-- Test Prompt Section -->
+<MudPaper Elevation="2" Class="pa-4 mt-4">
+    <MudText Typo="Typo.h6" GutterBottom="true">Test Prompt</MudText>
+    <MudGrid>
+        <MudItem xs="12" sm="9">
+            <MudSelect T="string" 
+                       Label="Select Prompt" 
+                       @bind-Value="_selectedPromptId" 
+                       Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var prompt in _promptDevices)
+                {
+                    <MudSelectItem Value="@prompt.Id">@prompt.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Info" 
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                       OnClick="PlayPromptAsync"
+                       Disabled="string.IsNullOrEmpty(_selectedPromptId) || _selectedOutput == null || _isPlayingPrompt">
+                Play
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
 @code {
-    private List<IAudioInput> _audioInputs = new();
+    private List<IAudioInput> _musicInputs = new();
     private List<IAudioOutput> _audioOutputs = new();
+    private List<DeviceConfigurationResponse> _promptDevices = new();
     private IAudioInput? _selectedInput;
     private IAudioOutput? _selectedOutput;
+    private string _selectedPromptId = string.Empty;
     private string _statusMessage = "Ready";
     private bool _isPlaying = false;
+    private bool _isPlayingPrompt = false;
     private double _volume = 0.5;
 
     protected override async Task OnInitializedAsync()
     {
         // Combine statically registered and dynamically configured devices
-        _audioInputs = AudioInputs.Concat(DeviceRegistry.GetAllInputs()).ToList();
+        var allInputs = AudioInputs.Concat(DeviceRegistry.GetAllInputs()).ToList();
+        
+        // Filter to only show Music inputs
+        _musicInputs = allInputs
+            .Where(i => i.InputType == AudioInputType.Music)
+            .ToList();
+        
         _audioOutputs = AudioOutputs.Concat(DeviceRegistry.GetAllOutputs()).ToList();
 
+        // Load prompt devices from API
+        await LoadPrompts();
+
         // Select first available input and output
-        _selectedInput = _audioInputs.FirstOrDefault(i => i.IsAvailable);
+        _selectedInput = _musicInputs.FirstOrDefault(i => i.IsAvailable);
         _selectedOutput = _audioOutputs.FirstOrDefault(o => o.IsAvailable);
 
         UpdateStatusMessage();
+    }
+
+    private async Task LoadPrompts()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            client.BaseAddress = new Uri("http://localhost:5000");
+
+            var allInputs = await client.GetFromJsonAsync<List<DeviceConfigurationResponse>>("/api/devices/inputs");
+            
+            if (allInputs != null)
+            {
+                _promptDevices = allInputs
+                    .Where(d => d.AudioInputType == AudioInputType.Event)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading prompts: {ex.Message}", Severity.Warning);
+        }
     }
 
     private async Task PlayAsync()
@@ -149,11 +216,47 @@
         _statusMessage = "Stopped";
     }
 
-    private async Task OnVolumeChanged()
+    private async Task PlayPromptAsync()
     {
-        if (_selectedOutput != null)
+        if (string.IsNullOrEmpty(_selectedPromptId) || _selectedOutput == null)
         {
-            await _selectedOutput.SetVolumeAsync(_volume);
+            Snackbar.Add("Please select a prompt and output", Severity.Warning);
+            return;
+        }
+
+        _isPlayingPrompt = true;
+
+        try
+        {
+            // Get the prompt input from the device registry
+            var promptInput = DeviceRegistry.GetInput(_selectedPromptId);
+            
+            if (promptInput == null)
+            {
+                Snackbar.Add("Prompt not found", Severity.Error);
+                return;
+            }
+
+            await _selectedOutput.StartAsync();
+            await promptInput.StartAsync();
+            
+            Snackbar.Add($"Playing prompt: {promptInput.Name}", Severity.Info);
+            
+            // Auto-stop after duration if available
+            if (promptInput.Duration.HasValue)
+            {
+                await Task.Delay(promptInput.Duration.Value);
+                await promptInput.StopAsync();
+                Snackbar.Add("Prompt finished", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error playing prompt: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isPlayingPrompt = false;
         }
     }
 
