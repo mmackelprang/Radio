@@ -4,6 +4,15 @@ using RadioConsole.Api.Models;
 namespace RadioConsole.Api.Services;
 
 /// <summary>
+/// Category of audio device for generic operations
+/// </summary>
+internal enum AudioDeviceCategory
+{
+  Input,
+  Output
+}
+
+/// <summary>
 /// Manages registry of configured audio devices
 /// </summary>
 public class DeviceRegistry : IDeviceRegistry
@@ -35,59 +44,87 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task LoadConfigurationsAsync()
     {
+      try
+      {
+        // Load input configurations
+        bool inputsHadDuplicates = await LoadDeviceConfigurationsAsync(
+          INPUT_REGISTRY_KEY,
+          AudioDeviceCategory.Input,
+          _inputConfigs,
+          _loadedInputs);
+
+        // Load output configurations
+        bool outputsHadDuplicates = await LoadDeviceConfigurationsAsync(
+          OUTPUT_REGISTRY_KEY,
+          AudioDeviceCategory.Output,
+          _outputConfigs,
+          _loadedOutputs);
+
+        // If we found and removed duplicates, save the cleaned configurations
+        if (inputsHadDuplicates || outputsHadDuplicates)
+        {
+          _logger.LogWarning("Duplicate device names detected and removed during configuration load. Saving cleaned configurations.");
+          await SaveConfigurationsAsync();
+        }
+
+        _logger.LogInformation("Device registry loaded: {InputCount} inputs, {OutputCount} outputs",
+          _loadedInputs.Count, _loadedOutputs.Count);
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "Error loading device configurations");
+      }
+    }
+
+    /// <summary>
+    /// Helper method to load device configurations for a specific category
+    /// </summary>
+    private async Task<bool> LoadDeviceConfigurationsAsync<TDevice>(
+      string storageKey,
+      AudioDeviceCategory category,
+      Dictionary<string, DeviceConfiguration> configDict,
+      Dictionary<string, TDevice> deviceDict) where TDevice : IAudioDevice
+    {
+      var configs = await _storage.LoadAsync<List<DeviceConfiguration>>(storageKey);
+      if (configs == null)
+        return false;
+
+      bool hadDuplicates = false;
+      var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+      foreach (var config in configs.Where(c => c.IsEnabled))
+      {
+        // Check for duplicate names
+        if (seenNames.Contains(config.Name))
+        {
+          _logger.LogWarning("Skipping duplicate {Category} device name: {Name} (ID: {Id})",
+            category, config.Name, config.Id);
+          hadDuplicates = true;
+          continue;
+        }
+
+        seenNames.Add(config.Name);
+        configDict[config.Id] = config;
+
         try
         {
-            // Load input configurations
-            var inputs = await _storage.LoadAsync<List<DeviceConfiguration>>(INPUT_REGISTRY_KEY);
-            if (inputs != null)
-            {
-                foreach (var config in inputs.Where(c => c.IsEnabled))
-                {
-                    _inputConfigs[config.Id] = config;
-                    
-                    try
-                    {
-                        var device = _deviceFactory.CreateInput(config);
-                        await device.InitializeAsync();
-                        _loadedInputs[config.Id] = device;
-                        _logger.LogInformation("Loaded input device: {Name} ({Type})", config.Name, config.DeviceType);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to load input device: {Name} ({Type})", config.Name, config.DeviceType);
-                    }
-                }
-            }
+          TDevice device = category == AudioDeviceCategory.Input
+            ? (TDevice)(object)_deviceFactory.CreateInput(config)
+            : (TDevice)(object)_deviceFactory.CreateOutput(config);
 
-            // Load output configurations
-            var outputs = await _storage.LoadAsync<List<DeviceConfiguration>>(OUTPUT_REGISTRY_KEY);
-            if (outputs != null)
-            {
-                foreach (var config in outputs.Where(c => c.IsEnabled))
-                {
-                    _outputConfigs[config.Id] = config;
-                    
-                    try
-                    {
-                        var device = _deviceFactory.CreateOutput(config);
-                        await device.InitializeAsync();
-                        _loadedOutputs[config.Id] = device;
-                        _logger.LogInformation("Loaded output device: {Name} ({Type})", config.Name, config.DeviceType);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to load output device: {Name} ({Type})", config.Name, config.DeviceType);
-                    }
-                }
-            }
-
-            _logger.LogInformation("Device registry loaded: {InputCount} inputs, {OutputCount} outputs",
-                _loadedInputs.Count, _loadedOutputs.Count);
+          await device.InitializeAsync();
+          deviceDict[config.Id] = device;
+          _logger.LogInformation("Loaded {Category} device: {Name} ({Type})",
+            category.ToString().ToLower(), config.Name, config.DeviceType);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading device configurations");
+          _logger.LogError(ex, "Failed to load {Category} device: {Name} ({Type})",
+            category.ToString().ToLower(), config.Name, config.DeviceType);
         }
+      }
+
+      return hadDuplicates;
     }
 
     /// <summary>
@@ -104,30 +141,7 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task<DeviceConfiguration> AddInputAsync(DeviceConfiguration config)
     {
-        config.Id = Guid.NewGuid().ToString();
-        config.CreatedAt = DateTime.UtcNow;
-        config.ModifiedAt = DateTime.UtcNow;
-
-        _inputConfigs[config.Id] = config;
-        await SaveConfigurationsAsync();
-
-        // Try to load the device
-        if (config.IsEnabled)
-        {
-            try
-            {
-                var device = _deviceFactory.CreateInput(config);
-                await device.InitializeAsync();
-                _loadedInputs[config.Id] = device;
-                _logger.LogInformation("Added and loaded input device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to load newly added input device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-        }
-
-        return config;
+      return await AddDeviceAsync(config, AudioDeviceCategory.Input, _inputConfigs, _loadedInputs);
     }
 
     /// <summary>
@@ -135,30 +149,64 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task<DeviceConfiguration> AddOutputAsync(DeviceConfiguration config)
     {
-        config.Id = Guid.NewGuid().ToString();
-        config.CreatedAt = DateTime.UtcNow;
-        config.ModifiedAt = DateTime.UtcNow;
+      return await AddDeviceAsync(config, AudioDeviceCategory.Output, _outputConfigs, _loadedOutputs);
+    }
 
-        _outputConfigs[config.Id] = config;
-        await SaveConfigurationsAsync();
+    /// <summary>
+    /// Helper method to add a device configuration
+    /// </summary>
+    private async Task<DeviceConfiguration> AddDeviceAsync<TDevice>(
+      DeviceConfiguration config,
+      AudioDeviceCategory category,
+      Dictionary<string, DeviceConfiguration> configDict,
+      Dictionary<string, TDevice> deviceDict) where TDevice : IAudioDevice
+    {
+      // Check for duplicate names across both inputs and outputs
+      if (IsNameDuplicate(config.Name, null))
+      {
+        throw new InvalidOperationException($"A device with the name '{config.Name}' already exists.");
+      }
 
-        // Try to load the device
-        if (config.IsEnabled)
+      config.Id = Guid.NewGuid().ToString();
+      config.CreatedAt = DateTime.UtcNow;
+      config.ModifiedAt = DateTime.UtcNow;
+
+      configDict[config.Id] = config;
+      await SaveConfigurationsAsync();
+
+      // Try to load the device
+      if (config.IsEnabled)
+      {
+        try
         {
-            try
-            {
-                var device = _deviceFactory.CreateOutput(config);
-                await device.InitializeAsync();
-                _loadedOutputs[config.Id] = device;
-                _logger.LogInformation("Added and loaded output device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to load newly added output device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-        }
+          TDevice device = category == AudioDeviceCategory.Input
+            ? (TDevice)(object)_deviceFactory.CreateInput(config)
+            : (TDevice)(object)_deviceFactory.CreateOutput(config);
 
-        return config;
+          await device.InitializeAsync();
+          deviceDict[config.Id] = device;
+          _logger.LogInformation("Added and loaded {Category} device: {Name} ({Type})",
+            category.ToString().ToLower(), config.Name, config.DeviceType);
+        }
+        catch (Exception ex)
+        {
+          _logger.LogError(ex, "Failed to load newly added {Category} device: {Name} ({Type})",
+            category.ToString().ToLower(), config.Name, config.DeviceType);
+        }
+      }
+
+      return config;
+    }
+
+    /// <summary>
+    /// Check if a device name is a duplicate
+    /// </summary>
+    private bool IsNameDuplicate(string name, string? excludeId)
+    {
+      return _inputConfigs.Values.Any(c => c.Id != excludeId && 
+        string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)) ||
+        _outputConfigs.Values.Any(c => c.Id != excludeId && 
+        string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -166,43 +214,7 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task<DeviceConfiguration?> UpdateInputAsync(string id, DeviceConfiguration config)
     {
-        if (!_inputConfigs.ContainsKey(id))
-            return null;
-
-        config.Id = id;
-        config.ModifiedAt = DateTime.UtcNow;
-        config.CreatedAt = _inputConfigs[id].CreatedAt;
-
-        _inputConfigs[id] = config;
-        await SaveConfigurationsAsync();
-
-        // Reload the device
-        if (_loadedInputs.ContainsKey(id))
-        {
-            try
-            {
-                await _loadedInputs[id].StopAsync();
-            }
-            catch { }
-            _loadedInputs.Remove(id);
-        }
-
-        if (config.IsEnabled)
-        {
-            try
-            {
-                var device = _deviceFactory.CreateInput(config);
-                await device.InitializeAsync();
-                _loadedInputs[id] = device;
-                _logger.LogInformation("Updated and reloaded input device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to reload updated input device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-        }
-
-        return config;
+      return await UpdateDeviceAsync(id, config, AudioDeviceCategory.Input, _inputConfigs, _loadedInputs);
     }
 
     /// <summary>
@@ -210,43 +222,67 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task<DeviceConfiguration?> UpdateOutputAsync(string id, DeviceConfiguration config)
     {
-        if (!_outputConfigs.ContainsKey(id))
-            return null;
+      return await UpdateDeviceAsync(id, config, AudioDeviceCategory.Output, _outputConfigs, _loadedOutputs);
+    }
 
-        config.Id = id;
-        config.ModifiedAt = DateTime.UtcNow;
-        config.CreatedAt = _outputConfigs[id].CreatedAt;
+    /// <summary>
+    /// Helper method to update a device configuration
+    /// </summary>
+    private async Task<DeviceConfiguration?> UpdateDeviceAsync<TDevice>(
+      string id,
+      DeviceConfiguration config,
+      AudioDeviceCategory category,
+      Dictionary<string, DeviceConfiguration> configDict,
+      Dictionary<string, TDevice> deviceDict) where TDevice : IAudioDevice
+    {
+      if (!configDict.ContainsKey(id))
+        return null;
 
-        _outputConfigs[id] = config;
-        await SaveConfigurationsAsync();
+      // Check for duplicate names (excluding the current device)
+      if (IsNameDuplicate(config.Name, id))
+      {
+        throw new InvalidOperationException($"A device with the name '{config.Name}' already exists.");
+      }
 
-        // Reload the device
-        if (_loadedOutputs.ContainsKey(id))
+      config.Id = id;
+      config.ModifiedAt = DateTime.UtcNow;
+      config.CreatedAt = configDict[id].CreatedAt;
+
+      configDict[id] = config;
+      await SaveConfigurationsAsync();
+
+      // Reload the device
+      if (deviceDict.ContainsKey(id))
+      {
+        try
         {
-            try
-            {
-                await _loadedOutputs[id].StopAsync();
-            }
-            catch { }
-            _loadedOutputs.Remove(id);
+          await deviceDict[id].StopAsync();
         }
+        catch { }
+        deviceDict.Remove(id);
+      }
 
-        if (config.IsEnabled)
+      if (config.IsEnabled)
+      {
+        try
         {
-            try
-            {
-                var device = _deviceFactory.CreateOutput(config);
-                await device.InitializeAsync();
-                _loadedOutputs[id] = device;
-                _logger.LogInformation("Updated and reloaded output device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to reload updated output device: {Name} ({Type})", config.Name, config.DeviceType);
-            }
-        }
+          TDevice device = category == AudioDeviceCategory.Input
+            ? (TDevice)(object)_deviceFactory.CreateInput(config)
+            : (TDevice)(object)_deviceFactory.CreateOutput(config);
 
-        return config;
+          await device.InitializeAsync();
+          deviceDict[id] = device;
+          _logger.LogInformation("Updated and reloaded {Category} device: {Name} ({Type})",
+            category.ToString().ToLower(), config.Name, config.DeviceType);
+        }
+        catch (Exception ex)
+        {
+          _logger.LogError(ex, "Failed to reload updated {Category} device: {Name} ({Type})",
+            category.ToString().ToLower(), config.Name, config.DeviceType);
+        }
+      }
+
+      return config;
     }
 
     /// <summary>
@@ -254,25 +290,7 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task<bool> RemoveInputAsync(string id)
     {
-        if (!_inputConfigs.ContainsKey(id))
-            return false;
-
-        // Stop and remove the loaded device
-        if (_loadedInputs.ContainsKey(id))
-        {
-            try
-            {
-                await _loadedInputs[id].StopAsync();
-            }
-            catch { }
-            _loadedInputs.Remove(id);
-        }
-
-        _inputConfigs.Remove(id);
-        await SaveConfigurationsAsync();
-        _logger.LogInformation("Removed input device: {Id}", id);
-
-        return true;
+      return await RemoveDeviceAsync(id, AudioDeviceCategory.Input, _inputConfigs, _loadedInputs);
     }
 
     /// <summary>
@@ -280,25 +298,37 @@ public class DeviceRegistry : IDeviceRegistry
     /// </summary>
     public async Task<bool> RemoveOutputAsync(string id)
     {
-        if (!_outputConfigs.ContainsKey(id))
-            return false;
+      return await RemoveDeviceAsync(id, AudioDeviceCategory.Output, _outputConfigs, _loadedOutputs);
+    }
 
-        // Stop and remove the loaded device
-        if (_loadedOutputs.ContainsKey(id))
+    /// <summary>
+    /// Helper method to remove a device configuration
+    /// </summary>
+    private async Task<bool> RemoveDeviceAsync<TDevice>(
+      string id,
+      AudioDeviceCategory category,
+      Dictionary<string, DeviceConfiguration> configDict,
+      Dictionary<string, TDevice> deviceDict) where TDevice : IAudioDevice
+    {
+      if (!configDict.ContainsKey(id))
+        return false;
+
+      // Stop and remove the loaded device
+      if (deviceDict.ContainsKey(id))
+      {
+        try
         {
-            try
-            {
-                await _loadedOutputs[id].StopAsync();
-            }
-            catch { }
-            _loadedOutputs.Remove(id);
+          await deviceDict[id].StopAsync();
         }
+        catch { }
+        deviceDict.Remove(id);
+      }
 
-        _outputConfigs.Remove(id);
-        await SaveConfigurationsAsync();
-        _logger.LogInformation("Removed output device: {Id}", id);
+      configDict.Remove(id);
+      await SaveConfigurationsAsync();
+      _logger.LogInformation("Removed {Category} device: {Id}", category.ToString().ToLower(), id);
 
-        return true;
+      return true;
     }
 
     /// <summary>
