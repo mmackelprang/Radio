@@ -69,6 +69,10 @@ builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
 builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
 
+// Register device management services
+builder.Services.AddSingleton<IDeviceFactory, DeviceFactory>();
+builder.Services.AddSingleton<IDeviceRegistry, DeviceRegistry>();
+
 // Register audio priority manager
 builder.Services.AddSingleton<IAudioPriorityManager, AudioPriorityManager>();
 
@@ -91,6 +95,10 @@ builder.Services.AddSingleton<IAudioOutput, WiredSoundbarOutput>();
 builder.Services.AddSingleton<IAudioOutput, ChromecastOutput>();
 
 var app = builder.Build();
+
+// Initialize device registry
+var deviceRegistry = app.Services.GetRequiredService<IDeviceRegistry>();
+await deviceRegistry.LoadConfigurationsAsync();
 
 // Initialize all audio modules
 var inputs = app.Services.GetServices<IAudioInput>();
