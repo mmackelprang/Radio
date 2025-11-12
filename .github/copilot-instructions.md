@@ -65,7 +65,7 @@ This repository contains modern C# (.NET 8+) applications and libraries, focusin
 - For longer and complex projects, keep a PROJECT_STATUS document with phases in progress, phases completed, and planned future phases.  As part of each agent request keep this document up to date.
 
 ## Testing & CI
-- All new code must be covered by unit tests.  For existing projects, use the frameworks in place.  For new projects use xUnit and FluentAssertions.
+- All new code must be covered by unit tests.  For existing projects, use the frameworks in place.  For new projects use xUnit and FluentAssertions.  Do *NOT* use Xceed FluentAssertions, but use the fully open source version of FluentAssertions.  If a project uses the Xceed version, remove that package and replace it with the open source version.
 - Write unit tests for business logic and integration tests for data access and API endpoints.
 - Use GitHub Actions for CI; target Linux runners
 - Test code with mocked Bluetooth/audio devices if hardware not present
