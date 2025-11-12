@@ -177,16 +177,28 @@ class Program
         await fileInput1.StartAsync();
         await Task.Delay(2000); // Play for 2 seconds
 
-        logger.LogInformation("  Pausing playback...");
-        await fileInput1.PauseAsync();
-        await Task.Delay(1000);
+        // Check if still active before pausing
+        if (fileInput1.IsActive)
+        {
+          logger.LogInformation("  Pausing playback...");
+          await fileInput1.PauseAsync();
+          await Task.Delay(1000);
 
-        logger.LogInformation("  Resuming playback...");
-        await fileInput1.ResumeAsync();
-        await Task.Delay(2000);
+          logger.LogInformation("  Resuming playback...");
+          await fileInput1.ResumeAsync();
+          await Task.Delay(2000);
+        }
+        else
+        {
+          logger.LogInformation("  Playback already finished");
+        }
 
-        logger.LogInformation("  Stopping playback...");
-        await fileInput1.StopAsync();
+        // Only stop if still active
+        if (fileInput1.IsActive)
+        {
+          logger.LogInformation("  Stopping playback...");
+          await fileInput1.StopAsync();
+        }
       }
 
       // Test FileAudioInput 2

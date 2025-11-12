@@ -79,7 +79,23 @@ public class TtsServiceTests
   {
     // Arrange
     _mockEnvironmentService.Setup(e => e.IsSimulationMode).Returns(false);
-    var service = new TtsService(CreateDefaultConfig(), _mockEnvironmentService.Object, _mockLogger.Object, _mockLoggerFactory.Object);
+    
+    // Use a non-existent executable path to ensure espeak-ng is not available
+    var config = new TtsConfig
+    {
+      Engine = "EspeakNG",
+      EspeakNg = new EspeakNgConfig
+      {
+        ExecutablePath = "/nonexistent/espeak-ng",
+        Voice = "en-us",
+        Speed = 175,
+        Pitch = 50,
+        Volume = 100,
+        WordGap = 0,
+        SampleRate = 22050
+      }
+    };
+    var service = new TtsService(Options.Create(config), _mockEnvironmentService.Object, _mockLogger.Object, _mockLoggerFactory.Object);
 
     // Act
     await service.InitializeAsync();
@@ -125,7 +141,23 @@ public class TtsServiceTests
   {
     // Arrange
     _mockEnvironmentService.Setup(e => e.IsSimulationMode).Returns(false);
-    var service = new TtsService(CreateDefaultConfig(), _mockEnvironmentService.Object, _mockLogger.Object, _mockLoggerFactory.Object);
+    
+    // Use a non-existent executable path to ensure espeak-ng is not available
+    var config = new TtsConfig
+    {
+      Engine = "EspeakNG",
+      EspeakNg = new EspeakNgConfig
+      {
+        ExecutablePath = "/nonexistent/espeak-ng",
+        Voice = "en-us",
+        Speed = 175,
+        Pitch = 50,
+        Volume = 100,
+        WordGap = 0,
+        SampleRate = 22050
+      }
+    };
+    var service = new TtsService(Options.Create(config), _mockEnvironmentService.Object, _mockLogger.Object, _mockLoggerFactory.Object);
     await service.InitializeAsync();
 
     // Act

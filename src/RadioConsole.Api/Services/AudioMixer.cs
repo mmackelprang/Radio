@@ -370,25 +370,272 @@ public class AudioMixer : IDisposable
 
     /// <summary>
     /// Convert audio data to target format
-    /// Note: This is a simplified implementation. Production code would use proper resampling.
+    /// Handles sample rate conversion, bit depth conversion, and channel conversion
     /// </summary>
     private byte[] ConvertAudioData(AudioDataAvailableEventArgs e, int targetRate, int targetChannels, int targetBits)
     {
-        // For now, assume data is already in correct format
-        // In production, you would use a library like NAudio for proper conversion/resampling
+        // If already in target format, return as-is
         if (e.SampleRate == targetRate && e.Channels == targetChannels && e.BitsPerSample == targetBits)
         {
             return e.AudioData;
         }
 
-        _logger.LogWarning("Audio format conversion needed but not implemented. " +
-            "Source: {SampleRate}Hz, {Channels}ch, {Bits}bit. " +
-            "Target: {TargetRate}Hz, {TargetChannels}ch, {TargetBits}bit",
-            e.SampleRate, e.Channels, e.BitsPerSample,
-            targetRate, targetChannels, targetBits);
+        try
+        {
+            byte[] converted = e.AudioData;
 
-        // Return original data for now
-        return e.AudioData;
+            // Step 1: Convert bit depth if needed
+            if (e.BitsPerSample != targetBits)
+            {
+                converted = ConvertBitDepth(converted, e.Channels, e.BitsPerSample, targetBits);
+            }
+
+            // Step 2: Convert sample rate if needed
+            if (e.SampleRate != targetRate)
+            {
+                converted = ConvertSampleRate(converted, e.Channels, targetBits, e.SampleRate, targetRate);
+            }
+
+            // Step 3: Convert channels if needed
+            if (e.Channels != targetChannels)
+            {
+                converted = ConvertChannels(converted, e.Channels, targetChannels, targetBits);
+            }
+
+            return converted;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting audio format. Source: {SampleRate}Hz, {Channels}ch, {Bits}bit. Target: {TargetRate}Hz, {TargetChannels}ch, {TargetBits}bit",
+                e.SampleRate, e.Channels, e.BitsPerSample, targetRate, targetChannels, targetBits);
+            
+            // Return original data as fallback
+            return e.AudioData;
+        }
+    }
+
+    /// <summary>
+    /// Convert bit depth of audio data
+    /// </summary>
+    private byte[] ConvertBitDepth(byte[] audioData, int channels, int sourceBits, int targetBits)
+    {
+        if (sourceBits == 32 && targetBits == 16)
+        {
+            // Convert 32-bit float to 16-bit PCM
+            int sampleCount = audioData.Length / 4; // 32-bit = 4 bytes per sample
+            byte[] converted = new byte[sampleCount * 2]; // 16-bit = 2 bytes per sample
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                // Read 32-bit float sample
+                float sample = BitConverter.ToSingle(audioData, i * 4);
+                
+                // Clamp to [-1.0, 1.0] range
+                sample = Math.Clamp(sample, -1.0f, 1.0f);
+                
+                // Convert to 16-bit PCM
+                short pcmSample = (short)(sample * short.MaxValue);
+                
+                // Write 16-bit sample
+                converted[i * 2] = (byte)(pcmSample & 0xFF);
+                converted[i * 2 + 1] = (byte)((pcmSample >> 8) & 0xFF);
+            }
+
+            return converted;
+        }
+        else if (sourceBits == 16 && targetBits == 32)
+        {
+            // Convert 16-bit PCM to 32-bit float
+            int sampleCount = audioData.Length / 2; // 16-bit = 2 bytes per sample
+            byte[] converted = new byte[sampleCount * 4]; // 32-bit = 4 bytes per sample
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                // Read 16-bit PCM sample
+                short pcmSample = (short)(audioData[i * 2] | (audioData[i * 2 + 1] << 8));
+                
+                // Convert to float [-1.0, 1.0]
+                float sample = pcmSample / (float)short.MaxValue;
+                
+                // Write 32-bit float sample
+                byte[] floatBytes = BitConverter.GetBytes(sample);
+                Array.Copy(floatBytes, 0, converted, i * 4, 4);
+            }
+
+            return converted;
+        }
+        else if (sourceBits == 24 && targetBits == 16)
+        {
+            // Convert 24-bit PCM to 16-bit PCM
+            int sampleCount = audioData.Length / 3; // 24-bit = 3 bytes per sample
+            byte[] converted = new byte[sampleCount * 2]; // 16-bit = 2 bytes per sample
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                // Read 24-bit sample (little endian)
+                int sample24 = audioData[i * 3] | (audioData[i * 3 + 1] << 8) | (audioData[i * 3 + 2] << 16);
+                
+                // Sign extend if negative
+                if ((sample24 & 0x800000) != 0)
+                {
+                    sample24 |= unchecked((int)0xFF000000);
+                }
+                
+                // Convert to 16-bit by dropping the lower 8 bits
+                short sample16 = (short)(sample24 >> 8);
+                
+                // Write 16-bit sample
+                converted[i * 2] = (byte)(sample16 & 0xFF);
+                converted[i * 2 + 1] = (byte)((sample16 >> 8) & 0xFF);
+            }
+
+            return converted;
+        }
+
+        // Unsupported conversion, return original
+        _logger.LogWarning("Unsupported bit depth conversion: {SourceBits}-bit to {TargetBits}-bit", sourceBits, targetBits);
+        return audioData;
+    }
+
+    /// <summary>
+    /// Convert sample rate using linear interpolation
+    /// </summary>
+    private byte[] ConvertSampleRate(byte[] audioData, int channels, int bitsPerSample, int sourceRate, int targetRate)
+    {
+        int bytesPerSample = bitsPerSample / 8;
+        int sourceSampleCount = audioData.Length / (bytesPerSample * channels);
+        int targetSampleCount = (int)((long)sourceSampleCount * targetRate / sourceRate);
+        byte[] converted = new byte[targetSampleCount * bytesPerSample * channels];
+
+        double ratio = (double)sourceRate / targetRate;
+
+        for (int targetSample = 0; targetSample < targetSampleCount; targetSample++)
+        {
+            double sourceSamplePos = targetSample * ratio;
+            int sourceSample1 = (int)sourceSamplePos;
+            int sourceSample2 = Math.Min(sourceSample1 + 1, sourceSampleCount - 1);
+            double fraction = sourceSamplePos - sourceSample1;
+
+            // Interpolate each channel
+            for (int ch = 0; ch < channels; ch++)
+            {
+                if (bitsPerSample == 16)
+                {
+                    // 16-bit interpolation
+                    int offset1 = (sourceSample1 * channels + ch) * 2;
+                    int offset2 = (sourceSample2 * channels + ch) * 2;
+                    
+                    short sample1 = (short)(audioData[offset1] | (audioData[offset1 + 1] << 8));
+                    short sample2 = (short)(audioData[offset2] | (audioData[offset2 + 1] << 8));
+                    
+                    short interpolated = (short)(sample1 + (sample2 - sample1) * fraction);
+                    
+                    int targetOffset = (targetSample * channels + ch) * 2;
+                    converted[targetOffset] = (byte)(interpolated & 0xFF);
+                    converted[targetOffset + 1] = (byte)((interpolated >> 8) & 0xFF);
+                }
+                else if (bitsPerSample == 32)
+                {
+                    // 32-bit float interpolation
+                    int offset1 = (sourceSample1 * channels + ch) * 4;
+                    int offset2 = (sourceSample2 * channels + ch) * 4;
+                    
+                    float sample1 = BitConverter.ToSingle(audioData, offset1);
+                    float sample2 = BitConverter.ToSingle(audioData, offset2);
+                    
+                    float interpolated = sample1 + (float)((sample2 - sample1) * fraction);
+                    
+                    int targetOffset = (targetSample * channels + ch) * 4;
+                    byte[] floatBytes = BitConverter.GetBytes(interpolated);
+                    Array.Copy(floatBytes, 0, converted, targetOffset, 4);
+                }
+                else if (bitsPerSample == 24)
+                {
+                    // 24-bit interpolation
+                    int offset1 = (sourceSample1 * channels + ch) * 3;
+                    int offset2 = (sourceSample2 * channels + ch) * 3;
+                    
+                    int sample1 = audioData[offset1] | (audioData[offset1 + 1] << 8) | (audioData[offset1 + 2] << 16);
+                    int sample2 = audioData[offset2] | (audioData[offset2 + 1] << 8) | (audioData[offset2 + 2] << 16);
+                    
+                    // Sign extend
+                    if ((sample1 & 0x800000) != 0) sample1 |= unchecked((int)0xFF000000);
+                    if ((sample2 & 0x800000) != 0) sample2 |= unchecked((int)0xFF000000);
+                    
+                    int interpolated = (int)(sample1 + (sample2 - sample1) * fraction);
+                    
+                    int targetOffset = (targetSample * channels + ch) * 3;
+                    converted[targetOffset] = (byte)(interpolated & 0xFF);
+                    converted[targetOffset + 1] = (byte)((interpolated >> 8) & 0xFF);
+                    converted[targetOffset + 2] = (byte)((interpolated >> 16) & 0xFF);
+                }
+            }
+        }
+
+        return converted;
+    }
+
+    /// <summary>
+    /// Convert number of channels
+    /// </summary>
+    private byte[] ConvertChannels(byte[] audioData, int sourceChannels, int targetChannels, int bitsPerSample)
+    {
+        int bytesPerSample = bitsPerSample / 8;
+        int frameSizeSource = bytesPerSample * sourceChannels;
+        int frameSizeTarget = bytesPerSample * targetChannels;
+        int frameCount = audioData.Length / frameSizeSource;
+        byte[] converted = new byte[frameCount * frameSizeTarget];
+
+        if (sourceChannels == 1 && targetChannels == 2)
+        {
+            // Mono to stereo: duplicate the channel
+            for (int frame = 0; frame < frameCount; frame++)
+            {
+                int sourceOffset = frame * frameSizeSource;
+                int targetOffset = frame * frameSizeTarget;
+                
+                // Copy to left channel
+                Array.Copy(audioData, sourceOffset, converted, targetOffset, bytesPerSample);
+                // Copy to right channel
+                Array.Copy(audioData, sourceOffset, converted, targetOffset + bytesPerSample, bytesPerSample);
+            }
+        }
+        else if (sourceChannels == 2 && targetChannels == 1)
+        {
+            // Stereo to mono: average the channels
+            for (int frame = 0; frame < frameCount; frame++)
+            {
+                int sourceOffset = frame * frameSizeSource;
+                int targetOffset = frame * frameSizeTarget;
+                
+                if (bitsPerSample == 16)
+                {
+                    short left = (short)(audioData[sourceOffset] | (audioData[sourceOffset + 1] << 8));
+                    short right = (short)(audioData[sourceOffset + 2] | (audioData[sourceOffset + 3] << 8));
+                    short avg = (short)((left + right) / 2);
+                    
+                    converted[targetOffset] = (byte)(avg & 0xFF);
+                    converted[targetOffset + 1] = (byte)((avg >> 8) & 0xFF);
+                }
+                else if (bitsPerSample == 32)
+                {
+                    float left = BitConverter.ToSingle(audioData, sourceOffset);
+                    float right = BitConverter.ToSingle(audioData, sourceOffset + 4);
+                    float avg = (left + right) / 2.0f;
+                    
+                    byte[] avgBytes = BitConverter.GetBytes(avg);
+                    Array.Copy(avgBytes, 0, converted, targetOffset, 4);
+                }
+            }
+        }
+        else
+        {
+            // Unsupported channel conversion
+            _logger.LogWarning("Unsupported channel conversion: {SourceChannels}ch to {TargetChannels}ch", sourceChannels, targetChannels);
+            return audioData;
+        }
+
+        return converted;
     }
 
     /// <summary>
