@@ -25,7 +25,7 @@ builder.Services.AddSwaggerGen(c =>
 - Multiple audio inputs with priority management
 - Event-driven audio with automatic volume ducking
 - Real-time audio mixing
-- Text-to-speech announcements (eSpeak TTS)
+- Text-to-speech announcements (eSpeak-ng, Piper, Google Cloud TTS)
 - Composite audio inputs (combine files and TTS)
 - File-based audio playback (MP3, WAV)
 
@@ -60,14 +60,14 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Configure eSpeak TTS settings
-builder.Services.Configure<ESpeakTtsConfig>(
-    builder.Configuration.GetSection("ESpeakTts"));
+// Configure TTS settings
+builder.Services.Configure<TtsConfig>(
+    builder.Configuration.GetSection("Tts"));
 
 // Register services
 builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
 builder.Services.AddSingleton<IStorage, JsonStorageService>();
-builder.Services.AddSingleton<ITtsService, ESpeakTtsService>();
+builder.Services.AddSingleton<ITtsService, TtsService>();
 
 // Register device management services
 builder.Services.AddSingleton<IDeviceFactory, DeviceFactory>();
