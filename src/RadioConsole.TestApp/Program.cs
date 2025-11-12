@@ -136,24 +136,24 @@ class Program
 
     try
     {
-      // Create test MP3 file paths (these would need to exist in real hardware testing)
-      var testDataPath = Path.Combine(AppContext.BaseDirectory, "TestData");
-      Directory.CreateDirectory(testDataPath);
+      // Use audio files from the AudioFiles folder in project root
+      var projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+      var audioFilesPath = Path.Combine(projectRoot, "AudioFiles");
 
-      // In simulation mode, these files don't need to exist
-      var mp3File1 = Path.Combine(testDataPath, "test_music1.mp3");
-      var mp3File2 = Path.Combine(testDataPath, "test_music2.mp3");
+      // Reference actual audio files in the AudioFiles folder
+      var mp3File1 = Path.Combine(audioFilesPath, "test_music1.wav");
+      var mp3File2 = Path.Combine(audioFilesPath, "test_music2.wav");
 
       if (!environmentService.IsSimulationMode)
       {
-        // Create placeholder files for testing if they don't exist
+        // Verify audio files exist
         if (!File.Exists(mp3File1))
         {
-          logger.LogInformation("Note: Create {File} for actual audio testing", mp3File1);
+          logger.LogWarning("Audio file not found: {File}", mp3File1);
         }
         if (!File.Exists(mp3File2))
         {
-          logger.LogInformation("Note: Create {File} for actual audio testing", mp3File2);
+          logger.LogWarning("Audio file not found: {File}", mp3File2);
         }
       }
 
@@ -286,7 +286,8 @@ class Program
 
     try
     {
-      var testDataPath = Path.Combine(AppContext.BaseDirectory, "TestData");
+      var projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+      var audioFilesPath = Path.Combine(projectRoot, "AudioFiles");
 
       // Test Composite 1: Serial playback
       logger.LogInformation("Creating CompositeAudioInput 1: Serial playback (TTS + File)");
@@ -305,7 +306,7 @@ class Program
         volume: 1.0);
 
       // Add file (if available)
-      var mp3File = Path.Combine(testDataPath, "test_music1.mp3");
+      var mp3File = Path.Combine(audioFilesPath, "test_music1.wav");
       if (File.Exists(mp3File) || environmentService.IsSimulationMode)
       {
         compositeInput1.AddFileInput(mp3File, volume: 0.8);
