@@ -74,7 +74,7 @@ The system now uses generic, composable input types:
 - **UsbAudioInput** - Captures audio from USB devices (radios, turntables, etc.)
 - **FileAudioInput** - Plays MP3/WAV files using NAudio
 - **CompositeAudioInput** - Combines multiple audio sources with custom timing and volume
-- **TtsAudioInput** - Text-to-speech using eSpeak TTS
+- **TtsAudioInput** - Text-to-speech using eSpeak-ng, Piper, or Google Cloud TTS
 - **SpotifyInput** - Spotify streaming integration
 
 Legacy specific event inputs (DoorbellEventInput, RadioInput, etc.) have been replaced with generic types.
