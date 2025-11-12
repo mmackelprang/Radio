@@ -140,9 +140,18 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 - [x] Implement base event audio input classes
 - [x] Add doorbell, telephone, timer, reminder, and broadcast event inputs
 - [x] Create example API endpoints for testing event functionality
+- [x] Implement full Spotify streaming integration
+  - [x] Favorite songs and playlists
+  - [x] Recently played tracks
+  - [x] Recommendations (general and audiobooks)
+  - [x] Search functionality
+  - [x] Playback control
+  - [x] Current track metadata
+  - [x] PKCE OAuth flow support
+  - [x] Comprehensive unit tests (32 tests)
+  - See [SPOTIFY_INTEGRATION.md](SPOTIFY_INTEGRATION.md) for setup guide
 - [ ] Integrate Wyze doorbell webhook for real events
 - [ ] Integrate Google broadcast receiver for real audio
-- [ ] Implement full Spotify streaming integration
 - [ ] Add Bluetooth audio input support and pairing UI
 
 ### Phase 5: Audio Output Devices 📝
@@ -170,6 +179,8 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
 - [ ] Add migration and backup capabilities
 
 ### Phase 8: Testing, Simulation, and Deployment 📝
+- [x] Create console test application for Raspberry Pi testing
+- [x] Comprehensive unit tests for Spotify integration (32 tests)
 - [ ] Conduct unit tests for core modules
 - [ ] Integration tests for input/output modules
 - [ ] Test simulation mode on development machines
@@ -312,6 +323,7 @@ Radio/
 ├── tests/
 │   └── RadioConsole.Api.Tests/   # API unit tests
 ├── DEVICE_CONFIGURATION_GUIDE.md # Device configuration guide
+├── SPOTIFY_INTEGRATION.md      # Spotify integration and setup guide
 ├── PROJECT_PLAN.md               # Detailed project plan
 ├── README.md                     # This file
 └── LICENSE                       # Project license
