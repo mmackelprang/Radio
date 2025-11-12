@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Bufdio" Version="0.1.0" />
     <PackageReference Include="Google.Cloud.TextToSpeech.V1" Version="3.17.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
     <PackageReference Include="NAudio" Version="2.2.1" />

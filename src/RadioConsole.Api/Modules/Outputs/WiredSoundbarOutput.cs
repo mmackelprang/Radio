@@ -1,3 +1,5 @@
+using Bufdio;
+using Bufdio.Engines;
 using NAudio.Wave;
 using RadioConsole.Api.Interfaces;
 using RadioConsole.Api.Services;
@@ -7,17 +9,17 @@ namespace RadioConsole.Api.Modules.Outputs;
 /// <summary>
 /// Wired soundbar output module
 /// 
-/// This output uses the system's default ALSA audio device on Linux/Raspberry Pi.
-/// Audio streams from the AudioMixer are sent directly to the soundbar via ALSA.
-/// The implementation uses a BufferedWaveProvider with WaveFileWriter for cross-platform support.
-/// On actual hardware, ALSA integration would happen through the default audio device.
+/// This output uses Bufdio library with PortAudio for direct ALSA audio device access on Linux/Raspberry Pi.
+/// Audio streams from the AudioMixer are converted to float samples and sent directly to the soundbar.
+/// In simulation mode, audio data is consumed without actual playback.
 /// </summary>
 public class WiredSoundbarOutput : BaseAudioOutput
 {
-    private BufferedWaveProvider? _waveProvider;
+    private PortAudioEngine? _audioEngine;
     private readonly object _lockObject = new();
     private WaveFileWriter? _waveFileWriter;
     private string? _tempOutputFile;
+    private bool _bufdioInitialized = false;
 
     // Audio format matching AudioMixer output
     private const int SAMPLE_RATE = 44100;
@@ -26,7 +28,7 @@ public class WiredSoundbarOutput : BaseAudioOutput
 
     public override string Id => "wired_soundbar";
     public override string Name => "Wired Soundbar";
-    public override string Description => "Wired Soundbar Connection";
+    public override string Description => "Wired Soundbar Connection (Bufdio/PortAudio)";
 
     public WiredSoundbarOutput(IEnvironmentService environmentService, IStorage storage) 
         : base(environmentService, storage)
@@ -45,9 +47,28 @@ public class WiredSoundbarOutput : BaseAudioOutput
         }
         else
         {
-            // Check for actual soundbar connection
-            IsAvailable = await CheckSoundbarConnectionAsync();
-            _display.UpdateStatus(IsAvailable ? "Soundbar Connected" : "Soundbar Not Found");
+            // Initialize Bufdio PortAudio for actual hardware
+            try
+            {
+                // Initialize PortAudio if not already initialized
+                if (!BufdioLib.IsPortAudioInitialized)
+                {
+                    // Let Bufdio find PortAudio in system libraries
+                    BufdioLib.InitializePortAudio(string.Empty);
+                }
+                _bufdioInitialized = true;
+                
+                // Check for actual soundbar connection
+                IsAvailable = await CheckSoundbarConnectionAsync();
+                _display.UpdateStatus(IsAvailable ? "Soundbar Connected" : "Soundbar Not Found");
+            }
+            catch (Exception ex)
+            {
+                // If PortAudio initialization fails, fall back to simulation behavior
+                IsAvailable = true;
+                _bufdioInitialized = false;
+                _display.UpdateStatus($"Soundbar (Fallback Mode: {ex.Message})");
+            }
         }
     }
 
@@ -58,18 +79,14 @@ public class WiredSoundbarOutput : BaseAudioOutput
 
         lock (_lockObject)
         {
-            // Initialize wave provider with standard PCM format
-            var waveFormat = new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS);
-            _waveProvider = new BufferedWaveProvider(waveFormat)
+            if (!_environmentService.IsSimulationMode && _bufdioInitialized)
             {
-                BufferLength = 1024 * 1024, // 1MB buffer to prevent dropping packets
-                DiscardOnBufferOverflow = false // Don't drop audio data
-            };
-
-            if (!_environmentService.IsSimulationMode)
-            {
-                // In hardware mode, we would configure ALSA output here
-                // For now, write to a temp file to demonstrate streaming works
+                // Initialize Bufdio PortAudioEngine for real audio output
+                var options = new AudioEngineOptions(CHANNELS, SAMPLE_RATE, 0.05); // 50ms latency
+                _audioEngine = new PortAudioEngine(options);
+                
+                // Optional: Create a debug WAV file to verify audio data
+                var waveFormat = new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS);
                 _tempOutputFile = Path.Combine(Path.GetTempPath(), $"soundbar_output_{DateTime.Now:yyyyMMdd_HHmmss}.wav");
                 _waveFileWriter = new WaveFileWriter(_tempOutputFile, waveFormat);
             }
@@ -80,7 +97,8 @@ public class WiredSoundbarOutput : BaseAudioOutput
             {
                 ["Volume"] = $"{(int)(_volume * 100)}%",
                 ["Connection"] = "Wired",
-                ["OutputFile"] = _tempOutputFile ?? "Simulation"
+                ["Engine"] = _bufdioInitialized ? "Bufdio/PortAudio" : "Simulation",
+                ["OutputFile"] = _tempOutputFile ?? "None"
             });
         }
         
@@ -93,13 +111,18 @@ public class WiredSoundbarOutput : BaseAudioOutput
         {
             IsActive = false;
             
+            if (_audioEngine != null)
+            {
+                _audioEngine.Dispose();
+                _audioEngine = null;
+            }
+            
             if (_waveFileWriter != null)
             {
                 _waveFileWriter.Dispose();
                 _waveFileWriter = null;
             }
 
-            _waveProvider = null;
             _display.UpdateStatus("Inactive");
         }
         
@@ -117,31 +140,54 @@ public class WiredSoundbarOutput : BaseAudioOutput
             return;
         }
 
-        // Stream audio data to the output device (or file in testing)
+        // Read audio data from stream (16-bit PCM from AudioMixer)
+        var buffer = new byte[audioStream.Length];
+        var bytesRead = audioStream.Read(buffer, 0, buffer.Length);
+
+        if (bytesRead == 0)
+            return;
+
         lock (_lockObject)
         {
-            if (_waveProvider == null)
-                return;
-
-            // Read all available data from the stream
-            var buffer = new byte[audioStream.Length];
-            var bytesRead = audioStream.Read(buffer, 0, buffer.Length);
-
-            if (bytesRead > 0)
+            // Write to debug WAV file if enabled
+            if (_waveFileWriter != null)
             {
-                // Add audio data to the buffer
-                _waveProvider.AddSamples(buffer, 0, bytesRead);
+                _waveFileWriter.Write(buffer, 0, bytesRead);
+                _waveFileWriter.Flush();
+            }
 
-                // Write to file for testing/verification
-                if (_waveFileWriter != null)
-                {
-                    _waveFileWriter.Write(buffer, 0, bytesRead);
-                    _waveFileWriter.Flush();
-                }
+            // Send to Bufdio PortAudioEngine if initialized
+            if (_audioEngine != null)
+            {
+                // Convert 16-bit PCM byte[] to float[] samples for Bufdio
+                var floatSamples = ConvertPcm16ToFloat(buffer, bytesRead);
+                
+                // Send samples to PortAudio
+                _audioEngine.Send(floatSamples);
             }
         }
 
         await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Convert 16-bit PCM byte array to float samples for Bufdio
+    /// </summary>
+    private float[] ConvertPcm16ToFloat(byte[] pcmData, int byteCount)
+    {
+        int sampleCount = byteCount / 2; // 16-bit = 2 bytes per sample
+        var floatSamples = new float[sampleCount];
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            // Read 16-bit PCM sample (little endian)
+            short pcmSample = (short)(pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
+            
+            // Convert to float [-1.0, 1.0]
+            floatSamples[i] = pcmSample / 32768.0f;
+        }
+
+        return floatSamples;
     }
 
     public override async Task SetVolumeAsync(double volume)
