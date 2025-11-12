@@ -133,16 +133,19 @@ See [AUDIO_INPUT_MIGRATION.md](AUDIO_INPUT_MIGRATION.md) for migration details.
   - Perfect for custom announcements and notifications
 
 **Configuration:**
-TextEventInput requires eSpeak TTS to be installed and configured. See [ESPEAK_TTS_SETUP.md](ESPEAK_TTS_SETUP.md) for detailed setup instructions.
+TextEventInput requires a TTS engine to be installed and configured. RadioConsole supports eSpeak-ng, Piper, and Google Cloud TTS. See [TTS_SETUP.md](TTS_SETUP.md) for detailed setup instructions.
 
 Common configuration parameters (in `appsettings.json`):
 ```json
 {
-  "ESpeakTts": {
-    "Voice": "en-us",
-    "Speed": 175,
-    "Pitch": 50,
-    "Volume": 100
+  "Tts": {
+    "Engine": "EspeakNG",
+    "EspeakNg": {
+      "Voice": "en-us",
+      "Speed": 175,
+      "Pitch": 50,
+      "Volume": 100
+    }
   }
 }
 ```
@@ -209,16 +212,19 @@ await emergencyAlert.InitializeAsync();
 
 ## TTS Configuration
 
-TtsAudioInput requires eSpeak TTS to be installed and configured. See [ESPEAK_TTS_SETUP.md](ESPEAK_TTS_SETUP.md) for detailed setup instructions.
+TtsAudioInput requires a TTS engine to be installed and configured. RadioConsole supports eSpeak-ng, Piper, and Google Cloud TTS. See [TTS_SETUP.md](TTS_SETUP.md) for detailed setup instructions.
 
 Common configuration parameters (in `appsettings.json`):
 ```json
 {
-  "ESpeakTts": {
-    "Voice": "en-us",
-    "Speed": 175,
-    "Pitch": 50,
-    "Volume": 100
+  "Tts": {
+    "Engine": "EspeakNG",
+    "EspeakNg": {
+      "Voice": "en-us",
+      "Speed": 175,
+      "Pitch": 50,
+      "Volume": 100
+    }
   }
 }
 ```

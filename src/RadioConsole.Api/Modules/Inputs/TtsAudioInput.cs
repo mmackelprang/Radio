@@ -15,7 +15,7 @@ public class TtsAudioInput : BaseAudioInput
 
     public override string Id => "tts_audio";
     public override string Name => "Text-to-Speech";
-    public override string Description => "Text-to-speech audio using eSpeak TTS";
+    public override string Description => "Text-to-speech audio using TTS service";
     public override EventPriority Priority => EventPriority.Medium;
     
     // Duration is dynamic based on text length
@@ -46,11 +46,11 @@ public class TtsAudioInput : BaseAudioInput
         {
             _display.UpdateStatus(_environmentService.IsSimulationMode 
                 ? "Text Event (Simulation Mode)" 
-                : "Text Event Ready (eSpeak TTS)");
+                : "Text Event Ready (TTS)");
         }
         else
         {
-            _display.UpdateStatus("Text Event Not Available - eSpeak TTS not configured");
+            _display.UpdateStatus("Text Event Not Available - TTS not configured");
         }
     }
 
