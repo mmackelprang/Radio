@@ -197,7 +197,7 @@ public class SpotifyInput : BaseAudioInput
 
     if (_environmentService.IsSimulationMode || _spotifyConfig.UseSimulation)
     {
-      return GetSimulatedFavorites();
+      return GetSimulatedFavorites(limit);
     }
 
     try
@@ -228,7 +228,7 @@ public class SpotifyInput : BaseAudioInput
 
     if (_environmentService.IsSimulationMode || _spotifyConfig.UseSimulation)
     {
-      return GetSimulatedPlaylists();
+      return GetSimulatedPlaylists(limit);
     }
 
     try
@@ -259,7 +259,7 @@ public class SpotifyInput : BaseAudioInput
 
     if (_environmentService.IsSimulationMode || _spotifyConfig.UseSimulation)
     {
-      return GetSimulatedRecentlyPlayed();
+      return GetSimulatedRecentlyPlayed(limit);
     }
 
     try
@@ -286,7 +286,7 @@ public class SpotifyInput : BaseAudioInput
   {
     if (_environmentService.IsSimulationMode || _spotifyConfig.UseSimulation)
     {
-      return GetSimulatedRecommendations("Audiobooks");
+      return GetSimulatedRecommendations("Audiobooks", limit);
     }
 
     // Note: Spotify API doesn't have direct audiobook recommendations yet
@@ -315,7 +315,7 @@ public class SpotifyInput : BaseAudioInput
 
     if (_environmentService.IsSimulationMode || _spotifyConfig.UseSimulation)
     {
-      return GetSimulatedRecommendations("General");
+      return GetSimulatedRecommendations("General", limit);
     }
 
     try
@@ -380,7 +380,7 @@ public class SpotifyInput : BaseAudioInput
 
     if (_environmentService.IsSimulationMode || _spotifyConfig.UseSimulation)
     {
-      return GetSimulatedSearchResults(query);
+      return GetSimulatedSearchResults(query, limit);
     }
 
     try
@@ -564,25 +564,65 @@ public class SpotifyInput : BaseAudioInput
 
   private async Task<bool> CheckSpotifyAvailabilityAsync()
   {
-    if (string.IsNullOrWhiteSpace(_spotifyConfig.ClientId) || 
-        string.IsNullOrWhiteSpace(_spotifyConfig.ClientSecret))
+    if (string.IsNullOrWhiteSpace(_spotifyConfig.ClientId))
     {
-      _logger?.LogWarning("Spotify credentials not configured");
+      _logger?.LogWarning("Spotify Client ID not configured");
       return false;
     }
 
     try
     {
-      // Initialize Spotify client with client credentials
-      // Note: Client credentials flow provides limited access (no user data)
-      // For full user access, implement proper OAuth2 PKCE flow
-      var config = SpotifyClientConfig
+      // Check if we have a refresh token for user authentication
+      if (!string.IsNullOrWhiteSpace(_spotifyConfig.RefreshToken))
+      {
+        _logger?.LogInformation("Initializing Spotify with user credentials (PKCE flow)");
+        
+        // Create PKCETokenResponse with the refresh token
+        // Note: We only have the refresh token, so we'll use a placeholder for access token
+        // The PKCEAuthenticator will automatically refresh it
+        var tokenResponse = new PKCETokenResponse
+        {
+          AccessToken = "initial", // Will be refreshed automatically
+          TokenType = "Bearer",
+          ExpiresIn = 0, // Expired, will trigger immediate refresh
+          RefreshToken = _spotifyConfig.RefreshToken,
+          Scope = string.Empty,
+          CreatedAt = DateTime.UtcNow.AddDays(-1) // Force expired
+        };
+
+        var authenticator = new PKCEAuthenticator(_spotifyConfig.ClientId, tokenResponse);
+        var config = SpotifyClientConfig.CreateDefault().WithAuthenticator(authenticator);
+        _spotify = new SpotifyClient(config);
+
+        // Test the connection with user profile (requires user auth)
+        try
+        {
+          var profile = await _spotify.UserProfile.Current();
+          _logger?.LogInformation("Successfully authenticated with Spotify user: {UserId}", profile.Id);
+          return true;
+        }
+        catch (Exception ex)
+        {
+          _logger?.LogError(ex, "Failed to authenticate with user credentials, falling back to client credentials");
+          // Fall through to client credentials
+        }
+      }
+
+      // Fallback to client credentials if refresh token is not available or failed
+      if (string.IsNullOrWhiteSpace(_spotifyConfig.ClientSecret))
+      {
+        _logger?.LogWarning("Spotify Client Secret not configured for client credentials flow");
+        return false;
+      }
+
+      _logger?.LogInformation("Initializing Spotify with client credentials (limited access)");
+      var clientConfig = SpotifyClientConfig
         .CreateDefault()
         .WithAuthenticator(new ClientCredentialsAuthenticator(
           _spotifyConfig.ClientId, 
           _spotifyConfig.ClientSecret));
       
-      _spotify = new SpotifyClient(config);
+      _spotify = new SpotifyClient(clientConfig);
 
       // Test the connection
       var search = await _spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, "test"));
@@ -685,53 +725,59 @@ public class SpotifyInput : BaseAudioInput
 
   #region Simulation Methods
 
-  private List<SpotifyTrack> GetSimulatedFavorites()
+  private List<SpotifyTrack> GetSimulatedFavorites(int limit = 50)
   {
-    return new List<SpotifyTrack>
+    var allFavorites = new List<SpotifyTrack>
     {
       new() { Name = "Favorite Song 1", Artist = "Artist A", Album = "Album 1", DurationMs = 210000 },
       new() { Name = "Favorite Song 2", Artist = "Artist B", Album = "Album 2", DurationMs = 195000 },
       new() { Name = "Favorite Song 3", Artist = "Artist C", Album = "Album 3", DurationMs = 225000 }
     };
+    return allFavorites.Take(limit).ToList();
   }
 
-  private List<SpotifyPlaylist> GetSimulatedPlaylists()
+  private List<SpotifyPlaylist> GetSimulatedPlaylists(int limit = 50)
   {
-    return new List<SpotifyPlaylist>
+    var allPlaylists = new List<SpotifyPlaylist>
     {
       new() { Name = "My Playlist 1", TrackCount = 25, Description = "Favorite tracks", IsPublic = true },
       new() { Name = "My Playlist 2", TrackCount = 42, Description = "Workout music", IsPublic = false }
     };
+    return allPlaylists.Take(limit).ToList();
   }
 
-  private List<SpotifyTrack> GetSimulatedRecentlyPlayed()
+  private List<SpotifyTrack> GetSimulatedRecentlyPlayed(int limit = 50)
   {
-    return new List<SpotifyTrack>
+    var allRecent = new List<SpotifyTrack>
     {
       new() { Name = "Recent Song 1", Artist = "Artist X", Album = "Recent Album", DurationMs = 180000 },
       new() { Name = "Recent Song 2", Artist = "Artist Y", Album = "Another Album", DurationMs = 200000 }
     };
+    return allRecent.Take(limit).ToList();
   }
 
-  private List<SpotifyTrack> GetSimulatedRecommendations(string category)
+  private List<SpotifyTrack> GetSimulatedRecommendations(string category, int limit = 20)
   {
-    return new List<SpotifyTrack>
+    var allRecommendations = new List<SpotifyTrack>
     {
       new() { Name = $"{category} Recommendation 1", Artist = "Rec Artist 1", DurationMs = 190000 },
       new() { Name = $"{category} Recommendation 2", Artist = "Rec Artist 2", DurationMs = 205000 }
     };
+    return allRecommendations.Take(limit).ToList();
   }
 
-  private SpotifySearchResults GetSimulatedSearchResults(string query)
+  private SpotifySearchResults GetSimulatedSearchResults(string query, int limit = 20)
   {
+    var allResults = new List<SpotifyTrack>
+    {
+      new() { Name = $"Search Result: {query} Track 1", Artist = "Search Artist 1", DurationMs = 195000 },
+      new() { Name = $"Search Result: {query} Track 2", Artist = "Search Artist 2", DurationMs = 210000 }
+    };
+    
     return new SpotifySearchResults
     {
-      Tracks = new List<SpotifyTrack>
-      {
-        new() { Name = $"Search Result: {query} Track 1", Artist = "Search Artist 1", DurationMs = 195000 },
-        new() { Name = $"Search Result: {query} Track 2", Artist = "Search Artist 2", DurationMs = 210000 }
-      },
-      TotalTracks = 2
+      Tracks = allResults.Take(limit).ToList(),
+      TotalTracks = allResults.Count
     };
   }
 
