@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
     <PackageReference Include="Sharpcaster" Version="3.0.0" />
     <PackageReference Include="SoundFlow" Version="1.2.1" />
+    <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
   </ItemGroup>
 
   <PropertyGroup>
