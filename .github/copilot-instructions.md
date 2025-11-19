@@ -76,6 +76,7 @@
 - Test code with mocks when hardware is not present
 
 ## Copilot Preferences
+- If skipping a complex implementation for ease of testing or any other reason **ALWAYS** mark that code section with a clear TODO to make these easy to find.  Note them in the followup documentation as well.
 - When generating code, prefer modern C# idioms and Linux-friendly APIs
 - If unsure of best approach, err toward performance and maintainability
 - For protocol implementations, always summarize logic before code
