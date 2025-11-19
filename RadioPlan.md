@@ -1,0 +1,73 @@
+# Project: Radio Console - Built in my Grandpa's Old Console Radio
+* This is a modern audio system built with C# with a Blazor Web UI and targeted for a Raspberry Pi 5, designed to bring new life to Grandpa Anderson's vintage console radio, making extensive use of the SoundFlow library available on GitHub and https://lsxprime.github.io/soundflow-docs/ 
+
+## Project Goals
+* Software Core and REST API
+  - Make *EXTENSIVE* use of the SoundFlow library for this effort.  It already contains nearly all of the audio management features desired.
+  - Selection of Audio Inputs: (Any device connected to the Raspberry Pi, but specifically the following)
+    - SW/AM/FM Radio - Integration with Raddy RF320 radio receiver with audio via a USB audio device.
+    - Vinyl Turntable - Analog to digital conversion with audio via a USB device.
+    - Spotify integration with playback controls
+    - MP3 files, directories, playlists selected from local storage or network shares
+  - System-or-app generated notifications / events:
+    - Volume management (i.e. turn down audio inputs for duration of notifications and events)
+    - Audio File Notification Events (MP3, OGG, WAV file types for example)
+      - Should support a large variety of audio types.
+      - Doorbell Ring - Audio notifications from smart doorbells (e.g., Wyze)
+      - Telephone Ring - Phone ringing notifications (available via an SIP device and bluetooth connection)
+    - TTS Nofification Events (arbitrary text to send to provide more information)
+      - Support multiple TTS engines: espeak, piper, Google TTS, Azure TTS
+      - Support selection of TTS engine, voice, other voice parameters
+      - Support optionsl background audio file for TTS events / notifications.
+    - Google Broadcast - Google Home broadcast message receiver
+    - Alarms/Reminders (timer expired / wake up / time for school, etc.) - Integrated with calendar or other apps
+  - Audio Outputs
+    - Any output device connected to the Raspberry Pi
+    - Chromecast - Network streaming to Chromecast devices
+  - Support for persistent storage of system configuration, user preferences, songs played, device configuration, etc.  Support JSON and SQLite, selectable at app config at startup.
+  - Extensible architecture for adding new audio inputs, outputs, etc.
+  - Provide a REST API to allow interaction from the Blazor Web app.
+  - Provide swagger docs and website to document API.
+  - Provide standard logging throughout using SeriLog.
+  - Provide test / example apps to manually verify system components as development progresses.
+  - Extensive test coverage using xUnit.
+* Blazor Web App
+  - Use Material Design 3 as the guiding theme for the entire web app - much prefer icons over text wherever this can be done with no ambiguity.
+  - Responsive design optimized for touch screens.
+  - Provides selection of multiple themes.
+  - The overall design is for a wide display / UI.  The screen is 12.5" wide and 3.75" high.  The UI should be divided into sections/panels that can move or be hidden based on context:
+    - Audio Setup Panel: 
+      - Input / Output Selection (with Select/Hide/Unhide options for each of these).
+      - Start / Stop / Pause / Repeat / Previous / Next Buttons
+      - Volume / Balance / Equalization Settings
+      - Save / Load named configuration.
+    - Now Playing Panel (supplied by currently active Audio Input):
+      - Song Name
+      - Track Number
+      - Album
+      - Song Length / Current Time
+      - Album Art (replace with appropriate art for Vinyl Record, Radio)
+      - Next Song (when available)
+      - Last Song (when available)
+      - Radio Band (when in Radio Mode)
+      - Radio Frequency (when in Radio Mode)
+      - Lyrics (when enabled and available)
+    - Visualization Panel
+      - Using the many visualizations avialble in SoundFlow, allow selection of one of them to show the audio being currently streamed.
+    - Device Preferences Panel (specific to device):
+      - For Chromecast, Select which cast device from a dropdown, Show any metadat from ChromeCast, Show any controls from Chromcast.
+      - For Radio, Band Selection (AM, FM, SW, AIR, VHF), Tuning - Up/Down, Save / Load named setups.
+      - For Spotify - full Spotify support: Search (song, album, lyrics, playlists, audio books, podcasts), select from search, mark as favorite
+      - This panel will have significant ongoing development on it, so keep that in mind with the design.
+    - System 
+      - Testing:
+        - Create / Play Events & Notifications (TTS and file based).  Have a few canned events available to try immediately:
+          - TTS: "Now is the time for all good men to come to the aid of their country" in Male voice 1
+          - TTS: "Hello World" in female voice 1
+          - Audio File: 2 Second 300 Hz Tone
+          - Audio File: Short 1 min mp3 song file
+      - Manage Persistent Storage:
+        - CRUD operations on all System and Device Config.
+      - System Status - Memory / CPU / Disk Space
+      - Backup/Restore All System Data
+	  
