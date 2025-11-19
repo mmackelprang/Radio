@@ -7,7 +7,7 @@
 
 ---
 
-### Phase 1: The Skeleton & Configuration
+### Phase 1: The Skeleton & Configuration ✅ Done
 **Goal:** Establish the project structure, logging, and data persistence layer.
 
 > "Let's start with Phase 1. Please execute the following:
@@ -20,9 +20,10 @@
 
 ---
 
-### Phase 2: Audio Engine & Google Cast
+### Phase 2: Audio Engine & Google Cast ✅ Done
 **Goal:** Implement the SoundFlow wrapper and the logic to cast audio to Google Home devices.
 
+> As described in `RadioPlan_v3.md`, continue devopment on this phase:
 > "Moving to Phase 2: Audio Core.
 >
 > 1.  **SoundFlow Wrapper:** In `Core`, define `IAudioPlayer` and `IAudioDeviceManager`. In `Infrastructure`, implement these using the **SoundFlow** library. It must support selecting specific ALSA input devices (USB Audio).
@@ -38,13 +39,14 @@
 ### Phase 3: Inputs & Broadcasts
 **Goal:** Connect the specific hardware inputs and the Google Broadcast receiver.
 
+> As described in `RadioPlan_v3.md`, continue devopment on this phase: 
 > "Phase 3: Inputs & Broadcasts.
 >
 > 1.  **Raddy RF320:** Create a `RaddyRadioService`. It needs to manage two things:
->     *   *Control:* Connect via Serial Port to send tuning commands (Frequency Up/Down, Band Select).
+>     *   *Control:* In a later phase, we will create the RaddyController which connects to BLE through a specific protocol.  For now, control will be handled manually.
 >     *   *Audio:* Identify the specific USB Audio device ID associated with the radio and route it to `IAudioPlayer`.
 > 2.  **Spotify:** Implement `ISpotifyService` using `SpotifyAPI-NET`. It needs methods for Auth, Search, Play, Pause, and fetching Album Art.
-> 3.  **Google Broadcast:** Create a `BroadcastReceiverService`. This should use the Google Assistant SDK (or a lightweight Python bridge if .NET SDK is insufficient) to listen for incoming 'Broadcast' events.
+> 3.  **Google Broadcast:** Create a `BroadcastReceiverService`. This should use the Google Assistant SDK to listen for incoming 'Broadcast' events.
 > 4.  **Integration:** Ensure that when a Broadcast is received, it triggers an event in the `Core` layer that contains the audio data of the message."
 
 ---
@@ -52,13 +54,14 @@
 ### Phase 4: The Mixer (Ducking) & Event Generator
 **Goal:** Handle volume logic (music vs. voice) and create the backend for the testing tools.
 
+> As described in `RadioPlan_v3.md`, continue devopment on this phase: 
 > "Phase 4: Audio Priority & Testing Logic.
 >
 > 1.  **Priority Manager:** Implement `AudioPriorityService`. It requires a priority mechanism:
 >     *   *High Priority:* TTS, Doorbell, Phone Ring, Google Broadcasts.
 >     *   *Low Priority:* Radio, Spotify, Vinyl.
->     *   *Logic:* When a High Priority event starts, fade Low Priority volume to 20% (Ducking). When High finishes, fade back to original volume.
-> 2.  **TTS Factory:** Create an `ITextToSpeechService` that can switch between `Piper` (local process) and Google/Azure (Cloud).
+>     *   *Logic:* When a High Priority event starts, fade Low Priority volume to configurable percentage (default to20%) (Ducking). When High Priority finishes, fade back to original volume.
+> 2.  **TTS Factory:** Create an `ITextToSpeechService` that can switch between `espeak` (local process) and Google/Azure (Cloud).
 > 3.  **Event Generator:** Create a `SystemTestService` in Core. This service should have methods to manually trigger:
 >     *   A specific TTS phrase.
 >     *   A standard test tone (300Hz sine wave).
@@ -70,6 +73,7 @@
 ### Phase 5: Blazor UI & Kiosk Layout
 **Goal:** Build the visual interface, specifically for the ultrawide screen.
 
+> As described in `RadioPlan_v3.md`, continue devopment on this phase: 
 > "Phase 5: The User Interface.
 >
 > 1.  **Setup:** Install `MudBlazor` (or similar Material library). Configure `MainLayout.razor` to use CSS Grid. The target resolution is strictly **12.5 inches x 3.75 inches**. The UI must be responsive to this ultra-wide aspect ratio.
