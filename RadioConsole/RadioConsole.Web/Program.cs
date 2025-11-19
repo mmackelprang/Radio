@@ -1,3 +1,4 @@
+using RadioConsole.Infrastructure.Configuration;
 using RadioConsole.Web.Components;
 using Serilog;
 
@@ -16,6 +17,9 @@ try
 
   // Add Serilog to the app
   builder.Host.UseSerilog();
+
+  // Add configuration service with settings from appsettings.json
+  builder.Services.AddConfigurationService(builder.Configuration);
 
   // Add services to the container.
   builder.Services.AddRazorComponents()

@@ -1,3 +1,4 @@
+using RadioConsole.Infrastructure.Configuration;
 using Serilog;
 
 // Configure Serilog
@@ -15,6 +16,9 @@ try
 
   // Add Serilog to the app
   builder.Host.UseSerilog();
+
+  // Add configuration service with settings from appsettings.json
+  builder.Services.AddConfigurationService(builder.Configuration);
 
   // Add services to the container.
   // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

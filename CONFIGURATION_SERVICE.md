@@ -13,6 +13,41 @@ The solution contains five projects following Clean Architecture principles:
 - **RadioConsole.Web**: Blazor Server web application
 - **RadioConsole.Tests**: xUnit test project
 
+## Configuration
+
+### appsettings.json Configuration
+
+The configuration service storage location and type can be configured in `appsettings.json`:
+
+```json
+{
+  "ConfigurationStorage": {
+    "StoragePath": "./storage",
+    "StorageType": "Json",
+    "JsonFileName": "config.json",
+    "SqliteFileName": "config.db"
+  }
+}
+```
+
+**Configuration Options:**
+- `StoragePath`: Directory where configuration files are stored (default: `./storage`)
+- `StorageType`: Either `Json` or `SQLite` (default: `Json`)
+- `JsonFileName`: Filename for JSON storage (default: `config.json`)
+- `SqliteFileName`: Filename for SQLite database (default: `config.db`)
+
+The storage directory will be automatically created at application startup if it doesn't exist.
+
+### Registration in Dependency Injection
+
+In `Program.cs`, the configuration service is registered using the extension method:
+
+```csharp
+builder.Services.AddConfigurationService(builder.Configuration);
+```
+
+This reads the settings from `appsettings.json` and creates the appropriate service instance as a singleton.
+
 ## IConfigurationService
 
 The configuration service provides a flexible storage mechanism that can switch between JSON and SQLite storage.
@@ -39,7 +74,7 @@ public class ConfigurationItem
     public string Id { get; set; }
     public string Key { get; set; }
     public string Value { get; set; }
-    public string Category { get; set; }  // NEW: For grouping related configuration items
+    public string Category { get; set; }  // For grouping related configuration items
     public DateTime LastUpdated { get; set; }
 }
 ```
@@ -60,7 +95,31 @@ public class ConfigurationItem
 
 ## Usage Examples
 
-### Creating a Configuration Service
+### Using Dependency Injection (Recommended)
+
+In your controllers or services, inject `IConfigurationService`:
+
+```csharp
+public class MyController : ControllerBase
+{
+    private readonly IConfigurationService _configService;
+
+    public MyController(IConfigurationService configService)
+    {
+        _configService = configService;
+    }
+
+    public async Task<IActionResult> GetSettings()
+    {
+        var allSettings = await _configService.LoadAllAsync();
+        return Ok(allSettings);
+    }
+}
+```
+
+The service is automatically configured based on your `appsettings.json` settings.
+
+### Manual Creation (For Testing)
 
 ```csharp
 using RadioConsole.Core.Enums;
