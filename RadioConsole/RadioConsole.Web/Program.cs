@@ -6,7 +6,7 @@ using Serilog;
 Log.Logger = new LoggerConfiguration()
   .MinimumLevel.Information()
   .WriteTo.Console()
-  .WriteTo.File("logs/web-.log", rollingInterval: RollingInterval.Day)
+  .WriteTo.File("./logs/web-.log", rollingInterval: RollingInterval.Day)
   .CreateLogger();
 
 try

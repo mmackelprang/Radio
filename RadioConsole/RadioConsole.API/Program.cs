@@ -1,11 +1,13 @@
 using RadioConsole.Infrastructure.Configuration;
+using RadioConsole.Infrastructure.Audio;
+using RadioConsole.API.Services;
 using Serilog;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
   .MinimumLevel.Information()
   .WriteTo.Console()
-  .WriteTo.File("logs/api-.log", rollingInterval: RollingInterval.Day)
+  .WriteTo.File("./logs/api-.log", rollingInterval: RollingInterval.Day)
   .CreateLogger();
 
 try
@@ -19,6 +21,10 @@ try
 
   // Add configuration service with settings from appsettings.json
   builder.Services.AddConfigurationService(builder.Configuration);
+
+  // Add audio services
+  builder.Services.AddAudioServices();
+  builder.Services.AddSingleton<StreamAudioService>();
 
   // Add services to the container.
   // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -35,6 +41,23 @@ try
   }
 
   app.UseHttpsRedirection();
+
+  // Audio streaming endpoints
+  app.MapGet("/stream.mp3", async (HttpContext context, StreamAudioService streamService) =>
+  {
+    await streamService.StreamMp3Async(context);
+  })
+  .WithName("StreamAudioMp3")
+  .WithOpenApi()
+  .ExcludeFromDescription(); // Don't show in Swagger as it's a streaming endpoint
+
+  app.MapGet("/stream.wav", async (HttpContext context, StreamAudioService streamService) =>
+  {
+    await streamService.StreamWavAsync(context);
+  })
+  .WithName("StreamAudioWav")
+  .WithOpenApi()
+  .ExcludeFromDescription(); // Don't show in Swagger as it's a streaming endpoint
 
   var summaries = new[]
   {
