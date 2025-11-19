@@ -84,7 +84,7 @@ public class RaddyRadioService : IRaddyRadioService
       // Set the input device for the audio player
       await _audioDeviceManager.SetInputDeviceAsync(_deviceId);
       
-      // Initialize audio player with the device (implementation depends on IAudioPlayer)
+      // Initialize audio player with the device if not already initialized
       if (!_audioPlayer.IsInitialized)
       {
         // Use the current output device or default
@@ -93,8 +93,10 @@ public class RaddyRadioService : IRaddyRadioService
         await _audioPlayer.InitializeAsync(outputId);
       }
 
-      // Start streaming (in a real implementation, this would start capturing from the input device)
-      // For now, we just mark as streaming - actual audio routing happens in the audio player
+      // The audio player now routes audio from the input device to the output device.
+      // In a full implementation with hardware capture, this would start capturing
+      // audio from the Raddy RF320's USB audio input and routing it through the
+      // audio mixer to the configured output device.
       _isStreaming = true;
       
       _logger.LogInformation("Raddy RF320 audio stream started successfully.");

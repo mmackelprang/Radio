@@ -1,5 +1,6 @@
 using RadioConsole.Core.Interfaces.Audio;
 using SoundFlow.Abstracts;
+using SoundFlow.Backends.MiniAudio;
 using SoundFlow.Structs;
 using Microsoft.Extensions.Logging;
 
@@ -26,9 +27,9 @@ public class SoundFlowAudioDeviceManager : IAudioDeviceManager, IDisposable
   {
     try
     {
-      // Create a minimal implementation that doesn't require protected methods
-      // In a complete implementation, this would properly initialize SoundFlow
-      _logger.LogInformation("SoundFlow audio device manager initialized (placeholder implementation)");
+      // Initialize MiniAudioEngine - the concrete implementation of AudioEngine
+      _engine = new MiniAudioEngine();
+      _logger.LogInformation("SoundFlow audio device manager initialized successfully");
     }
     catch (Exception ex)
     {
@@ -41,18 +42,29 @@ public class SoundFlowAudioDeviceManager : IAudioDeviceManager, IDisposable
   {
     try
     {
-      // Placeholder implementation - returns a sample device
-      // In a complete implementation, this would query SoundFlow for actual devices
-      var deviceList = new List<AudioDeviceInfo>
+      if (_engine == null)
       {
-        new AudioDeviceInfo
+        _logger.LogWarning("Audio engine not initialized, returning empty device list");
+        return Enumerable.Empty<AudioDeviceInfo>();
+      }
+
+      // Get capture devices from SoundFlow
+      var captureDevices = _engine.CaptureDevices;
+      var deviceList = new List<AudioDeviceInfo>();
+
+      if (captureDevices != null)
+      {
+        foreach (var device in captureDevices)
         {
-          Id = "default",
-          Name = "Default Input Device",
-          IsDefault = true,
-          DeviceType = "Default"
+          deviceList.Add(new AudioDeviceInfo
+          {
+            Id = device.Id.ToString(),
+            Name = device.Name,
+            IsDefault = device.IsDefault,
+            DeviceType = GetDeviceType(device.Name)
+          });
         }
-      };
+      }
 
       _logger.LogInformation("Found {Count} input devices", deviceList.Count);
       return await Task.FromResult(deviceList);
@@ -68,25 +80,29 @@ public class SoundFlowAudioDeviceManager : IAudioDeviceManager, IDisposable
   {
     try
     {
-      // Placeholder implementation - returns sample devices
-      // In a complete implementation, this would query SoundFlow for actual devices
-      var deviceList = new List<AudioDeviceInfo>
+      if (_engine == null)
       {
-        new AudioDeviceInfo
+        _logger.LogWarning("Audio engine not initialized, returning empty device list");
+        return Enumerable.Empty<AudioDeviceInfo>();
+      }
+
+      // Get playback devices from SoundFlow
+      var playbackDevices = _engine.PlaybackDevices;
+      var deviceList = new List<AudioDeviceInfo>();
+
+      if (playbackDevices != null)
+      {
+        foreach (var device in playbackDevices)
         {
-          Id = "default",
-          Name = "Default Output Device",
-          IsDefault = true,
-          DeviceType = "Default"
-        },
-        new AudioDeviceInfo
-        {
-          Id = "hdmi",
-          Name = "HDMI Audio Output",
-          IsDefault = false,
-          DeviceType = "HDMI"
+          deviceList.Add(new AudioDeviceInfo
+          {
+            Id = device.Id.ToString(),
+            Name = device.Name,
+            IsDefault = device.IsDefault,
+            DeviceType = GetDeviceType(device.Name)
+          });
         }
-      };
+      }
 
       _logger.LogInformation("Found {Count} output devices", deviceList.Count);
       return await Task.FromResult(deviceList);

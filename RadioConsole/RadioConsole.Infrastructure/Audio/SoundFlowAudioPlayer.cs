@@ -1,6 +1,8 @@
 using RadioConsole.Core.Interfaces.Audio;
 using SoundFlow.Abstracts;
 using SoundFlow.Abstracts.Devices;
+using SoundFlow.Backends.MiniAudio;
+using SoundFlow.Enums;
 using SoundFlow.Structs;
 using Microsoft.Extensions.Logging;
 
@@ -34,14 +36,47 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
     {
       _logger.LogInformation("Initializing SoundFlow audio player with device: {DeviceId}", deviceId);
 
-      // For now, we'll create a minimal implementation that doesn't fully initialize SoundFlow
-      // A complete implementation would properly initialize the audio engine
-      // This is a placeholder that satisfies the interface contract
+      // Initialize the MiniAudioEngine
+      _engine = new MiniAudioEngine();
+
+      // Create audio format (standard CD quality: 44.1kHz, 2 channels, 16-bit)
+      var format = new AudioFormat
+      {
+        SampleRate = 44100,
+        Channels = 2,
+        Format = SampleFormat.S16
+      };
+
+      // Find the device by ID
+      DeviceInfo? targetDevice = null;
+      if (!string.IsNullOrEmpty(deviceId) && deviceId != "default")
+      {
+        var devices = _engine.PlaybackDevices;
+        if (devices != null)
+        {
+          // Convert deviceId string to nint for comparison
+          if (nint.TryParse(deviceId, out var deviceIdNint))
+          {
+            targetDevice = devices.FirstOrDefault(d => d.Id == deviceIdNint);
+            if (targetDevice == null)
+            {
+              _logger.LogWarning("Device {DeviceId} not found, using default device", deviceId);
+            }
+          }
+          else
+          {
+            _logger.LogWarning("Invalid device ID format: {DeviceId}, using default device", deviceId);
+          }
+        }
+      }
+
+      // Initialize playback device (null means use default device and default config)
+      _playbackDevice = _engine.InitializePlaybackDevice(targetDevice, format, null);
       
       _currentDeviceId = deviceId;
       _isInitialized = true;
 
-      _logger.LogInformation("SoundFlow audio player initialized successfully (placeholder implementation)");
+      _logger.LogInformation("SoundFlow audio player initialized successfully");
       await Task.CompletedTask;
     }
     catch (Exception ex)
@@ -53,7 +88,7 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
 
   public async Task PlayAsync(string sourceId, Stream audioData)
   {
-    if (!_isInitialized || _playbackDevice == null)
+    if (!_isInitialized || _playbackDevice == null || _engine == null)
     {
       throw new InvalidOperationException("Audio player is not initialized");
     }
@@ -68,16 +103,39 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
         await StopAsync(sourceId);
       }
 
-      // For now, we'll store the source information
-      // In a complete implementation, we would create a SoundFlow decoder and connect it to the playback device
+      // Create audio format for decoder
+      var format = new AudioFormat
+      {
+        SampleRate = 44100,
+        Channels = 2,
+        Format = SampleFormat.S16
+      };
+
+      // Create a decoder for the audio stream
+      var decoder = _engine.CreateDecoder(audioData, format);
+      
+      // Store the source information
       var source = new AudioSource
       {
         Id = sourceId,
         Stream = audioData,
+        Decoder = decoder as SoundComponent,
         Volume = 1.0f
       };
 
       _audioSources[sourceId] = source;
+
+      // Connect the decoder to the playback device's master mixer
+      if (decoder is SoundComponent component)
+      {
+        _playbackDevice.MasterMixer.AddComponent(component);
+      }
+      
+      // Start playback if not already started
+      if (!_playbackDevice.IsRunning)
+      {
+        _playbackDevice.Start();
+      }
 
       _logger.LogInformation("Source {SourceId} added to playback", sourceId);
       await Task.CompletedTask;
@@ -96,6 +154,14 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
       _logger.LogInformation("Stopping playback for source: {SourceId}", sourceId);
       
       var source = _audioSources[sourceId];
+      
+      // Remove the decoder from the playback device's master mixer
+      if (source.Decoder != null && _playbackDevice != null)
+      {
+        _playbackDevice.MasterMixer.RemoveComponent(source.Decoder);
+        source.Decoder.Dispose();
+      }
+      
       source.Stream?.Dispose();
       _audioSources.Remove(sourceId);
 
@@ -140,6 +206,7 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
 
     foreach (var source in _audioSources.Values)
     {
+      source.Decoder?.Dispose();
       source.Stream?.Dispose();
     }
     _audioSources.Clear();
@@ -159,6 +226,7 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
   {
     public string Id { get; set; } = string.Empty;
     public Stream? Stream { get; set; }
+    public SoundComponent? Decoder { get; set; }
     public float Volume { get; set; }
   }
 }

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Moq;
+using RadioConsole.Core.Interfaces;
 using RadioConsole.Core.Interfaces.Inputs;
+using RadioConsole.Core.Models;
 using RadioConsole.Infrastructure.Inputs;
 using Xunit;
 
@@ -12,12 +14,14 @@ namespace RadioConsole.Tests.Inputs;
 public class SpotifyServiceTests
 {
   private readonly Mock<ILogger<SpotifyService>> _mockLogger;
+  private readonly Mock<IConfigurationService> _mockConfigService;
   private readonly SpotifyService _service;
 
   public SpotifyServiceTests()
   {
     _mockLogger = new Mock<ILogger<SpotifyService>>();
-    _service = new SpotifyService(_mockLogger.Object);
+    _mockConfigService = new Mock<IConfigurationService>();
+    _service = new SpotifyService(_mockLogger.Object, _mockConfigService.Object);
   }
 
   [Fact]

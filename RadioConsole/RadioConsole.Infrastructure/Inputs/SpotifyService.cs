@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using RadioConsole.Core.Interfaces;
 using RadioConsole.Core.Interfaces.Inputs;
 using SpotifyAPI.Web;
 
@@ -7,20 +8,104 @@ namespace RadioConsole.Infrastructure.Inputs;
 /// <summary>
 /// Implementation of ISpotifyService using SpotifyAPI-NET.
 /// Provides Spotify authentication, search, playback control, and album art fetching.
+/// Authentication can be configured via IConfigurationService with:
+/// - Category: "Spotify", Key: "ClientId"
+/// - Category: "Spotify", Key: "ClientSecret"
+/// - Category: "Spotify", Key: "RefreshToken" (for user authentication)
 /// </summary>
 public class SpotifyService : ISpotifyService
 {
   private readonly ILogger<SpotifyService> _logger;
+  private readonly IConfigurationService _configurationService;
   private SpotifyClient? _spotifyClient;
   private bool _isAuthenticated;
   private bool _isPlaying;
+  private string? _refreshToken;
 
   public bool IsAuthenticated => _isAuthenticated;
   public bool IsPlaying => _isPlaying;
 
-  public SpotifyService(ILogger<SpotifyService> logger)
+  public SpotifyService(
+    ILogger<SpotifyService> logger,
+    IConfigurationService configurationService)
   {
     _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
+  }
+
+  /// <summary>
+  /// Initialize authentication using credentials from the configuration service.
+  /// Reads ClientId, ClientSecret, and optionally RefreshToken from the "Spotify" category.
+  /// </summary>
+  public async Task InitializeFromConfigurationAsync()
+  {
+    _logger.LogInformation("Initializing Spotify service from configuration...");
+
+    try
+    {
+      // Load Spotify configuration
+      var spotifyConfig = await _configurationService.LoadByCategoryAsync("Spotify");
+      var configDict = spotifyConfig.ToDictionary(c => c.Key, c => c.Value);
+
+      if (!configDict.TryGetValue("ClientId", out var clientId) || string.IsNullOrWhiteSpace(clientId))
+      {
+        _logger.LogWarning("Spotify ClientId not found in configuration");
+        return;
+      }
+
+      if (!configDict.TryGetValue("ClientSecret", out var clientSecret) || string.IsNullOrWhiteSpace(clientSecret))
+      {
+        _logger.LogWarning("Spotify ClientSecret not found in configuration");
+        return;
+      }
+
+      // Check for refresh token (needed for user-level operations like playback control)
+      configDict.TryGetValue("RefreshToken", out _refreshToken);
+
+      // Authenticate using the configuration values
+      if (!string.IsNullOrWhiteSpace(_refreshToken))
+      {
+        await AuthenticateWithRefreshTokenAsync(clientId, clientSecret, _refreshToken);
+      }
+      else
+      {
+        await AuthenticateAsync(clientId, clientSecret);
+        _logger.LogInformation("Authenticated with Client Credentials (search/browse only)");
+      }
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Failed to initialize Spotify from configuration");
+      throw;
+    }
+  }
+
+  /// <summary>
+  /// Authenticate using a refresh token for user-level operations.
+  /// </summary>
+  private async Task AuthenticateWithRefreshTokenAsync(string clientId, string clientSecret, string refreshToken)
+  {
+    _logger.LogInformation("Authenticating with Spotify using refresh token...");
+
+    try
+    {
+      var config = SpotifyClientConfig.CreateDefault();
+      var response = await new OAuthClient(config).RequestToken(
+        new AuthorizationCodeRefreshRequest(clientId, clientSecret, refreshToken)
+      );
+
+      _spotifyClient = new SpotifyClient(config.WithToken(response.AccessToken));
+      _isAuthenticated = true;
+      _refreshToken = refreshToken;
+
+      _logger.LogInformation("Successfully authenticated with Spotify using refresh token (full playback control available)");
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Failed to authenticate with Spotify using refresh token");
+      _isAuthenticated = false;
+      throw;
+    }
   }
 
   /// <inheritdoc/>
@@ -141,25 +226,39 @@ public class SpotifyService : ISpotifyService
 
     try
     {
-      // Note: This requires user authentication with proper scopes.
-      // For now, we'll log a warning as Client Credentials flow doesn't support playback control.
-      _logger.LogWarning("Playback control requires user authentication with proper scopes. " +
-                        "Client Credentials flow does not support playback operations.");
+      if (string.IsNullOrWhiteSpace(_refreshToken))
+      {
+        _logger.LogWarning("Playback control requires user authentication with refresh token. " +
+                          "Configure RefreshToken in Spotify category or call AuthenticateWithRefreshTokenAsync.");
+        _isPlaying = false;
+        return;
+      }
+
+      // Attempt to start playback with the given track URI
+      var playbackRequest = new PlayerResumePlaybackRequest
+      {
+        Uris = new List<string> { trackUri }
+      };
       
-      // In a full implementation, you would use:
-      // var playbackRequest = new PlayerResumePlaybackRequest
-      // {
-      //   Uris = new List<string> { trackUri }
-      // };
-      // await _spotifyClient!.Player.ResumePlayback(playbackRequest);
+      await _spotifyClient!.Player.ResumePlayback(playbackRequest);
       
       _isPlaying = true;
-      
-      await Task.CompletedTask;
+      _logger.LogInformation("Playback started for track: {TrackUri}", trackUri);
+    }
+    catch (APIException apiEx) when (apiEx.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+    {
+      _logger.LogWarning("No active device found. Please start Spotify on a device first.");
+      _isPlaying = false;
+    }
+    catch (APIException apiEx) when (apiEx.Response?.StatusCode == System.Net.HttpStatusCode.Forbidden)
+    {
+      _logger.LogWarning("Playback forbidden. Ensure the refresh token has the required scopes (user-modify-playback-state).");
+      _isPlaying = false;
     }
     catch (Exception ex)
     {
       _logger.LogError(ex, "Error playing track: {TrackUri}", trackUri);
+      _isPlaying = false;
       throw;
     }
   }
@@ -173,15 +272,20 @@ public class SpotifyService : ISpotifyService
 
     try
     {
-      // Note: This requires user authentication with proper scopes.
-      _logger.LogWarning("Playback control requires user authentication with proper scopes.");
-      
-      // In a full implementation:
-      // await _spotifyClient!.Player.PausePlayback();
+      if (string.IsNullOrWhiteSpace(_refreshToken))
+      {
+        _logger.LogWarning("Playback control requires user authentication with refresh token.");
+        return;
+      }
+
+      await _spotifyClient!.Player.PausePlayback();
       
       _isPlaying = false;
-      
-      await Task.CompletedTask;
+      _logger.LogInformation("Playback paused successfully");
+    }
+    catch (APIException apiEx) when (apiEx.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+    {
+      _logger.LogWarning("No active device found for pause operation");
     }
     catch (Exception ex)
     {
@@ -199,15 +303,20 @@ public class SpotifyService : ISpotifyService
 
     try
     {
-      // Note: This requires user authentication with proper scopes.
-      _logger.LogWarning("Playback control requires user authentication with proper scopes.");
-      
-      // In a full implementation:
-      // await _spotifyClient!.Player.ResumePlayback();
+      if (string.IsNullOrWhiteSpace(_refreshToken))
+      {
+        _logger.LogWarning("Playback control requires user authentication with refresh token.");
+        return;
+      }
+
+      await _spotifyClient!.Player.ResumePlayback();
       
       _isPlaying = true;
-      
-      await Task.CompletedTask;
+      _logger.LogInformation("Playback resumed successfully");
+    }
+    catch (APIException apiEx) when (apiEx.Response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+    {
+      _logger.LogWarning("No active device found for resume operation");
     }
     catch (Exception ex)
     {
@@ -291,17 +400,36 @@ public class SpotifyService : ISpotifyService
 
     try
     {
-      // Note: This requires user authentication with proper scopes.
-      _logger.LogWarning("Fetching currently playing track requires user authentication with proper scopes.");
+      if (string.IsNullOrWhiteSpace(_refreshToken))
+      {
+        _logger.LogWarning("Getting currently playing track requires user authentication with refresh token. " +
+                          "Configure RefreshToken in Spotify category.");
+        return null;
+      }
+
+      var currentlyPlaying = await _spotifyClient!.Player.GetCurrentPlayback();
       
-      // In a full implementation:
-      // var currentlyPlaying = await _spotifyClient!.Player.GetCurrentPlayback();
-      // if (currentlyPlaying?.Item is FullTrack track)
-      // {
-      //   return new SpotifyTrack { ... };
-      // }
-      
-      return await Task.FromResult<SpotifyTrack?>(null);
+      if (currentlyPlaying?.Item is FullTrack track)
+      {
+        return new SpotifyTrack
+        {
+          Id = track.Id,
+          Uri = track.Uri,
+          Name = track.Name,
+          Artist = string.Join(", ", track.Artists.Select(a => a.Name)),
+          Album = track.Album.Name,
+          AlbumArtUrl = track.Album.Images?.FirstOrDefault()?.Url,
+          DurationMs = track.DurationMs
+        };
+      }
+
+      _logger.LogInformation("No track currently playing");
+      return null;
+    }
+    catch (APIException apiEx) when (apiEx.Response?.StatusCode == System.Net.HttpStatusCode.Forbidden)
+    {
+      _logger.LogWarning("Access forbidden. Ensure the refresh token has the required scopes (user-read-playback-state).");
+      return null;
     }
     catch (Exception ex)
     {
