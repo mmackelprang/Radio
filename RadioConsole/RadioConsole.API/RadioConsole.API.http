@@ -1,0 +1,6 @@
+@RadioConsole.API_HostAddress = http://localhost:5211
+
+GET {{RadioConsole.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
