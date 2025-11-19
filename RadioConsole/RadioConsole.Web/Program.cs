@@ -1,4 +1,6 @@
 using RadioConsole.Infrastructure.Configuration;
+using RadioConsole.Infrastructure.Audio;
+using RadioConsole.Infrastructure.Inputs;
 using RadioConsole.Web.Components;
 using Serilog;
 
@@ -20,6 +22,12 @@ try
 
   // Add configuration service with settings from appsettings.json
   builder.Services.AddConfigurationService(builder.Configuration);
+
+  // Add audio services
+  builder.Services.AddAudioServices();
+
+  // Add input services (Raddy Radio, Spotify, Broadcast Receiver)
+  builder.Services.AddInputServices();
 
   // Add services to the container.
   builder.Services.AddRazorComponents()

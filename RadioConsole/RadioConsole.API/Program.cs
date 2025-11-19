@@ -1,5 +1,6 @@
 using RadioConsole.Infrastructure.Configuration;
 using RadioConsole.Infrastructure.Audio;
+using RadioConsole.Infrastructure.Inputs;
 using RadioConsole.API.Services;
 using Serilog;
 
@@ -25,6 +26,9 @@ try
   // Add audio services
   builder.Services.AddAudioServices();
   builder.Services.AddSingleton<StreamAudioService>();
+
+  // Add input services (Raddy Radio, Spotify, Broadcast Receiver)
+  builder.Services.AddInputServices();
 
   // Add services to the container.
   // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
