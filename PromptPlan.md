@@ -36,7 +36,7 @@
 
 ---
 
-### Phase 3: Inputs & Broadcasts
+### Phase 3: Inputs & Broadcasts ✅ Done
 **Goal:** Connect the specific hardware inputs and the Google Broadcast receiver.
 
 > As described in `RadioPlan_v3.md`, continue devopment on this phase: 
