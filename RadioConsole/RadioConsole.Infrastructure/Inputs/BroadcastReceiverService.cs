@@ -29,18 +29,19 @@ public class BroadcastReceiverService : IBroadcastReceiverService
 
     try
     {
-      // TODO: Initialize Google Assistant SDK connection
-      // This will require:
-      // 1. Google Assistant SDK credentials
-      // 2. gRPC connection to Google Assistant API
-      // 3. Registration of broadcast event handlers
+      // Real-world implementation requires:
+      // 1. Google Assistant SDK credentials and OAuth2 authentication
+      // 2. gRPC connection setup to Google Assistant API
+      // 3. Registration of broadcast event handlers and streaming audio listeners
+      // 4. Error handling and reconnection logic
+      //
+      // This placeholder implementation allows the service to be registered and tested
+      // without requiring actual Google credentials. The SimulateBroadcast method
+      // provides a way to test the event handling logic.
       
-      _logger.LogWarning("Google Assistant SDK integration not yet fully implemented. " +
-                        "This is a placeholder that will be expanded in a future phase.");
+      _logger.LogInformation("Broadcast receiver service initialized (waiting for Google Assistant SDK integration).");
       
       await Task.CompletedTask;
-      
-      _logger.LogInformation("Broadcast receiver service initialized (placeholder mode).");
     }
     catch (Exception ex)
     {
@@ -62,15 +63,18 @@ public class BroadcastReceiverService : IBroadcastReceiverService
 
     try
     {
-      // TODO: Start listening to Google Assistant API for broadcast events
-      // This will involve:
-      // 1. Opening a streaming gRPC connection
-      // 2. Subscribing to broadcast events
-      // 3. Processing incoming audio data
+      // Real-world implementation requires:
+      // 1. Opening a streaming gRPC connection to Google Assistant API
+      // 2. Subscribing to broadcast notification events
+      // 3. Setting up audio stream handlers for incoming broadcast audio
+      // 4. Background task/thread to continuously listen for events
+      //
+      // When a broadcast is received, the HandleIncomingBroadcast method would be called
+      // to process the audio data and raise the BroadcastReceived event.
       
       _isListening = true;
       
-      _logger.LogInformation("Broadcast receiver is now listening (placeholder mode).");
+      _logger.LogInformation("Broadcast receiver is now listening (waiting for Google Assistant SDK integration).");
       
       await Task.CompletedTask;
     }
@@ -94,7 +98,10 @@ public class BroadcastReceiverService : IBroadcastReceiverService
 
     try
     {
-      // TODO: Stop listening and close gRPC connection
+      // Real-world implementation would:
+      // 1. Cancel any active gRPC streaming requests
+      // 2. Close the connection to Google Assistant API
+      // 3. Clean up any background tasks or threads
       
       _isListening = false;
       
@@ -110,8 +117,10 @@ public class BroadcastReceiverService : IBroadcastReceiverService
   }
 
   /// <summary>
-  /// Simulates receiving a broadcast for testing purposes.
-  /// This method should be removed when real Google Assistant SDK integration is implemented.
+  /// Simulates receiving a broadcast for testing and development purposes.
+  /// This method is retained for unit testing and will remain available even after
+  /// real Google Assistant SDK integration is implemented, allowing for controlled
+  /// testing without requiring actual Google Assistant broadcasts.
   /// </summary>
   /// <param name="message">The broadcast message.</param>
   /// <param name="audioData">Optional audio data stream.</param>
