@@ -5,8 +5,6 @@ using SoundFlow.Backends.MiniAudio;
 using SoundFlow.Enums;
 using SoundFlow.Structs;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.SignalR;
-using RadioConsole.Web.Hubs;
 
 namespace RadioConsole.Infrastructure.Audio;
 
@@ -17,20 +15,20 @@ namespace RadioConsole.Infrastructure.Audio;
 public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
 {
     private readonly ILogger<SoundFlowAudioPlayer> _logger;
-    private readonly IHubContext<VisualizerHub> _hubContext;
+    private readonly IVisualizationService? _visualizationService;
     private AudioEngine? _engine;
     private AudioPlaybackDevice? _playbackDevice;
     private readonly Dictionary<string, AudioSource> _audioSources;
     private bool _isInitialized;
     private string? _currentDeviceId;
-    private Timer _fftTimer;
+    private Timer? _fftTimer;
 
     public bool IsInitialized => _isInitialized;
 
-    public SoundFlowAudioPlayer(ILogger<SoundFlowAudioPlayer> logger, IHubContext<VisualizerHub> hubContext)
+    public SoundFlowAudioPlayer(ILogger<SoundFlowAudioPlayer> logger, IVisualizationService? visualizationService = null)
     {
         _logger = logger;
-        _hubContext = hubContext;
+        _visualizationService = visualizationService;
         _audioSources = new Dictionary<string, AudioSource>();
         _isInitialized = false;
     }
@@ -243,7 +241,7 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
 
     private async Task GenerateFftData()
     {
-        if (_playbackDevice != null)
+        if (_playbackDevice != null && _visualizationService != null)
         {
             var fftData = new float[256]; // Get 256 samples
             // Note: This is a placeholder. A real implementation would need to get the FFT data from SoundFlow.
@@ -255,7 +253,7 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
             {
                 fftData[i] = (float)rand.NextDouble();
             }
-            await _hubContext.Clients.All.SendAsync("ReceiveFFTData", fftData);
+            await _visualizationService.SendFFTDataAsync(fftData);
         }
     }
 

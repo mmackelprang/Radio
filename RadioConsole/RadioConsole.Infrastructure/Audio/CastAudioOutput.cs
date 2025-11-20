@@ -125,7 +125,7 @@ public class CastAudioOutput : IAudioOutput
         }
 
         await _chromecastClient.DisconnectAsync();
-        _chromecastClient.Dispose();
+        await Task.Run(() => _chromecastClient.Dispose());
         _chromecastClient = null;
       }
 
