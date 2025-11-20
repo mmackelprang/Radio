@@ -24,14 +24,9 @@ public class JsonConfigurationService : IConfigurationService
   public JsonConfigurationService(string storagePath)
   {
     // If storagePath is a file, use its directory; otherwise use it as-is
-    if (Path.HasExtension(storagePath))
-    {
-      _storageDirectory = Path.GetDirectoryName(storagePath) ?? "./storage";
-    }
-    else
-    {
-      _storageDirectory = storagePath;
-    }
+    _storageDirectory = Path.HasExtension(storagePath)
+      ? Path.GetDirectoryName(storagePath) ?? "./storage"
+      : storagePath;
 
     _jsonOptions = new JsonSerializerOptions
     {
