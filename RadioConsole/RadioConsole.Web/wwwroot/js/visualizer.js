@@ -8,11 +8,16 @@ let animationFrameId = null;
 window.initializeVisualizer = function (canvasElement) {
   if (!canvasElement) {
     console.error('Canvas element not provided');
-    return;
+    return false;
   }
 
   visualizerCanvas = canvasElement;
   visualizerContext = visualizerCanvas.getContext('2d');
+
+  if (!visualizerContext) {
+    console.error('Failed to get 2D context from canvas');
+    return false;
+  }
 
   // Set canvas size to match container
   resizeCanvas();
@@ -22,11 +27,12 @@ window.initializeVisualizer = function (canvasElement) {
   startAnimation();
 
   console.log('Visualizer initialized');
+  return true;
 };
 
 // Resize canvas to match container size
 function resizeCanvas() {
-  if (!visualizerCanvas) return;
+  if (!visualizerCanvas || !visualizerCanvas.parentElement) return;
 
   const container = visualizerCanvas.parentElement;
   visualizerCanvas.width = container.clientWidth;
@@ -148,12 +154,17 @@ function drawPlaceholder(ctx, width, height) {
 
 // Cleanup
 window.disposeVisualizer = function () {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
+  try {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    window.removeEventListener('resize', resizeCanvas);
+    visualizerCanvas = null;
+    visualizerContext = null;
+    currentFFTData = [];
+    console.log('Visualizer disposed');
+  } catch (error) {
+    console.error('Error disposing visualizer:', error);
   }
-  window.removeEventListener('resize', resizeCanvas);
-  visualizerCanvas = null;
-  visualizerContext = null;
-  currentFFTData = [];
 };
