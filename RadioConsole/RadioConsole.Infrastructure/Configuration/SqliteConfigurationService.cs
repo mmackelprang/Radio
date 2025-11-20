@@ -83,11 +83,10 @@ public class SqliteConfigurationService : IConfigurationService
         CREATE TABLE IF NOT EXISTS {tableName} (
           Id TEXT PRIMARY KEY,
           Component TEXT NOT NULL,
-          Key TEXT NOT NULL,
+          Key TEXT NOT NULL UNIQUE,
           Value TEXT NOT NULL,
           Category TEXT NOT NULL,
-          LastUpdated TEXT NOT NULL,
-          UNIQUE(Key, Category)
+          LastUpdated TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_{tableName}_key ON {tableName}(Key);
         CREATE INDEX IF NOT EXISTS idx_{tableName}_category ON {tableName}(Category);
@@ -113,8 +112,9 @@ public class SqliteConfigurationService : IConfigurationService
     command.CommandText = $@"
       INSERT INTO {tableName} (Id, Component, Key, Value, Category, LastUpdated)
       VALUES ($id, $component, $key, $value, $category, $lastUpdated)
-      ON CONFLICT(Key, Category) DO UPDATE SET
+      ON CONFLICT(Key) DO UPDATE SET
         Value = $value,
+        Category = $category,
         LastUpdated = $lastUpdated;
     ";
 

@@ -71,7 +71,7 @@ public class SystemTestService : ISystemTestService
     }
   }
 
-  public async Task TriggerTestToneAsync(int frequency = 300, int durationSeconds = 2)
+  public async Task TriggerTestToneAsync(int frequency = 300, double durationSeconds = 2)
   {
     if (frequency <= 0)
     {

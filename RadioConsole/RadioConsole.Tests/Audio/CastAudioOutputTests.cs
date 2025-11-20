@@ -49,7 +49,7 @@ public class CastAudioOutputTests
     var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3");
 
     // Act
-    var devices = await castOutput.DiscoverDevicesAsync(1); // Short timeout for test
+    var devices = await castOutput.DiscoverDevicesAsync(0.1); // Short timeout for test
 
     // Assert - Should complete without throwing, even if no devices found
     Assert.NotNull(devices);
@@ -70,6 +70,7 @@ public class CastAudioOutputTests
   {
     // Arrange
     var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3");
+    castOutput.DiscoveryTimeoutSeconds = 0.1; // Speed up test
     _mockAudioPlayer.Setup(x => x.IsInitialized).Returns(true);
 
     // Act & Assert
@@ -141,6 +142,7 @@ public class CastAudioOutputTests
   {
     // Arrange
     var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3");
+    castOutput.DiscoveryTimeoutSeconds = 0.1; // Speed up test
     _mockAudioPlayer.Setup(x => x.IsInitialized).Returns(true);
     _mockAudioPlayer.Setup(x => x.GetMixedOutputStream()).Returns(new MemoryStream());
 

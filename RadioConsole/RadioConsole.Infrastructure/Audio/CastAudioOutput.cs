@@ -26,6 +26,12 @@ public class CastAudioOutput : IAudioOutput
     : "Cast Audio Output (No device selected)";
 
   /// <summary>
+  /// Gets or sets the timeout for device discovery in seconds.
+  /// Default is 5 seconds.
+  /// </summary>
+  public double DiscoveryTimeoutSeconds { get; set; } = 5;
+
+  /// <summary>
   /// Initializes a new instance of the CastAudioOutput class.
   /// </summary>
   /// <param name="logger">The logger instance.</param>
@@ -57,7 +63,7 @@ public class CastAudioOutput : IAudioOutput
       _audioPlayer = audioPlayer;
 
       // Discover Cast devices on the network
-      var devices = await DiscoverDevicesAsync();
+      var devices = await DiscoverDevicesAsync(DiscoveryTimeoutSeconds);
       
       if (!devices.Any())
       {
@@ -146,7 +152,7 @@ public class CastAudioOutput : IAudioOutput
   /// </summary>
   /// <param name="timeoutSeconds">Discovery timeout in seconds.</param>
   /// <returns>List of discovered Cast devices.</returns>
-  public async Task<IEnumerable<ChromecastReceiver>> DiscoverDevicesAsync(int timeoutSeconds = 5)
+  public async Task<IEnumerable<ChromecastReceiver>> DiscoverDevicesAsync(double timeoutSeconds = 5)
   {
     try
     {

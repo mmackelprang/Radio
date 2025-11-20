@@ -144,6 +144,7 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error refreshing test status");
+            Snackbar.Add("Error: Could not connect to the API. Please ensure the API project is running.", Severity.Error);
         }
         await InvokeAsync(StateHasChanged);
     }

@@ -19,7 +19,7 @@ public interface ISystemTestService
   /// </summary>
   /// <param name="frequency">Frequency of the tone in Hz. Default is 300Hz.</param>
   /// <param name="durationSeconds">Duration of the tone in seconds. Default is 2 seconds.</param>
-  Task TriggerTestToneAsync(int frequency = 300, int durationSeconds = 2);
+  Task TriggerTestToneAsync(int frequency = 300, double durationSeconds = 2);
 
   /// <summary>
   /// Simulate a doorbell event.

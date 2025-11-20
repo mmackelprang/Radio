@@ -11,6 +11,8 @@ namespace RadioConsole.Tests.Audio;
 /// </summary>
 public static class TestHardwareHelper
 {
+  private static bool? _isAudioHardwareAvailable;
+
   /// <summary>
   /// Determines whether audio playback hardware appears to be available.
   /// Attempts SoundFlow device enumeration and applies lightweight OS heuristics.
@@ -19,9 +21,15 @@ public static class TestHardwareHelper
   /// <returns>True if audio hardware is likely available; false otherwise.</returns>
   public static bool AudioHardwareAvailable()
   {
+    if (_isAudioHardwareAvailable.HasValue)
+    {
+      return _isAudioHardwareAvailable.Value;
+    }
+
     var force = Environment.GetEnvironmentVariable("RADIO_FORCE_HW_AVAILABLE");
     if (!string.IsNullOrEmpty(force) && (force == "1" || force.Equals("true", StringComparison.OrdinalIgnoreCase)))
     {
+      _isAudioHardwareAvailable = true;
       return true;
     }
 
@@ -32,6 +40,7 @@ public static class TestHardwareHelper
       var outputs = manager.GetOutputDevicesAsync().GetAwaiter().GetResult();
       if (outputs != null && outputs.Any())
       {
+        _isAudioHardwareAvailable = true;
         return true;
       }
     }
@@ -51,6 +60,7 @@ public static class TestHardwareHelper
           var cardFiles = Directory.GetFiles("/proc/asound", "card*", SearchOption.TopDirectoryOnly);
           if (cardFiles.Length > 0)
           {
+            _isAudioHardwareAvailable = true;
             return true;
           }
         }
@@ -59,12 +69,14 @@ public static class TestHardwareHelper
       {
         // On Windows assume hardware unless running in certain CI containers where enumeration failed.
         // Provide minimal sentinel: absence of common system directory would be unusual.
-        return Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
+        _isAudioHardwareAvailable = Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
+        return _isAudioHardwareAvailable.Value;
       }
       else if (OperatingSystem.IsMacOS())
       {
         // macOS generally exposes CoreAudio; assume available if /System exists.
-        return Directory.Exists("/System");
+        _isAudioHardwareAvailable = Directory.Exists("/System");
+        return _isAudioHardwareAvailable.Value;
       }
     }
     catch
@@ -72,6 +84,7 @@ public static class TestHardwareHelper
       // Ignore failures and treat as unavailable
     }
 
+    _isAudioHardwareAvailable = false;
     return false;
   }
 }

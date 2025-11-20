@@ -52,11 +52,12 @@ public class JsonConfigurationService : IConfigurationService
     {
       var componentFile = GetComponentFilePath(item.Component);
       var items = await LoadComponentInternalAsync(item.Component);
-      var existingItem = items.FirstOrDefault(i => i.Key == item.Key && i.Category == item.Category);
+      var existingItem = items.FirstOrDefault(i => i.Key == item.Key);
 
       if (existingItem != null)
       {
         existingItem.Value = item.Value;
+        existingItem.Category = item.Category;
         existingItem.LastUpdated = DateTime.UtcNow;
       }
       else

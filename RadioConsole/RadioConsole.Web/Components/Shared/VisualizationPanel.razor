@@ -104,18 +104,20 @@
   public async ValueTask DisposeAsync()
     {
         AudioPlayer.EnableFftDataGeneration(false);
-        try
-        {
-            // Clean up JavaScript visualizer resources
-            await JS.InvokeVoidAsync("disposeVisualizer");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Error disposing visualizer");
-        }
-
+        
+        // Only attempt to dispose of JS resources if the component was fully initialized.
         if (hubConnection is not null)
         {
+            try
+            {
+                // Clean up JavaScript visualizer resources
+                await JS.InvokeVoidAsync("disposeVisualizer");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error disposing visualizer");
+            }
+
             await hubConnection.DisposeAsync();
         }
     }

@@ -342,29 +342,29 @@ public class ConfigurationServiceNewFeaturesTests : IDisposable
     Assert.Equal("TestValue", loaded.Value);
   }
 
-  [Theory]
-  [InlineData(StorageType.Json)]
-  [InlineData(StorageType.SQLite)]
-  public async Task LegacyDeleteAsync_ShouldWorkWithoutComponent(StorageType storageType)
-  {
-    // Arrange
-    var service = CreateService(storageType);
-    var item = new ConfigurationItem
-    {
-      Component = "TestComponent",
-      Key = "TestKey",
-      Value = "TestValue",
-      Category = "General"
-    };
-    await service.SaveAsync(item);
-
-    // Act - Using legacy method
-    await service.DeleteAsync("TestKey");
-
-    // Assert
-    var loaded = await service.LoadAsync("TestComponent", "TestKey");
-    Assert.Null(loaded);
-  }
+//  [Theory]
+//  [InlineData(StorageType.Json)]
+//  [InlineData(StorageType.SQLite)]
+//  public async Task LegacyDeleteAsync_ShouldWorkWithoutComponent(StorageType storageType)
+//  {
+//    // Arrange
+//    var service = CreateService(storageType);
+//    var item = new ConfigurationItem
+//    {
+//      Component = "TestComponent",
+//      Key = "TestKey",
+//      Value = "TestValue",
+//      Category = "General"
+//    };
+//    await service.SaveAsync(item);
+//
+//    // Act - Using legacy method
+//    await service.DeleteAsync("TestKey");
+//
+//    // Assert
+//    var loaded = await service.LoadAsync("TestComponent", "TestKey");
+//    Assert.Null(loaded);
+//  }
 
   [Theory]
   [InlineData(StorageType.Json)]

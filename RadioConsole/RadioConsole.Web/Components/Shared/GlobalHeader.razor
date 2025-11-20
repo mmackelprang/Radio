@@ -59,6 +59,7 @@
 
     private async Task UpdateSystemStatus()
     {
+        if (_httpClient == null) return;
         try
         {
             var response = await _httpClient.GetFromJsonAsync<SystemStatusResponse>("/api/test/status");

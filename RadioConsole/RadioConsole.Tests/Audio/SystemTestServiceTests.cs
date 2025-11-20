@@ -64,7 +64,7 @@ public class SystemTestServiceTests
   {
     // Arrange
     var frequency = 440;
-    var duration = 1;
+    var duration = 0.1;
 
     // Act
     await _service.TriggerTestToneAsync(frequency, duration);
