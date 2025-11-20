@@ -23,6 +23,15 @@ public static class AudioServiceExtensions
     // Register audio device manager as singleton
     services.AddSingleton<IAudioDeviceManager, SoundFlowAudioDeviceManager>();
 
+    // Register audio priority service as singleton
+    services.AddSingleton<IAudioPriorityService, AudioPriorityService>();
+
+    // Register TTS factory as singleton
+    services.AddSingleton<TextToSpeechFactory>();
+
+    // Register system test service as singleton
+    services.AddSingleton<ISystemTestService, SystemTestService>();
+
     // Register audio outputs as transient (new instance per request)
     services.AddTransient<LocalAudioOutput>();
     services.AddTransient(sp => 

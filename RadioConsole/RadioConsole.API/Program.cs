@@ -30,6 +30,9 @@ try
   // Add input services (Raddy Radio, Spotify, Broadcast Receiver)
   builder.Services.AddInputServices();
 
+  // Add controllers
+  builder.Services.AddControllers();
+
   // Add services to the container.
   // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
   builder.Services.AddEndpointsApiExplorer();
@@ -45,6 +48,9 @@ try
   }
 
   app.UseHttpsRedirection();
+
+  // Map controllers
+  app.MapControllers();
 
   // Audio streaming endpoints
   app.MapGet("/stream.mp3", async (HttpContext context, StreamAudioService streamService) =>
