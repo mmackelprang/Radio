@@ -73,6 +73,7 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
     var item = new ConfigurationItem
     {
+      Component = "TestComponent",
       Key = "TestKey",
       Value = "TestValue",
       Category = "General"
@@ -82,8 +83,9 @@ public class ConfigurationServiceTests : IDisposable
     await service.SaveAsync(item);
 
     // Assert
-    var loaded = await service.LoadAsync("TestKey");
+    var loaded = await service.LoadAsync("TestComponent", "TestKey");
     Assert.NotNull(loaded);
+    Assert.Equal("TestComponent", loaded.Component);
     Assert.Equal("TestKey", loaded.Key);
     Assert.Equal("TestValue", loaded.Value);
     Assert.Equal("General", loaded.Category);
@@ -98,6 +100,7 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
     var item = new ConfigurationItem
     {
+      Component = "TestComponent",
       Key = "TestKey",
       Value = "OriginalValue",
       Category = "General"
@@ -107,6 +110,7 @@ public class ConfigurationServiceTests : IDisposable
     // Act
     var updatedItem = new ConfigurationItem
     {
+      Component = "TestComponent",
       Key = "TestKey",
       Value = "UpdatedValue",
       Category = "Advanced"
@@ -114,7 +118,7 @@ public class ConfigurationServiceTests : IDisposable
     await service.SaveAsync(updatedItem);
 
     // Assert
-    var loaded = await service.LoadAsync("TestKey");
+    var loaded = await service.LoadAsync("TestComponent", "TestKey");
     Assert.NotNull(loaded);
     Assert.Equal("UpdatedValue", loaded.Value);
     Assert.Equal("Advanced", loaded.Category);
@@ -129,7 +133,7 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
 
     // Act
-    var result = await service.LoadAsync("NonExistentKey");
+    var result = await service.LoadAsync("TestComponent", "NonExistentKey");
 
     // Assert
     Assert.Null(result);
@@ -144,9 +148,9 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
     var items = new[]
     {
-      new ConfigurationItem { Key = "Key1", Value = "Value1", Category = "General" },
-      new ConfigurationItem { Key = "Key2", Value = "Value2", Category = "Advanced" },
-      new ConfigurationItem { Key = "Key3", Value = "Value3", Category = "General" }
+      new ConfigurationItem { Component = "Component1", Key = "Key1", Value = "Value1", Category = "General" },
+      new ConfigurationItem { Component = "Component2", Key = "Key2", Value = "Value2", Category = "Advanced" },
+      new ConfigurationItem { Component = "Component1", Key = "Key3", Value = "Value3", Category = "General" }
     };
 
     foreach (var item in items)
@@ -170,10 +174,10 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
     var items = new[]
     {
-      new ConfigurationItem { Key = "Key1", Value = "Value1", Category = "General" },
-      new ConfigurationItem { Key = "Key2", Value = "Value2", Category = "Advanced" },
-      new ConfigurationItem { Key = "Key3", Value = "Value3", Category = "General" },
-      new ConfigurationItem { Key = "Key4", Value = "Value4", Category = "Audio" }
+      new ConfigurationItem { Component = "Component1", Key = "Key1", Value = "Value1", Category = "General" },
+      new ConfigurationItem { Component = "Component2", Key = "Key2", Value = "Value2", Category = "Advanced" },
+      new ConfigurationItem { Component = "Component1", Key = "Key3", Value = "Value3", Category = "General" },
+      new ConfigurationItem { Component = "Component3", Key = "Key4", Value = "Value4", Category = "Audio" }
     };
 
     foreach (var item in items)
@@ -204,6 +208,7 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
     var item = new ConfigurationItem
     {
+      Component = "TestComponent",
       Key = "TestKey",
       Value = "TestValue",
       Category = "General"
@@ -211,10 +216,10 @@ public class ConfigurationServiceTests : IDisposable
     await service.SaveAsync(item);
 
     // Act
-    await service.DeleteAsync("TestKey");
+    await service.DeleteAsync("TestComponent", "TestKey");
 
     // Assert
-    var loaded = await service.LoadAsync("TestKey");
+    var loaded = await service.LoadAsync("TestComponent", "TestKey");
     Assert.Null(loaded);
   }
 
@@ -227,6 +232,7 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
     var item = new ConfigurationItem
     {
+      Component = "TestComponent",
       Key = "TestKey",
       Value = "TestValue",
       Category = "General"
@@ -234,7 +240,7 @@ public class ConfigurationServiceTests : IDisposable
     await service.SaveAsync(item);
 
     // Act
-    var exists = await service.ExistsAsync("TestKey");
+    var exists = await service.ExistsAsync("TestComponent", "TestKey");
 
     // Assert
     Assert.True(exists);
@@ -249,7 +255,7 @@ public class ConfigurationServiceTests : IDisposable
     var service = CreateService(storageType);
 
     // Act
-    var exists = await service.ExistsAsync("NonExistentKey");
+    var exists = await service.ExistsAsync("TestComponent", "NonExistentKey");
 
     // Assert
     Assert.False(exists);
@@ -265,6 +271,7 @@ public class ConfigurationServiceTests : IDisposable
     var beforeSave = DateTime.UtcNow;
     var item = new ConfigurationItem
     {
+      Component = "TestComponent",
       Key = "TestKey",
       Value = "TestValue",
       Category = "General"
@@ -276,7 +283,7 @@ public class ConfigurationServiceTests : IDisposable
     var afterSave = DateTime.UtcNow;
 
     // Assert
-    var loaded = await service.LoadAsync("TestKey");
+    var loaded = await service.LoadAsync("TestComponent", "TestKey");
     Assert.NotNull(loaded);
     var lastUpdatedUtc = loaded.LastUpdated.Kind == DateTimeKind.Utc
       ? loaded.LastUpdated
