@@ -1,20 +1,25 @@
 # Phase 5 Integration TODO - Status Update
 
-**Last Updated:** November 20, 2025
+**Last Updated:** November 20, 2025 (Updated with API Controllers, Metadata, and UI Components)
 
 This document outlines the remaining integration work needed to connect the Phase 5 Blazor UI with the backend audio services implemented in Phases 1-4.
 
 ## Current Status Summary
 
-### ✅ Completed (Build Infrastructure)
+### ✅ Completed (Build Infrastructure & New Features)
 - Architecture fixed: Created `IVisualizationService` abstraction to prevent circular dependencies
 - All service injections working in components
-- Build successful with 80/80 tests passing
+- Build successful with 110/119 tests passing (9 audio device tests fail in CI as expected)
 - API endpoints functional via SystemTestPanel
+- **NEW: 5 API Controllers added with 20+ endpoints (Configuration, NowPlaying, Visualization, StreamAudio, Metadata)**
+- **NEW: TagLib# metadata extraction service integrated**
+- **NEW: Material 3 touchscreen keyboards (NumericKeypad, TouchKeyboard)**
+- **NEW: USB Radio Control Panel with LED displays and frequency validation**
+- **NEW: Radio Demo page with component documentation at /radio-demo**
 
 ### ⚠️ Partially Complete (Functional but Limited)
 - AudioSetupPanel: UI works, limited backend integration
-- NowPlayingPanel: UI works, using available service methods  
+- NowPlayingPanel: UI works, using available service methods (can now use MetadataController for local files)
 - SystemTestPanel: Full API integration complete
 - GlobalHeader: Basic functionality, needs real system monitoring
 - VisualizationPanel: Architecture ready, needs FFT implementation
@@ -24,6 +29,7 @@ This document outlines the remaining integration work needed to connect the Phas
 - Advanced service methods (seek, skip, etc.)
 - Real-time system monitoring
 - Performance optimizations
+- Integration of metadata extraction into NowPlayingPanel for local files
 
 ## Overview
 
@@ -412,6 +418,124 @@ All changes are additive and maintain backward compatibility with existing code.
    - Design and implement vinyl input service
    - Implement local file browser and player
    - Add to UI
+
+## 11. Recently Completed Features (November 2025)
+
+### API Controllers ✅ COMPLETE
+Added 5 new REST API controllers with Swagger documentation:
+
+1. **ConfigurationController** (`/api/Configuration`)
+   - Full CRUD operations for configuration management
+   - Backup and restore functionality
+   - 8 endpoints total
+
+2. **NowPlayingController** (`/api/NowPlaying`)
+   - Real-time playback metadata from all sources
+   - Radio, Spotify, and general playback info
+   - 3 endpoints total
+
+3. **VisualizationController** (`/api/Visualization`)
+   - FFT data generation control
+   - Visualization type enumeration
+   - 3 endpoints total
+
+4. **StreamAudioController** (`/api/StreamAudio`)
+   - Audio streaming endpoint discovery
+   - MP3/WAV streaming URLs
+   - 2 endpoints total
+
+5. **MetadataController** (`/api/Metadata`)
+   - Audio file metadata extraction using TagLib#
+   - Format validation and support checking
+   - 3 endpoints total
+
+**Files Added:**
+- `RadioConsole.API/Controllers/ConfigurationController.cs`
+- `RadioConsole.API/Controllers/NowPlayingController.cs`
+- `RadioConsole.API/Controllers/VisualizationController.cs`
+- `RadioConsole.API/Controllers/StreamAudioController.cs`
+- `RadioConsole.API/Controllers/MetadataController.cs`
+
+### TagLib# Metadata Integration ✅ COMPLETE
+Implemented comprehensive audio file metadata extraction:
+
+**Features:**
+- Extracts title, artist, album, artwork, lyrics, duration, bitrate, channels
+- Supports 13+ audio formats (MP3, FLAC, AAC, OGG, WAV, WMA, etc.)
+- Stream-based extraction for non-file sources
+- Format validation and support checking
+
+**Files Added:**
+- `RadioConsole.Core/Interfaces/Audio/IMetadataService.cs`
+- `RadioConsole.Infrastructure/Audio/TagLibMetadataService.cs`
+
+**Files Modified:**
+- `RadioConsole.Infrastructure/Audio/AudioServiceExtensions.cs` (registered service)
+- `RadioConsole.Infrastructure/RadioConsole.Infrastructure.csproj` (added TagLibSharp package)
+
+### Material 3 Keyboard Components ✅ COMPLETE
+Created two touchscreen-optimized input components:
+
+1. **NumericKeypad** (`NumericKeypad.razor`)
+   - Large touch-friendly buttons (70px height)
+   - LED-style display with validation
+   - Configurable decimal support
+   - Event callbacks for value changes and submission
+   - Used for radio frequency entry
+
+2. **TouchKeyboard** (`TouchKeyboard.razor`)
+   - Full QWERTY layout with shift key
+   - Auto-deactivates shift after character
+   - LED-style display with blinking cursor
+   - Support for special characters
+   - Large touch targets (50px height)
+
+**Files Added:**
+- `RadioConsole.Web/Components/Shared/NumericKeypad.razor`
+- `RadioConsole.Web/Components/Shared/TouchKeyboard.razor`
+
+### USB Radio Control Panel ✅ COMPLETE
+Comprehensive radio control interface:
+
+**Features:**
+- LED-style frequency display (green) with auto-formatting per band
+- LED-style band display (orange)
+- Tune Up/Down with band-specific steps (FM: 100kHz, AM: 10kHz, etc.)
+- Scan Up/Down buttons (stubbed for future implementation)
+- Independent radio volume control (0-100%)
+- Frequency entry via NumericKeypad with band-based validation
+- Band selector: FM (87.5-108.0 MHz), AM (0.53-1.71), SW (1.71-30.0), AIR (108.0-137.0), VHF (30.0-300.0)
+- Status indicators for streaming and USB device detection
+
+**Files Added:**
+- `RadioConsole.Web/Components/Shared/RaddyRadioControlPanel.razor`
+
+### Demo Page & Documentation ✅ COMPLETE
+Created comprehensive demonstration page:
+
+**Features:**
+- Interactive component demonstrations
+- Live event logging
+- Complete parameter documentation
+- Usage examples and feature lists
+- 4 tabs: Radio Control, Numeric Keypad, Touch Keyboard, Documentation
+
+**Files Added:**
+- `RadioConsole.Web/Components/Pages/RadioDemo.razor`
+
+**Files Modified:**
+- `RadioConsole.Web/Components/Layout/NavMenu.razor` (added navigation link)
+
+### Build & Test Status
+- ✅ All projects build successfully (0 warnings, 0 errors)
+- ✅ 110/119 tests passing (9 audio device tests fail in CI as expected)
+- ✅ 0 CodeQL security alerts
+- ✅ Code review completed and issues addressed
+
+### Documentation
+- ✅ UPDATES_COMPLETED.md created with comprehensive summary
+- ✅ This file updated with completed features
+- ✅ README.md needs update (see next section)
 
 ## Notes
 
