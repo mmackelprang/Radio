@@ -17,6 +17,19 @@ try
 
   var builder = WebApplication.CreateBuilder(args);
 
+  // Check for appsettings.json and log its location
+  var appSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+  if (File.Exists(appSettingsPath))
+  {
+    Log.Information("Found appsettings.json at: {Path}", appSettingsPath);
+  }
+  else
+  {
+    Log.Warning("appsettings.json not found at expected location: {Path}", appSettingsPath);
+    Log.Warning("Looking for configuration in: {BaseDir}", AppDomain.CurrentDomain.BaseDirectory);
+    Log.Warning("Current directory: {CurrentDir}", Directory.GetCurrentDirectory());
+  }
+
   // Add Serilog to the app
   builder.Host.UseSerilog();
 

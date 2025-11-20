@@ -131,12 +131,18 @@ The Phase 5 UI is complete and functional. The initial integration commit connec
 - System health is hardcoded to `true`
 - Needs backend API endpoint or direct system monitoring
 
-## 5. VisualizationPanel Integration ⚠️ ARCHITECTURE READY
+## 5. VisualizationPanel Integration ✅ ENHANCED WITH MULTIPLE VISUALIZATIONS
 
 **File:** `RadioConsole.Web/Components/Shared/VisualizationPanel.razor`  
 **File:** `RadioConsole.Web/Hubs/VisualizerHub.cs`  
-**File:** `RadioConsole.Core/Interfaces/Audio/IVisualizationService.cs` ✨ **NEW**  
-**File:** `RadioConsole.Web/Services/SignalRVisualizationService.cs` ✨ **NEW**
+**File:** `RadioConsole.Core/Interfaces/Audio/IVisualizationService.cs`  
+**File:** `RadioConsole.Web/Services/SignalRVisualizationService.cs`  
+**File:** `RadioConsole.Core/Interfaces/Audio/IVisualizationContext.cs` ✨ **NEW**  
+**File:** `RadioConsole.Core/Interfaces/Audio/IVisualizer.cs` ✨ **NEW**  
+**File:** `RadioConsole.Infrastructure/Audio/Visualization/LevelMeterVisualizer.cs` ✨ **NEW**  
+**File:** `RadioConsole.Infrastructure/Audio/Visualization/WaveformVisualizer.cs` ✨ **NEW**  
+**File:** `RadioConsole.Infrastructure/Audio/Visualization/SpectrumVisualizer.cs` ✨ **NEW**  
+**File:** `RadioConsole.Web/Services/BlazorVisualizationContext.cs` ✨ **NEW**
 
 ### Completed:
 - [x] Created `IVisualizationService` interface in Core layer
@@ -146,77 +152,91 @@ The Phase 5 UI is complete and functional. The initial integration commit connec
 - [x] Canvas visualization rendering working
 - [x] FFT timer mechanism in place (placeholder data)
 - [x] Fixed circular dependency issue
+- [x] **Created `IVisualizationContext` interface adapted from WPF examples**
+- [x] **Created `IVisualizer` interface with `VisualizationType` enum**
+- [x] **Implemented `LevelMeterVisualizer` for RMS/Peak level display**
+- [x] **Implemented `WaveformVisualizer` for audio waveform display**
+- [x] **Implemented `SpectrumVisualizer` for frequency spectrum display**
+- [x] **Created `BlazorVisualizationContext` for JavaScript interop rendering**
+- [x] **Added visualization type selector dropdown to UI**
+- [x] **Updated visualizer.js to support multiple visualization modes**
+- [x] **Added rendering commands system for custom visualizers**
 
 ### Remaining Work:
+- [ ] Integrate visualizers with audio player to process real audio data
 - [ ] Implement actual FFT analysis from audio stream (SoundFlow limitation)
   - SoundFlow/MiniAudio doesn't provide built-in FFT
   - Need to integrate FFT library (e.g., Kiss FFT, MathNet.Numerics)
   - Capture audio samples from playback stream
   - Process samples through FFT algorithm
-- [ ] Configure audio player to generate FFT data every 50ms
-- [ ] Enable/disable FFT generation based on audio player state
-- [ ] Ensure FFT data is normalized to 0-1 range
-- [ ] Optimize FFT bin count for visualization (currently 256, could use 64/128)
+- [ ] Configure audio player to send audio samples to selected visualizer
+- [ ] Enable/disable visualization based on audio player state
+- [ ] Ensure visualization data is normalized to 0-1 range
+- [ ] Optimize performance for real-time rendering
 
 ### Current Limitations:
-- FFT data is placeholder random values
-- No actual audio analysis happening
-- FFT generation requires integration with audio processing library
+- FFT data is placeholder random values (no real audio analysis)
+- Visualizers are implemented but not yet connected to audio player
+- Real FFT requires integration with audio processing library
+- SpectrumVisualizer uses simplified frequency approximation instead of true FFT
 
 ### Implementation Notes:
-The architecture is now correct with proper separation of concerns:
-```
-Core (IVisualizationService) 
-  ↑ used by
-Infrastructure (SoundFlowAudioPlayer)
-  ↓ implemented in  
-Web (SignalRVisualizationService → VisualizerHub)
+The architecture follows the example code from `/examples` folder:
+- `IVisualizationContext` provides drawing primitives (adapted from WPF examples)
+- `IVisualizer` interface defines the contract for all visualizers
+- Three visualizer types implemented: LevelMeter, Waveform, Spectrum
+- Blazor uses JavaScript interop for canvas rendering (instead of WPF's DrawingContext)
+- Visualization type can be selected from dropdown in UI
 
-## 6. Configuration Service Integration ⚠️ PARTIALLY COMPLETE
+Architecture:
+```
+Core (IVisualizationService, IVisualizationContext, IVisualizer) 
+  ↑ used by
+Infrastructure (SoundFlowAudioPlayer, LevelMeterVisualizer, WaveformVisualizer, SpectrumVisualizer)
+  ↓ implemented in  
+Web (SignalRVisualizationService → VisualizerHub, BlazorVisualizationContext)
+```
+
+## 6. Configuration Service Integration ✅ COMPLETE WITH ROOTDIR SUPPORT
 
 ### Completed:
 - [x] Add HttpClient base URL configuration to `appsettings.json`
 - [x] Configure API client in Program.cs with default fallback
+- [x] **Added `RootDir` configuration option to `ConfigurationStorageOptions`**
+- [x] **Implemented `ResolvePath()` method to resolve paths relative to RootDir**
+- [x] **Updated `ConfigurationServiceExtensions` to use RootDir**
+- [x] **Added diagnostic logging for configuration paths**
+- [x] **Added appsettings.json detection and warnings in Program.cs**
+- [x] **Updated all appsettings.json files with RootDir field**
+
+### Configuration Changes:
+The `appsettings.json` now includes `RootDir` in the `ConfigurationStorage` section:
+```json
+{
+  "ConfigurationStorage": {
+    "RootDir": "",
+    "StoragePath": "./storage",
+    "StorageType": "Json",
+    "JsonFileName": "config.json",
+    "SqliteFileName": "config.db"
+  }
+}
+```
+
+### Implementation Details:
+- **RootDir**: Base directory for all configuration paths. Defaults to application base directory if empty.
+- **Path Resolution**: All relative paths (StoragePath, log paths, etc.) are resolved relative to RootDir
+- **Diagnostics**: Application logs configuration file location at startup
+- **Warnings**: Clear warnings printed if appsettings.json is not found, showing:
+  - Expected location
+  - Application base directory
+  - Current working directory
 
 ### Remaining Work:
 - [ ] Add SignalR hub configuration if needed
 - [ ] Add Cast device discovery settings
-- [ ] Add FFT generation settings (sample rate, bin count, etc.)
-- [ ] Document all configuration options
-
-### Current Configuration:
-The `appsettings.json` should include:
-```json
-{
-  "RadioConsole": {
-    "ApiBaseUrl": "http://localhost:5100"
-  }
-}
-```
-
-### Recommended Additions:
-```json
-{
-  "RadioConsole": {
-    "ApiBaseUrl": "http://localhost:5100",
-    "SignalR": {
-      "VisualizerUpdateIntervalMs": 50,
-      "ReconnectDelayMs": 5000
-    },
-    "Audio": {
-      "FFT": {
-        "BinCount": 64,
-        "SampleRate": 44100,
-        "UpdateIntervalMs": 50
-      }
-    },
-    "Cast": {
-      "DiscoveryTimeoutMs": 5000,
-      "RefreshIntervalMs": 30000
-    }
-  }
-}
-```
+- [ ] Add visualization settings (update interval, smoothing, etc.)
+- [ ] Document all configuration options in README
 
 ## 7. Error Handling and User Feedback ⚠️ PARTIALLY COMPLETE
 
