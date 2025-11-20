@@ -51,7 +51,7 @@
 
 ---
 
-### Phase 4: The Mixer (Ducking) & Event Generator
+### Phase 4: The Mixer (Ducking) & Event Generator ✅ Done
 **Goal:** Handle volume logic (music vs. voice) and create the backend for the testing tools.
 
 > As described in `RadioPlan_v3.md`, continue devopment on this phase: 
@@ -70,7 +70,7 @@
 
 ---
 
-### Phase 5: Blazor UI & Kiosk Layout
+### Phase 5: Blazor UI & Kiosk Layout ✅ Done
 **Goal:** Build the visual interface, specifically for the ultrawide screen.
 
 > As described in `RadioPlan_v3.md`, continue devopment on this phase: 
