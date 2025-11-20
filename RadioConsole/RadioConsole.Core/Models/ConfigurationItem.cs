@@ -11,6 +11,11 @@ public class ConfigurationItem
   public string Id { get; set; } = string.Empty;
 
   /// <summary>
+  /// Gets or sets the component this configuration belongs to (e.g., Spotify, TTS, Audio).
+  /// </summary>
+  public string Component { get; set; } = string.Empty;
+
+  /// <summary>
   /// Gets or sets the configuration key.
   /// </summary>
   public string Key { get; set; } = string.Empty;
