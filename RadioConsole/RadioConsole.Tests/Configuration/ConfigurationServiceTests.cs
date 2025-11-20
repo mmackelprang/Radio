@@ -3,12 +3,16 @@ using RadioConsole.Core.Interfaces;
 using RadioConsole.Core.Models;
 using RadioConsole.Infrastructure.Configuration;
 using Xunit;
+using System.Threading;
 
 namespace RadioConsole.Tests.Configuration;
 
 /// <summary>
 /// Unit tests for configuration services (JSON and SQLite implementations).
 /// </summary>
+// Collection attribute ensures tests in this class do not run in parallel, avoiding
+// file locking issues with SQLite temporary databases.
+[Collection("ConfigurationServiceTestsCollection")]
 public class ConfigurationServiceTests : IDisposable
 {
   private readonly string _testDirectory;
@@ -27,10 +31,36 @@ public class ConfigurationServiceTests : IDisposable
 
   public void Dispose()
   {
-    // Clean up test directory
-    if (Directory.Exists(_testDirectory))
+    if (!Directory.Exists(_testDirectory))
     {
-      Directory.Delete(_testDirectory, true);
+      return;
+    }
+
+    // Retry deletion to handle transient SQLite file locks due to async finalizers.
+    for (var attempt = 0; attempt < 5; attempt++)
+    {
+      try
+      {
+        Directory.Delete(_testDirectory, true);
+        break;
+      }
+      catch (IOException)
+      {
+        if (attempt == 4)
+        {
+          // Swallow on final attempt to prevent test failure purely due to cleanup.
+          break;
+        }
+        Thread.Sleep(50);
+      }
+      catch (UnauthorizedAccessException)
+      {
+        if (attempt == 4)
+        {
+          break;
+        }
+        Thread.Sleep(50);
+      }
     }
   }
 
@@ -248,7 +278,10 @@ public class ConfigurationServiceTests : IDisposable
     // Assert
     var loaded = await service.LoadAsync("TestKey");
     Assert.NotNull(loaded);
-    Assert.InRange(loaded.LastUpdated, beforeSave.AddSeconds(-1), afterSave.AddSeconds(1));
+    var lastUpdatedUtc = loaded.LastUpdated.Kind == DateTimeKind.Utc
+      ? loaded.LastUpdated
+      : loaded.LastUpdated.ToUniversalTime();
+    Assert.InRange(lastUpdatedUtc, beforeSave.AddSeconds(-1), afterSave.AddSeconds(1));
   }
 
   [Fact]
