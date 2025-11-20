@@ -276,9 +276,10 @@
                         SelectedInputDevice = currentInput.Id;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // No current device selected, use default or first
+                    // No current device selected or API error - use default or first
+                    Logger.LogDebug(ex, "Could not get current input device, using default");
                     SelectedInputDevice = AvailableInputDevices.FirstOrDefault(d => d.IsDefault)?.Id 
                                         ?? AvailableInputDevices.FirstOrDefault()?.Id 
                                         ?? "";
@@ -299,9 +300,10 @@
                         SelectedOutputDevice = currentOutput.Id;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // No current device selected, use default or first
+                    // No current device selected or API error - use default or first
+                    Logger.LogDebug(ex, "Could not get current output device, using default");
                     SelectedOutputDevice = AvailableOutputDevices.FirstOrDefault(d => d.IsDefault)?.Id 
                                          ?? AvailableOutputDevices.FirstOrDefault()?.Id 
                                          ?? "";

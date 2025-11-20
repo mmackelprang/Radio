@@ -306,12 +306,12 @@
         {
             if (_httpClient == null) return;
             
-            // For now, log that we would play the file
-            // In a full implementation, this would send the file path to an API endpoint
-            Logger.LogInformation("Would play audio file: {FilePath}", AlertFilePath);
-            Snackbar.Add($"File alert testing not fully implemented yet. File: {AlertFilePath}", Severity.Info);
+            // TODO: Full implementation requires server-side file reading and streaming
+            // For now, demonstrate the ducking behavior with a tone
+            Logger.LogInformation("File alert requested for: {FilePath}", AlertFilePath);
+            Snackbar.Add($"File alert demonstration (full implementation pending). Selected: {System.IO.Path.GetFileName(AlertFilePath)}", Severity.Info);
             
-            // Simulate the alert by triggering a tone instead
+            // Demonstrate ducking behavior by triggering a tone as high-priority
             var request = new { frequency = 440, durationSeconds = 2 };
             var response = await _httpClient.PostAsJsonAsync("/api/test/tone", request);
             response.EnsureSuccessStatusCode();
