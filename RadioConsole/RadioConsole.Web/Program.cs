@@ -34,7 +34,10 @@ try
   builder.Services.AddMudServices();
 
   // Add HttpClient for making API calls
-  builder.Services.AddHttpClient();
+  builder.Services.AddHttpClient("API", client =>
+  {
+      client.BaseAddress = new Uri(builder.Configuration["RadioConsole:ApiBaseUrl"]);
+  });
 
   // Add SignalR for real-time visualizer data
   builder.Services.AddSignalR();

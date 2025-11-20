@@ -3,6 +3,7 @@
 @inject IJSRuntime JS
 @inject ILogger<VisualizationPanel> Logger
 @implements IAsyncDisposable
+@inject IAudioPlayer AudioPlayer
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
   <MudText Typo="Typo.h5" Class="mb-2">Audio Visualizer</MudText>
@@ -18,13 +19,14 @@
   private ElementReference canvasElement;
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
-  {
-    if (firstRender)
     {
-      await InitializeSignalR();
-      await InitializeCanvas();
+        if (firstRender)
+        {
+            AudioPlayer.EnableFftDataGeneration(true);
+            await InitializeSignalR();
+            await InitializeCanvas();
+        }
     }
-  }
 
   private async Task InitializeSignalR()
   {
@@ -75,22 +77,23 @@
   }
 
   public async ValueTask DisposeAsync()
-  {
-    try
     {
-      // Clean up JavaScript visualizer resources
-      await JS.InvokeVoidAsync("disposeVisualizer");
-    }
-    catch (Exception ex)
-    {
-      Logger.LogWarning(ex, "Error disposing visualizer");
-    }
+        AudioPlayer.EnableFftDataGeneration(false);
+        try
+        {
+            // Clean up JavaScript visualizer resources
+            await JS.InvokeVoidAsync("disposeVisualizer");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Error disposing visualizer");
+        }
 
-    if (hubConnection is not null)
-    {
-      await hubConnection.DisposeAsync();
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
-  }
 }
 
 <style>

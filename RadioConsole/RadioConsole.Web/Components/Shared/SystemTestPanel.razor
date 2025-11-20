@@ -1,4 +1,4 @@
-@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
 @inject ILogger<SystemTestPanel> Logger
 @inject ISnackbar Snackbar
 
@@ -113,144 +113,109 @@
 </MudPaper>
 
 @code {
-  private bool IsTestRunning { get; set; } = false;
-  private int CpuUsage { get; set; } = 25;
-  private int MemoryUsage { get; set; } = 512;
-  private string Uptime { get; set; } = "1d 5h 23m";
+    private bool IsTestRunning { get; set; } = false;
+    private int CpuUsage { get; set; } = 25;
+    private int MemoryUsage { get; set; } = 512;
+    private string Uptime { get; set; } = "1d 5h 23m";
+    private HttpClient _httpClient;
+    private Timer _timer;
 
-  // Base URL for the API - in production, this should come from configuration
-  private string ApiBaseUrl { get; set; } = "http://localhost:5100";
+    protected override async Task OnInitializedAsync()
+    {
+        _httpClient = HttpClientFactory.CreateClient("API");
+        _timer = new Timer(async _ => await RefreshStatus(), null, 0, 5000);
+    }
 
-  protected override async Task OnInitializedAsync()
-  {
-    // TODO: Load actual system status
-    await RefreshStatus();
-  }
+    private async Task RefreshStatus()
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<SystemStatusResponse>("/api/test/status");
+            if (response != null)
+            {
+                CpuUsage = response.CpuUsage;
+                MemoryUsage = response.MemoryUsage;
+                Uptime = response.Uptime;
+                IsTestRunning = response.IsTestRunning;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing test status");
+        }
+        await InvokeAsync(StateHasChanged);
+    }
 
-  private async Task RefreshStatus()
-  {
-    try
+    private async Task TestTTS(string phrase, string voiceGender)
     {
-      // TODO: Call actual status endpoint
-      // var response = await Http.GetFromJsonAsync<TestStatusResponse>($"{ApiBaseUrl}/api/test/status");
-      // IsTestRunning = response.IsTestRunning;
+        await RunTest(async () =>
+        {
+            var request = new { phrase, voiceGender, speed = 1.0 };
+            var response = await _httpClient.PostAsJsonAsync("/api/test/tts", request);
+            response.EnsureSuccessStatusCode();
+            Snackbar.Add($"Playing TTS with {voiceGender} voice...", Severity.Info);
+        });
     }
-    catch (Exception ex)
-    {
-      Logger.LogError(ex, "Error refreshing test status");
-    }
-  }
 
-  private async Task TestTTS(string phrase, string voiceGender)
-  {
-    IsTestRunning = true;
-    try
+    private async Task TestTone(int frequency, int duration)
     {
-      var request = new
-      {
-        phrase = phrase,
-        voiceGender = voiceGender,
-        speed = 1.0
-      };
+        await RunTest(async () =>
+        {
+            var request = new { frequency, durationSeconds = duration };
+            var response = await _httpClient.PostAsJsonAsync("/api/test/tone", request);
+            response.EnsureSuccessStatusCode();
+            Snackbar.Add($"Playing {frequency}Hz tone for {duration} seconds...", Severity.Info);
+        });
+    }
 
-      // TODO: Uncomment when API is available
-      // var response = await Http.PostAsJsonAsync($"{ApiBaseUrl}/api/test/tts", request);
-      // response.EnsureSuccessStatusCode();
-      
-      Snackbar.Add($"Playing TTS with {voiceGender} voice...", Severity.Info);
-      Logger.LogInformation("TTS test triggered: {VoiceGender}", voiceGender);
-      
-      // Simulate test duration
-      await Task.Delay(3000);
-    }
-    catch (Exception ex)
+    private async Task TestDoorbell()
     {
-      Logger.LogError(ex, "Error testing TTS");
-      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        await RunTest(async () =>
+        {
+            var response = await _httpClient.PostAsync("/api/test/doorbell", null);
+            response.EnsureSuccessStatusCode();
+            Snackbar.Add("Playing doorbell sound...", Severity.Info);
+        });
     }
-    finally
-    {
-      IsTestRunning = false;
-    }
-  }
 
-  private async Task TestTone(int frequency, int duration)
-  {
-    IsTestRunning = true;
-    try
+    private async Task TestBroadcast()
     {
-      var request = new
-      {
-        frequency = frequency,
-        durationSeconds = duration
-      };
+        await RunTest(async () =>
+        {
+            var response = await _httpClient.PostAsync("/api/test/broadcast", null);
+            response.EnsureSuccessStatusCode();
+            Snackbar.Add("Simulating broadcast receipt...", Severity.Info);
+        });
+    }
 
-      // TODO: Uncomment when API is available
-      // var response = await Http.PostAsJsonAsync($"{ApiBaseUrl}/api/test/tone", request);
-      // response.EnsureSuccessStatusCode();
-      
-      Snackbar.Add($"Playing {frequency}Hz tone for {duration} seconds...", Severity.Info);
-      Logger.LogInformation("Tone test triggered: {Frequency}Hz, {Duration}s", frequency, duration);
-      
-      // Simulate test duration
-      await Task.Delay(duration * 1000 + 500);
-    }
-    catch (Exception ex)
+    private async Task RunTest(Func<Task> testAction)
     {
-      Logger.LogError(ex, "Error testing tone");
-      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        IsTestRunning = true;
+        try
+        {
+            await testAction();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error running test");
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsTestRunning = false;
+        }
     }
-    finally
-    {
-      IsTestRunning = false;
-    }
-  }
 
-  private async Task TestDoorbell()
-  {
-    IsTestRunning = true;
-    try
+    public void Dispose()
     {
-      // TODO: Uncomment when API is available
-      // var response = await Http.PostAsync($"{ApiBaseUrl}/api/test/doorbell", null);
-      // response.EnsureSuccessStatusCode();
-      
-      Snackbar.Add("Playing doorbell sound...", Severity.Info);
-      Logger.LogInformation("Doorbell test triggered");
-      
-      // Simulate test duration
-      await Task.Delay(2000);
+        _timer?.Dispose();
     }
-    catch (Exception ex)
-    {
-      Logger.LogError(ex, "Error testing doorbell");
-      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-    }
-    finally
-    {
-      IsTestRunning = false;
-    }
-  }
 
-  private async Task TestBroadcast()
-  {
-    IsTestRunning = true;
-    try
+    public class SystemStatusResponse
     {
-      Snackbar.Add("Simulating broadcast receipt...", Severity.Info);
-      Logger.LogInformation("Broadcast test triggered");
-      
-      // TODO: Implement actual broadcast test
-      await Task.Delay(2000);
+        public int CpuUsage { get; set; }
+        public int MemoryUsage { get; set; }
+        public string Uptime { get; set; }
+        public bool IsTestRunning { get; set; }
     }
-    catch (Exception ex)
-    {
-      Logger.LogError(ex, "Error testing broadcast");
-      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-    }
-    finally
-    {
-      IsTestRunning = false;
-    }
-  }
 }
