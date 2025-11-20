@@ -390,11 +390,24 @@ public class SqliteConfigurationService : IConfigurationService
 
   public async Task ReplicateToAsync(IConfigurationService target)
   {
-    var allItems = await LoadAllAsync();
-    
-    foreach (var item in allItems)
+    var components = await GetComponentsAsync();
+    foreach (var component in components)
     {
-      await target.SaveAsync(item);
+      await EnsureComponentTableExistsAsync(component);
+      var tableName = GetTableName(component);
+
+      using var connection = new SqliteConnection(_connectionString);
+      await connection.OpenAsync();
+
+      var command = connection.CreateCommand();
+      command.CommandText = $"SELECT Id, Component, Key, Value, Category, LastUpdated FROM {tableName};";
+
+      using var reader = await command.ExecuteReaderAsync();
+      while (await reader.ReadAsync())
+      {
+        var item = ReadConfigurationItem(reader);
+        await target.SaveAsync(item);
+      }
     }
   }
 
