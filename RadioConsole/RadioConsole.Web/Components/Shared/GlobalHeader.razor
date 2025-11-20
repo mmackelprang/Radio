@@ -45,13 +45,22 @@
   private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
   {
     CurrentDateTime = DateTime.Now;
-    InvokeAsync(StateHasChanged);
+    try
+    {
+      InvokeAsync(StateHasChanged);
+    }
+    catch (ObjectDisposedException)
+    {
+      // Component was disposed, stop the timer
+      timer?.Stop();
+    }
   }
 
   public void Dispose()
   {
     if (timer != null)
     {
+      timer.Elapsed -= OnTimerElapsed;
       timer.Stop();
       timer.Dispose();
     }

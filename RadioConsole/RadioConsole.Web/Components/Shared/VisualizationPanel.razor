@@ -6,7 +6,11 @@
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
   <MudText Typo="Typo.h5" Class="mb-2">Audio Visualizer</MudText>
-  <canvas id="visualizer-canvas" class="visualizer-canvas" @ref="canvasElement"></canvas>
+  <canvas id="visualizer-canvas" 
+          class="visualizer-canvas" 
+          @ref="canvasElement" 
+          role="img" 
+          aria-label="Real-time audio frequency visualization"></canvas>
 </MudPaper>
 
 @code {
@@ -72,6 +76,16 @@
 
   public async ValueTask DisposeAsync()
   {
+    try
+    {
+      // Clean up JavaScript visualizer resources
+      await JS.InvokeVoidAsync("disposeVisualizer");
+    }
+    catch (Exception ex)
+    {
+      Logger.LogWarning(ex, "Error disposing visualizer");
+    }
+
     if (hubConnection is not null)
     {
       await hubConnection.DisposeAsync();
