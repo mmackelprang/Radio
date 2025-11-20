@@ -174,16 +174,11 @@ public class SqliteConfigurationService : IConfigurationService
 
   public async Task<IEnumerable<ConfigurationItem>> LoadAllAsync()
   {
-    var allItems = new List<ConfigurationItem>();
     var components = await GetComponentsAsync();
-
-    foreach (var component in components)
-    {
-      var items = await LoadByComponentAsync(component);
-      allItems.AddRange(items);
-    }
-
-    return allItems;
+    var itemsByComponent = await Task.WhenAll(
+      components.Select(component => LoadByComponentAsync(component))
+    );
+    return itemsByComponent.SelectMany(items => items);
   }
 
   public async Task<IEnumerable<ConfigurationItem>> LoadByComponentAsync(string component)
