@@ -1,0 +1,308 @@
+@inject ILogger<RaddyRadioControlPanel> Logger
+@inject ISnackbar Snackbar
+@inject IRaddyRadioService RaddyRadioService
+
+<MudPaper Class="pa-4" Style="background-color: #2c2c2c;">
+  <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4">USB Radio Control</MudText>
+
+  <MudGrid Spacing="3">
+    @* Left Column - Frequency Display and Band *@
+    <MudItem xs="12" md="6">
+      <MudStack Spacing="3">
+        @* LED Frequency Display *@
+        <MudPaper Elevation="3" Class="pa-4" Style="background-color: #000000; border: 2px solid #444;">
+          <MudText Typo="Typo.caption" Align="Align.Center" Style="color: #888;">FREQUENCY</MudText>
+          <MudText Typo="Typo.h2" Align="Align.Center" 
+                   Style="font-family: 'Digital-7', 'Courier New', monospace; color: #00ff00; font-weight: 700; letter-spacing: 8px; text-shadow: 0 0 10px #00ff00;">
+            @Frequency.ToString(FrequencyFormat)
+          </MudText>
+          <MudText Typo="Typo.h6" Align="Align.Center" Style="color: #00ff00; font-weight: 700;">MHz</MudText>
+        </MudPaper>
+
+        @* Band Display *@
+        <MudPaper Elevation="3" Class="pa-3" Style="background-color: #000000; border: 2px solid #444;">
+          <MudText Typo="Typo.caption" Align="Align.Center" Style="color: #888;">BAND</MudText>
+          <MudText Typo="Typo.h3" Align="Align.Center" 
+                   Style="font-family: 'Digital-7', 'Courier New', monospace; color: #ff4500; font-weight: 700; letter-spacing: 4px; text-shadow: 0 0 10px #ff4500;">
+            @SelectedBand
+          </MudText>
+        </MudPaper>
+
+        @* Band Selector *@
+        <MudSelect T="string" Label="Select Band" Variant="Variant.Filled" 
+                   @bind-Value="SelectedBand" FullWidth="true"
+                   AdornmentIcon="@Icons.Material.Filled.Radio">
+          <MudSelectItem Value="@("FM")">FM (87.5 - 108.0 MHz)</MudSelectItem>
+          <MudSelectItem Value="@("AM")">AM (0.53 - 1.71 MHz)</MudSelectItem>
+          <MudSelectItem Value="@("SW")">SW (1.71 - 30.0 MHz)</MudSelectItem>
+          <MudSelectItem Value="@("AIR")">AIR (108.0 - 137.0 MHz)</MudSelectItem>
+          <MudSelectItem Value="@("VHF")">VHF (30.0 - 300.0 MHz)</MudSelectItem>
+        </MudSelect>
+      </MudStack>
+    </MudItem>
+
+    @* Right Column - Controls *@
+    <MudItem xs="12" md="6">
+      <MudStack Spacing="3">
+        @* Tuning Controls *@
+        <MudPaper Elevation="2" Class="pa-3">
+          <MudText Typo="Typo.h6" Class="mb-2">Tuning</MudText>
+          <MudGrid Spacing="2">
+            <MudItem xs="6">
+              <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large"
+                         StartIcon="@Icons.Material.Filled.KeyboardArrowDown" OnClick="TuneDown">
+                Tune Down
+              </MudButton>
+            </MudItem>
+            <MudItem xs="6">
+              <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large"
+                         EndIcon="@Icons.Material.Filled.KeyboardArrowUp" OnClick="TuneUp">
+                Tune Up
+              </MudButton>
+            </MudItem>
+            <MudItem xs="6">
+              <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Size="Size.Large"
+                         StartIcon="@Icons.Material.Filled.FastRewind" OnClick="ScanDown">
+                Scan Down
+              </MudButton>
+            </MudItem>
+            <MudItem xs="6">
+              <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Size="Size.Large"
+                         EndIcon="@Icons.Material.Filled.FastForward" OnClick="ScanUp">
+                Scan Up
+              </MudButton>
+            </MudItem>
+          </MudGrid>
+        </MudPaper>
+
+        @* Radio Volume Control *@
+        <MudPaper Elevation="2" Class="pa-3">
+          <MudText Typo="Typo.h6" Class="mb-2">Radio Volume</MudText>
+          <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudIconButton Icon="@Icons.Material.Filled.VolumeDown" Color="Color.Primary" OnClick="VolumeDown" />
+            <MudSlider T="int" @bind-Value="RadioVolume" Min="0" Max="100" Color="Color.Primary" Style="flex: 1;" />
+            <MudIconButton Icon="@Icons.Material.Filled.VolumeUp" Color="Color.Primary" OnClick="VolumeUp" />
+            <MudText Typo="Typo.body1" Style="min-width: 50px;">@RadioVolume%</MudText>
+          </MudStack>
+          <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+            * This only affects radio volume, not overall audio mix
+          </MudText>
+        </MudPaper>
+
+        @* Set Frequency Button *@
+        <MudButton Variant="Variant.Filled" Color="Color.Success" FullWidth="true" Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Dialpad" OnClick="ShowFrequencyDialog">
+          Set Frequency
+        </MudButton>
+      </MudStack>
+    </MudItem>
+  </MudGrid>
+
+  @* Status Info *@
+  <MudDivider Class="my-4" />
+  <MudStack Row="true" Spacing="2" Justify="Justify.SpaceBetween">
+    <MudChip T="string" Color="@(IsStreaming ? Color.Success : Color.Default)" Icon="@Icons.Material.Filled.Radio">
+      @(IsStreaming ? "Streaming" : "Not Streaming")
+    </MudChip>
+    <MudChip T="string" Color="@(IsDeviceDetected ? Color.Info : Color.Warning)" Icon="@Icons.Material.Filled.Usb">
+      @(IsDeviceDetected ? "Device Detected" : "Device Not Found")
+    </MudChip>
+  </MudStack>
+</MudPaper>
+
+@* Frequency Entry Dialog *@
+@if (ShowKeypad)
+{
+  <MudOverlay Visible="true" DarkBackground="true" ZIndex="9999" OnClick="@(() => ShowKeypad = false)">
+    <div @onclick:stopPropagation="true" style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+      <NumericKeypad Title="@($"Enter Frequency ({GetFrequencyRange()})")"
+                     InitialValue="@Frequency.ToString("F1")"
+                     MaxLength="6"
+                     AllowDecimal="true"
+                     DecimalSeparator="."
+                     SubmitLabel="Set"
+                     OnSubmitted="SetFrequency"
+                     ValidateValue="ValidateFrequency" />
+    </div>
+  </MudOverlay>
+}
+
+@code {
+  // Radio state
+  private double Frequency { get; set; } = 101.5;
+  private string SelectedBand { get; set; } = "FM";
+  private int RadioVolume { get; set; } = 50;
+  private bool IsStreaming { get; set; } = false;
+  private bool IsDeviceDetected { get; set; } = false;
+
+  // UI state
+  private bool ShowKeypad { get; set; } = false;
+
+  private string FrequencyFormat => SelectedBand == "AM" || SelectedBand == "SW" ? "F3" : "F1";
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadRadioState();
+  }
+
+  private async Task LoadRadioState()
+  {
+    try
+    {
+      IsStreaming = RaddyRadioService.IsStreaming;
+      IsDeviceDetected = RaddyRadioService.IsDeviceDetected;
+      
+      var freq = await RaddyRadioService.GetFrequencyAsync();
+      if (freq.HasValue)
+      {
+        Frequency = freq.Value;
+        SelectedBand = DetermineBandFromFrequency(freq.Value);
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading radio state");
+    }
+  }
+
+  private string DetermineBandFromFrequency(double freq)
+  {
+    if (freq >= 87.5 && freq <= 108.0) return "FM";
+    if (freq >= 0.53 && freq <= 1.71) return "AM";
+    if (freq >= 1.71 && freq <= 30.0) return "SW";
+    if (freq >= 108.0 && freq <= 137.0) return "AIR";
+    if (freq >= 30.0 && freq <= 300.0) return "VHF";
+    return "FM";
+  }
+
+  private async Task TuneUp()
+  {
+    var step = GetTuneStep();
+    Frequency += step;
+    Frequency = ClampFrequency(Frequency);
+    await ApplyFrequency();
+    Snackbar.Add($"Tuned up to {Frequency:F1} MHz", Severity.Info);
+  }
+
+  private async Task TuneDown()
+  {
+    var step = GetTuneStep();
+    Frequency -= step;
+    Frequency = ClampFrequency(Frequency);
+    await ApplyFrequency();
+    Snackbar.Add($"Tuned down to {Frequency:F1} MHz", Severity.Info);
+  }
+
+  private async Task ScanUp()
+  {
+    // Stubbed - would scan for next strong signal
+    Snackbar.Add("Scan Up feature coming soon", Severity.Info);
+    await Task.CompletedTask;
+  }
+
+  private async Task ScanDown()
+  {
+    // Stubbed - would scan for previous strong signal
+    Snackbar.Add("Scan Down feature coming soon", Severity.Info);
+    await Task.CompletedTask;
+  }
+
+  private double GetTuneStep()
+  {
+    return SelectedBand switch
+    {
+      "FM" => 0.1,    // 100 kHz steps
+      "AM" => 0.01,   // 10 kHz steps
+      "SW" => 0.005,  // 5 kHz steps
+      "AIR" => 0.025, // 25 kHz steps
+      "VHF" => 0.1,   // 100 kHz steps
+      _ => 0.1
+    };
+  }
+
+  private double ClampFrequency(double freq)
+  {
+    var (min, max) = GetBandRange(SelectedBand);
+    return Math.Clamp(freq, min, max);
+  }
+
+  private (double min, double max) GetBandRange(string band)
+  {
+    return band switch
+    {
+      "FM" => (87.5, 108.0),
+      "AM" => (0.53, 1.71),
+      "SW" => (1.71, 30.0),
+      "AIR" => (108.0, 137.0),
+      "VHF" => (30.0, 300.0),
+      _ => (87.5, 108.0)
+    };
+  }
+
+  private string GetFrequencyRange()
+  {
+    var (min, max) = GetBandRange(SelectedBand);
+    return $"{min:F1} - {max:F1} MHz";
+  }
+
+  private void VolumeUp()
+  {
+    RadioVolume = Math.Min(100, RadioVolume + 5);
+    Snackbar.Add($"Radio volume: {RadioVolume}%", Severity.Info);
+  }
+
+  private void VolumeDown()
+  {
+    RadioVolume = Math.Max(0, RadioVolume - 5);
+    Snackbar.Add($"Radio volume: {RadioVolume}%", Severity.Info);
+  }
+
+  private void ShowFrequencyDialog()
+  {
+    ShowKeypad = true;
+  }
+
+  private async Task SetFrequency(string value)
+  {
+    if (double.TryParse(value, out var freq))
+    {
+      Frequency = ClampFrequency(freq);
+      await ApplyFrequency();
+      ShowKeypad = false;
+      Snackbar.Add($"Frequency set to {Frequency:F1} MHz", Severity.Success);
+    }
+    else
+    {
+      Snackbar.Add("Invalid frequency value", Severity.Error);
+    }
+  }
+
+  private string? ValidateFrequency(string value)
+  {
+    if (string.IsNullOrWhiteSpace(value))
+      return null; // Allow empty during typing
+
+    if (!double.TryParse(value, out var freq))
+      return "Invalid number";
+
+    var (min, max) = GetBandRange(SelectedBand);
+    if (freq < min || freq > max)
+      return $"Must be between {min:F1} and {max:F1} MHz";
+
+    return null; // Valid
+  }
+
+  private async Task ApplyFrequency()
+  {
+    try
+    {
+      await RaddyRadioService.SetFrequencyAsync(Frequency);
+      Logger.LogInformation("Set radio frequency to {Frequency} MHz", Frequency);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error setting radio frequency");
+      Snackbar.Add("Error setting frequency", Severity.Error);
+    }
+  }
+}

@@ -1,0 +1,232 @@
+@using MudBlazor
+
+<MudPaper Elevation="4" Class="numeric-keypad pa-4" Style="max-width: 400px;">
+  <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">@Title</MudText>
+  
+  @* Display *@
+  <MudPaper Elevation="2" Class="pa-3 mb-3" Style="background-color: #1e1e1e;">
+    <MudText Typo="Typo.h4" Align="Align.Right" Style="font-family: 'Courier New', monospace; color: #00ff00; min-height: 50px;">
+      @CurrentValue
+    </MudText>
+  </MudPaper>
+
+  @* Numeric buttons *@
+  <MudGrid Spacing="2" Justify="Justify.Center">
+    @for (int i = 1; i <= 9; i++)
+    {
+      var digit = i;
+      <MudItem xs="4">
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   FullWidth="true"
+                   Size="Size.Large"
+                   Style="min-height: 70px; font-size: 1.5rem;"
+                   OnClick="@(() => OnDigitClick(digit.ToString()))">
+          @digit
+        </MudButton>
+      </MudItem>
+    }
+    
+    @* Decimal point *@
+    <MudItem xs="4">
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Secondary" 
+                 FullWidth="true"
+                 Size="Size.Large"
+                 Style="min-height: 70px; font-size: 1.5rem;"
+                 OnClick="@(() => OnDigitClick(DecimalSeparator))"
+                 Disabled="@(!AllowDecimal || CurrentValue.Contains(DecimalSeparator))">
+        @DecimalSeparator
+      </MudButton>
+    </MudItem>
+    
+    @* Zero *@
+    <MudItem xs="4">
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Primary" 
+                 FullWidth="true"
+                 Size="Size.Large"
+                 Style="min-height: 70px; font-size: 1.5rem;"
+                 OnClick="@(() => OnDigitClick("0"))">
+        0
+      </MudButton>
+    </MudItem>
+    
+    @* Backspace *@
+    <MudItem xs="4">
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Warning" 
+                 FullWidth="true"
+                 Size="Size.Large"
+                 Style="min-height: 70px;"
+                 OnClick="OnBackspace">
+        <MudIcon Icon="@Icons.Material.Filled.Backspace" />
+      </MudButton>
+    </MudItem>
+    
+    @* Clear *@
+    <MudItem xs="6">
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Error" 
+                 FullWidth="true"
+                 Size="Size.Large"
+                 Style="min-height: 60px;"
+                 OnClick="OnClear">
+        Clear
+      </MudButton>
+    </MudItem>
+    
+    @* Enter/Submit *@
+    <MudItem xs="6">
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Success" 
+                 FullWidth="true"
+                 Size="Size.Large"
+                 Style="min-height: 60px;"
+                 OnClick="OnSubmit"
+                 Disabled="@string.IsNullOrEmpty(CurrentValue)">
+        @SubmitLabel
+      </MudButton>
+    </MudItem>
+  </MudGrid>
+</MudPaper>
+
+@code {
+  /// <summary>
+  /// Title displayed above the keypad.
+  /// </summary>
+  [Parameter]
+  public string Title { get; set; } = "Enter Number";
+
+  /// <summary>
+  /// Initial value to display.
+  /// </summary>
+  [Parameter]
+  public string InitialValue { get; set; } = "";
+
+  /// <summary>
+  /// Maximum number of digits/characters allowed.
+  /// </summary>
+  [Parameter]
+  public int MaxLength { get; set; } = 10;
+
+  /// <summary>
+  /// Whether to allow decimal point entry.
+  /// </summary>
+  [Parameter]
+  public bool AllowDecimal { get; set; } = true;
+
+  /// <summary>
+  /// Decimal separator character (. or ,).
+  /// </summary>
+  [Parameter]
+  public string DecimalSeparator { get; set; } = ".";
+
+  /// <summary>
+  /// Label for the submit button.
+  /// </summary>
+  [Parameter]
+  public string SubmitLabel { get; set; } = "Enter";
+
+  /// <summary>
+  /// Callback when a digit is pressed.
+  /// </summary>
+  [Parameter]
+  public EventCallback<string> OnValueChanged { get; set; }
+
+  /// <summary>
+  /// Callback when submit button is pressed.
+  /// </summary>
+  [Parameter]
+  public EventCallback<string> OnSubmitted { get; set; }
+
+  /// <summary>
+  /// Callback when clear button is pressed.
+  /// </summary>
+  [Parameter]
+  public EventCallback OnCleared { get; set; }
+
+  /// <summary>
+  /// Validation function to check if value is valid (returns error message or null if valid).
+  /// </summary>
+  [Parameter]
+  public Func<string, string?>? ValidateValue { get; set; }
+
+  private string CurrentValue { get; set; } = "";
+
+  protected override void OnInitialized()
+  {
+    CurrentValue = InitialValue;
+  }
+
+  private async Task OnDigitClick(string digit)
+  {
+    if (CurrentValue.Length >= MaxLength)
+      return;
+
+    var newValue = CurrentValue + digit;
+
+    // Run validation if provided
+    if (ValidateValue != null)
+    {
+      var error = ValidateValue(newValue);
+      if (error != null)
+      {
+        // Don't allow invalid input
+        return;
+      }
+    }
+
+    CurrentValue = newValue;
+    await OnValueChanged.InvokeAsync(CurrentValue);
+  }
+
+  private async Task OnBackspace()
+  {
+    if (CurrentValue.Length > 0)
+    {
+      CurrentValue = CurrentValue.Substring(0, CurrentValue.Length - 1);
+      await OnValueChanged.InvokeAsync(CurrentValue);
+    }
+  }
+
+  private async Task OnClear()
+  {
+    CurrentValue = "";
+    await OnValueChanged.InvokeAsync(CurrentValue);
+    await OnCleared.InvokeAsync();
+  }
+
+  private async Task OnSubmit()
+  {
+    if (string.IsNullOrEmpty(CurrentValue))
+      return;
+
+    // Final validation before submit
+    if (ValidateValue != null)
+    {
+      var error = ValidateValue(CurrentValue);
+      if (error != null)
+      {
+        // Show error somehow
+        return;
+      }
+    }
+
+    await OnSubmitted.InvokeAsync(CurrentValue);
+  }
+
+  /// <summary>
+  /// Programmatically set the current value.
+  /// </summary>
+  public void SetValue(string value)
+  {
+    CurrentValue = value;
+    StateHasChanged();
+  }
+
+  /// <summary>
+  /// Get the current value.
+  /// </summary>
+  public string GetValue() => CurrentValue;
+}

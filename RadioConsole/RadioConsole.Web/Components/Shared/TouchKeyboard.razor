@@ -1,0 +1,275 @@
+@using MudBlazor
+
+<MudPaper Elevation="4" Class="touch-keyboard pa-4" Style="max-width: 900px;">
+  <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">@Title</MudText>
+  
+  @* Display *@
+  <MudPaper Elevation="2" Class="pa-3 mb-3" Style="background-color: #1e1e1e;">
+    <MudText Typo="Typo.h5" Style="font-family: 'Courier New', monospace; color: #00ff00; min-height: 40px; word-break: break-all;">
+      @CurrentValue
+      <span style="animation: blink 1s infinite;">|</span>
+    </MudText>
+  </MudPaper>
+
+  @* Keyboard layout *@
+  <MudStack Spacing="2">
+    @* Row 1 - Numbers *@
+    <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+      @foreach (var key in Row1Keys)
+      {
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Size="Size.Medium"
+                   Style="min-width: 60px; min-height: 50px; font-size: 1.2rem;"
+                   OnClick="@(() => OnKeyClick(key))">
+          @(IsShiftActive ? GetShiftedKey(key) : key)
+        </MudButton>
+      }
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Warning" 
+                 Size="Size.Medium"
+                 Style="min-width: 100px; min-height: 50px;"
+                 OnClick="OnBackspace">
+        <MudIcon Icon="@Icons.Material.Filled.Backspace" />
+      </MudButton>
+    </MudStack>
+
+    @* Row 2 - QWERTY *@
+    <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+      @foreach (var key in Row2Keys)
+      {
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Size="Size.Medium"
+                   Style="min-width: 60px; min-height: 50px; font-size: 1.2rem;"
+                   OnClick="@(() => OnKeyClick(key))">
+          @(IsShiftActive ? key.ToUpper() : key.ToLower())
+        </MudButton>
+      }
+    </MudStack>
+
+    @* Row 3 - ASDFGH *@
+    <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+      @foreach (var key in Row3Keys)
+      {
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Size="Size.Medium"
+                   Style="min-width: 60px; min-height: 50px; font-size: 1.2rem;"
+                   OnClick="@(() => OnKeyClick(key))">
+          @(IsShiftActive ? key.ToUpper() : key.ToLower())
+        </MudButton>
+      }
+    </MudStack>
+
+    @* Row 4 - ZXCVBN *@
+    <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+      <MudButton Variant="Variant.Filled" 
+                 Color="@(IsShiftActive ? Color.Success : Color.Secondary)" 
+                 Size="Size.Medium"
+                 Style="min-width: 100px; min-height: 50px;"
+                 OnClick="OnShiftToggle">
+        <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" />
+        Shift
+      </MudButton>
+      @foreach (var key in Row4Keys)
+      {
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Size="Size.Medium"
+                   Style="min-width: 60px; min-height: 50px; font-size: 1.2rem;"
+                   OnClick="@(() => OnKeyClick(key))">
+          @(IsShiftActive ? key.ToUpper() : key.ToLower())
+        </MudButton>
+      }
+      <MudButton Variant="Variant.Filled" 
+                 Color="@(IsShiftActive ? Color.Success : Color.Secondary)" 
+                 Size="Size.Medium"
+                 Style="min-width: 100px; min-height: 50px;"
+                 OnClick="OnShiftToggle">
+        <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" />
+        Shift
+      </MudButton>
+    </MudStack>
+
+    @* Row 5 - Space and actions *@
+    <MudStack Row="true" Spacing="2" Justify="Justify.Center">
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Error" 
+                 Size="Size.Medium"
+                 Style="min-width: 120px; min-height: 50px;"
+                 OnClick="OnClear">
+        Clear
+      </MudButton>
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Primary" 
+                 Size="Size.Medium"
+                 Style="min-width: 400px; min-height: 50px;"
+                 OnClick="@(() => OnKeyClick(" "))">
+        Space
+      </MudButton>
+      <MudButton Variant="Variant.Filled" 
+                 Color="Color.Success" 
+                 Size="Size.Medium"
+                 Style="min-width: 120px; min-height: 50px;"
+                 OnClick="OnSubmit"
+                 Disabled="@string.IsNullOrEmpty(CurrentValue)">
+        @SubmitLabel
+      </MudButton>
+    </MudStack>
+  </MudStack>
+</MudPaper>
+
+<style>
+  @@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+</style>
+
+@code {
+  /// <summary>
+  /// Title displayed above the keyboard.
+  /// </summary>
+  [Parameter]
+  public string Title { get; set; } = "Enter Text";
+
+  /// <summary>
+  /// Initial value to display.
+  /// </summary>
+  [Parameter]
+  public string InitialValue { get; set; } = "";
+
+  /// <summary>
+  /// Maximum number of characters allowed.
+  /// </summary>
+  [Parameter]
+  public int MaxLength { get; set; } = 100;
+
+  /// <summary>
+  /// Label for the submit button.
+  /// </summary>
+  [Parameter]
+  public string SubmitLabel { get; set; } = "Enter";
+
+  /// <summary>
+  /// Callback when a key is pressed.
+  /// </summary>
+  [Parameter]
+  public EventCallback<string> OnValueChanged { get; set; }
+
+  /// <summary>
+  /// Callback when submit button is pressed.
+  /// </summary>
+  [Parameter]
+  public EventCallback<string> OnSubmitted { get; set; }
+
+  /// <summary>
+  /// Callback when clear button is pressed.
+  /// </summary>
+  [Parameter]
+  public EventCallback OnCleared { get; set; }
+
+  private string CurrentValue { get; set; } = "";
+  private bool IsShiftActive { get; set; } = false;
+
+  // Keyboard layout
+  private readonly string[] Row1Keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" };
+  private readonly string[] Row2Keys = { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" };
+  private readonly string[] Row3Keys = { "A", "S", "D", "F", "G", "H", "J", "K", "L" };
+  private readonly string[] Row4Keys = { "Z", "X", "C", "V", "B", "N", "M" };
+
+  protected override void OnInitialized()
+  {
+    CurrentValue = InitialValue;
+  }
+
+  private async Task OnKeyClick(string key)
+  {
+    if (CurrentValue.Length >= MaxLength)
+      return;
+
+    var charToAdd = key;
+    
+    // Apply shift if active
+    if (IsShiftActive && key.Length == 1 && char.IsLetter(key[0]))
+    {
+      charToAdd = key.ToUpper();
+      IsShiftActive = false; // Auto-deactivate shift after one character
+    }
+    else if (IsShiftActive && Row1Keys.Contains(key))
+    {
+      charToAdd = GetShiftedKey(key);
+      IsShiftActive = false;
+    }
+    else if (key.Length == 1 && char.IsLetter(key[0]))
+    {
+      charToAdd = key.ToLower();
+    }
+
+    CurrentValue += charToAdd;
+    await OnValueChanged.InvokeAsync(CurrentValue);
+  }
+
+  private string GetShiftedKey(string key)
+  {
+    return key switch
+    {
+      "1" => "!",
+      "2" => "@",
+      "3" => "#",
+      "4" => "$",
+      "5" => "%",
+      "6" => "^",
+      "7" => "&",
+      "8" => "*",
+      "9" => "(",
+      "0" => ")",
+      _ => key
+    };
+  }
+
+  private void OnShiftToggle()
+  {
+    IsShiftActive = !IsShiftActive;
+  }
+
+  private async Task OnBackspace()
+  {
+    if (CurrentValue.Length > 0)
+    {
+      CurrentValue = CurrentValue.Substring(0, CurrentValue.Length - 1);
+      await OnValueChanged.InvokeAsync(CurrentValue);
+    }
+  }
+
+  private async Task OnClear()
+  {
+    CurrentValue = "";
+    IsShiftActive = false;
+    await OnValueChanged.InvokeAsync(CurrentValue);
+    await OnCleared.InvokeAsync();
+  }
+
+  private async Task OnSubmit()
+  {
+    if (string.IsNullOrEmpty(CurrentValue))
+      return;
+
+    await OnSubmitted.InvokeAsync(CurrentValue);
+  }
+
+  /// <summary>
+  /// Programmatically set the current value.
+  /// </summary>
+  public void SetValue(string value)
+  {
+    CurrentValue = value;
+    StateHasChanged();
+  }
+
+  /// <summary>
+  /// Get the current value.
+  /// </summary>
+  public string GetValue() => CurrentValue;
+}
