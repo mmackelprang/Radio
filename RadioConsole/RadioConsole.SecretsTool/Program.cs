@@ -245,7 +245,7 @@ class Program
     if (value.Length <= 4)
       return "****";
     
-    return $"{value.Substring(0, 2)}{'*'.ToString().PadLeft(value.Length - 4, '*')}{value.Substring(value.Length - 2)}";
+    return $"{value.Substring(0, 2)}{new string('*', value.Length - 4)}{value.Substring(value.Length - 2)}";
   }
 }
 
