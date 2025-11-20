@@ -17,6 +17,7 @@ public class SystemTestService : ISystemTestService
   private bool _isTestRunning;
   private const string TestSourceId = "system-test";
   private const string DoorbellSourceId = "doorbell-test";
+  private const string TtsSourceId = "tts-test";
 
   public SystemTestService(
     IAudioPlayer audioPlayer,
@@ -51,6 +52,10 @@ public class SystemTestService : ISystemTestService
     {
       _logger.LogInformation("Triggering TTS test with phrase: {Phrase}", phrase);
 
+      // Register TTS as high priority to trigger ducking
+      await _priorityService.RegisterSourceAsync(TtsSourceId, AudioPriority.High);
+      await _priorityService.OnHighPriorityStartAsync(TtsSourceId);
+
       // Create TTS service (default to espeak)
       var ttsService = _ttsFactory.Create(TtsProvider.ESpeak);
       await ttsService.InitializeAsync();
@@ -67,6 +72,8 @@ public class SystemTestService : ISystemTestService
     }
     finally
     {
+      await _priorityService.OnHighPriorityEndAsync(TtsSourceId);
+      await _priorityService.UnregisterSourceAsync(TtsSourceId);
       _isTestRunning = false;
     }
   }

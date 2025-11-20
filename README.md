@@ -224,10 +224,21 @@ See `RadioPlan_v3.md` for detailed deployment instructions.
 
 ## Documentation
 
-- **RadioPlan_v3.md**: Complete project specification and architecture
-- **PHASE5_INTEGRATION_TODO.md**: Integration status and remaining work
-- **UPDATES_COMPLETED.md**: Recently completed features summary
-- **Component READMEs**: Individual project documentation
+### 📘 Essential Guides
+- **[RadioPlan_v3.md](RadioPlan_v3.md)** - Complete project specification and architecture blueprint
+- **[Audio Priority Service](docs/AUDIO_PRIORITY_SERVICE.md)** - Developer guide for audio ducking and priority management
+- **[Configuration Service](docs/CONFIGURATION_SERVICE.md)** - Configuration management and storage guide
+- **[Visualization Guide](docs/UI_VISUALIZATION_GUIDE.md)** - Audio visualization implementation details
+
+### 📋 Active Development
+- **[PHASE5_INTEGRATION_TODO.md](PHASE5_INTEGRATION_TODO.md)** - Current integration tasks and status
+
+### 📚 Additional Documentation
+See the [Documentation Index](docs/README.md) for:
+- Historical phase completion summaries
+- Previous plan versions
+- Code review guidelines
+- All project documentation organized by category
 
 ## Contributing
 
