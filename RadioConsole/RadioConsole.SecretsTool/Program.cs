@@ -196,13 +196,15 @@ class Program
       return 1;
     }
 
-    var exists = await service.ExistsAsync("Secrets", key);
-    if (!exists)
+    var secretItems = await service.LoadByComponentAsync("Secrets");
+    var secretToDelete = secretItems.FirstOrDefault(s => s.Category == category && s.Key == key);
+    if (secretToDelete == null)
     {
       Console.WriteLine($"Secret not found: Category={category}, Key={key}");
       return 1;
     }
 
+    // TODO: Ideally, DeleteAsync should accept both category and key for precise deletion.
     await service.DeleteAsync("Secrets", key);
 
     Console.WriteLine($"Secret deleted successfully:");
