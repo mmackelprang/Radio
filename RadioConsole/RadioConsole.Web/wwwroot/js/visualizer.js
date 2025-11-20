@@ -3,6 +3,7 @@ let visualizerCanvas = null;
 let visualizerContext = null;
 let currentFFTData = [];
 let animationFrameId = null;
+let visualizationType = 'spectrum'; // default: spectrum, levelMeter, waveform
 
 // Initialize the visualizer canvas
 window.initializeVisualizer = function (canvasElement) {
@@ -28,6 +29,12 @@ window.initializeVisualizer = function (canvasElement) {
 
   console.log('Visualizer initialized');
   return true;
+};
+
+// Set the visualization type
+window.setVisualizationType = function (type) {
+  visualizationType = type || 'spectrum';
+  console.log('Visualization type set to:', visualizationType);
 };
 
 // Resize canvas to match container size
@@ -151,6 +158,40 @@ function drawPlaceholder(ctx, width, height) {
     ctx.fillRect(x, y, barWidth, randomHeight);
   }
 }
+
+// Render visualization commands from C# (for custom visualizers)
+window.renderVisualizationCommands = function (commands) {
+  if (!visualizerContext || !visualizerCanvas || !commands) return;
+
+  const ctx = visualizerContext;
+  const width = visualizerCanvas.width;
+  const height = visualizerCanvas.height;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height);
+  
+  // Draw gradient background
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, '#0a0a0a');
+  gradient.addColorStop(1, '#1a1a1a');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Execute drawing commands
+  for (const cmd of commands) {
+    if (cmd.type === 'line') {
+      ctx.strokeStyle = cmd.color;
+      ctx.lineWidth = cmd.thickness || 1;
+      ctx.beginPath();
+      ctx.moveTo(cmd.x1, cmd.y1);
+      ctx.lineTo(cmd.x2, cmd.y2);
+      ctx.stroke();
+    } else if (cmd.type === 'rectangle') {
+      ctx.fillStyle = cmd.color;
+      ctx.fillRect(cmd.x, cmd.y, cmd.width, cmd.height);
+    }
+  }
+};
 
 // Cleanup
 window.disposeVisualizer = function () {

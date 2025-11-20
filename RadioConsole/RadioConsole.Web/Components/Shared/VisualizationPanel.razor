@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.SignalR.Client
+@using RadioConsole.Core.Interfaces.Audio
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject ILogger<VisualizationPanel> Logger
@@ -6,7 +7,16 @@
 @inject IAudioPlayer AudioPlayer
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
-  <MudText Typo="Typo.h5" Class="mb-2">Audio Visualizer</MudText>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <MudText Typo="Typo.h5">Audio Visualizer</MudText>
+    <MudSelect T="VisualizationType" Label="Visualization Type" Value="@selectedVisualizationType" 
+               ValueChanged="@OnVisualizationTypeChanged"
+               Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 200px;">
+      <MudSelectItem Value="@VisualizationType.Spectrum">Spectrum</MudSelectItem>
+      <MudSelectItem Value="@VisualizationType.Waveform">Waveform</MudSelectItem>
+      <MudSelectItem Value="@VisualizationType.LevelMeter">Level Meter</MudSelectItem>
+    </MudSelect>
+  </div>
   <canvas id="visualizer-canvas" 
           class="visualizer-canvas" 
           @ref="canvasElement" 
@@ -17,16 +27,31 @@
 @code {
   private HubConnection? hubConnection;
   private ElementReference canvasElement;
+  private VisualizationType selectedVisualizationType = VisualizationType.Spectrum;
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (firstRender)
     {
-        if (firstRender)
-        {
-            AudioPlayer.EnableFftDataGeneration(true);
-            await InitializeSignalR();
-            await InitializeCanvas();
-        }
+      AudioPlayer.EnableFftDataGeneration(true);
+      await InitializeSignalR();
+      await InitializeCanvas();
     }
+  }
+
+  private async Task OnVisualizationTypeChanged(VisualizationType newType)
+  {
+    selectedVisualizationType = newType;
+    try
+    {
+      await JS.InvokeVoidAsync("setVisualizationType", newType.ToString().ToLowerInvariant());
+      Logger.LogInformation("Visualization type changed to: {Type}", newType);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error changing visualization type");
+    }
+  }
 
   private async Task InitializeSignalR()
   {

@@ -24,15 +24,25 @@ public static class ConfigurationServiceExtensions
     // Bind configuration options
     var storageOptions = new ConfigurationStorageOptions();
     configuration.GetSection("ConfigurationStorage").Bind(storageOptions);
+
+    // Set RootDir to base directory if not specified
+    if (string.IsNullOrEmpty(storageOptions.RootDir))
+    {
+      storageOptions.RootDir = AppDomain.CurrentDomain.BaseDirectory;
+    }
+    
+    // Resolve storage path relative to RootDir
+    var resolvedStoragePath = storageOptions.ResolvePath(storageOptions.StoragePath);
     
     // Register options
     services.Configure<ConfigurationStorageOptions>(
       configuration.GetSection("ConfigurationStorage"));
 
     // Ensure storage directory exists
-    if (!Directory.Exists(storageOptions.StoragePath))
+    if (!Directory.Exists(resolvedStoragePath))
     {
-      Directory.CreateDirectory(storageOptions.StoragePath);
+      Directory.CreateDirectory(resolvedStoragePath);
+      Console.WriteLine($"Created storage directory: {resolvedStoragePath}");
     }
 
     // Determine storage type
@@ -44,7 +54,10 @@ public static class ConfigurationServiceExtensions
     var fileName = storageType == StorageType.Json 
       ? storageOptions.JsonFileName 
       : storageOptions.SqliteFileName;
-    var storagePath = Path.Combine(storageOptions.StoragePath, fileName);
+    var storagePath = Path.Combine(resolvedStoragePath, fileName);
+
+    Console.WriteLine($"Configuration storage path: {storagePath}");
+    Console.WriteLine($"Configuration storage type: {storageType}");
 
     // Register the configuration service as singleton
     services.AddSingleton<IConfigurationService>(sp => 
