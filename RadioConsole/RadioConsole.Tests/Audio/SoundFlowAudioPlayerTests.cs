@@ -39,9 +39,10 @@ public class SoundFlowAudioPlayerTests
     Assert.False(player.IsInitialized);
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task InitializeAsync_ShouldSetIsInitializedToTrue()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object, _mockVisualizationService.Object);
 
@@ -52,9 +53,10 @@ public class SoundFlowAudioPlayerTests
     Assert.True(player.IsInitialized);
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task InitializeAsync_WithInvalidDeviceId_ShouldUseDefaultDevice()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object);
 
@@ -85,9 +87,10 @@ public class SoundFlowAudioPlayerTests
       async () => await player.PlayAsync("test", audioStream));
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task SetVolumeAsync_WithInitializedPlayer_ShouldSucceed()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object);
     await player.InitializeAsync("default");
@@ -97,9 +100,10 @@ public class SoundFlowAudioPlayerTests
     // No exception should be thrown
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task SetVolumeAsync_ShouldClampVolumeToValidRange()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object);
     await player.InitializeAsync("default");
@@ -121,9 +125,10 @@ public class SoundFlowAudioPlayerTests
     Assert.Throws<InvalidOperationException>(() => player.GetMixedOutputStream());
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task GetMixedOutputStream_WithInitialization_ShouldReturnStream()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object);
     await player.InitializeAsync("default");
@@ -135,11 +140,13 @@ public class SoundFlowAudioPlayerTests
     Assert.NotNull(stream);
   }
 
-  [Fact(Skip = "Requires audio hardware - FFT generation only works with initialized playback device")]
-  public void EnableFftDataGeneration_ShouldNotThrow_WhenEnabled()
+  [Fact]
+  public async Task EnableFftDataGeneration_ShouldNotThrow_WhenEnabled()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object, _mockVisualizationService.Object);
+    await player.InitializeAsync("default");
 
     // Act
     player.EnableFftDataGeneration(true);
@@ -164,11 +171,13 @@ public class SoundFlowAudioPlayerTests
     player.EnableFftDataGeneration(false);
   }
 
-  [Fact(Skip = "Requires audio hardware - FFT generation only works with initialized playback device")]
-  public void EnableFftDataGeneration_ShouldStopTimer_WhenDisabled()
+  [Fact]
+  public async Task EnableFftDataGeneration_ShouldStopTimer_WhenDisabled()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object, _mockVisualizationService.Object);
+    await player.InitializeAsync("default");
     player.EnableFftDataGeneration(true);
     Thread.Sleep(100);
 
@@ -183,9 +192,10 @@ public class SoundFlowAudioPlayerTests
       Times.Never);
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task Dispose_ShouldCleanupResources()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object, _mockVisualizationService.Object);
     await player.InitializeAsync("default");
@@ -198,9 +208,10 @@ public class SoundFlowAudioPlayerTests
     Assert.False(player.IsInitialized);
   }
 
-  [Fact(Skip = "Requires audio hardware")]
+  [Fact]
   public async Task StopAsync_ShouldLogInformation()
   {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
     // Arrange
     var player = new SoundFlowAudioPlayer(_mockLogger.Object);
     await player.InitializeAsync("default");
