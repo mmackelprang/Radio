@@ -1,0 +1,108 @@
+@inject ILogger<FileSelector> Logger
+@inject IJSRuntime JS
+
+<MudStack Spacing="2">
+  <MudTextField @bind-Value="SelectedPath" Label="@Label" Variant="Variant.Outlined" ReadOnly="true" />
+  <MudStack Row="true" Spacing="2">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SelectFile" Disabled="@IsDirectory">
+      <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Class="mr-2" />
+      Select File
+    </MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SelectDirectory" Disabled="@(!IsDirectory)">
+      <MudIcon Icon="@Icons.Material.Filled.Folder" Class="mr-2" />
+      Select Directory
+    </MudButton>
+    @if (!string.IsNullOrEmpty(SelectedPath))
+    {
+      <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="Clear">
+        <MudIcon Icon="@Icons.Material.Filled.Clear" Class="mr-2" />
+        Clear
+      </MudButton>
+    }
+  </MudStack>
+</MudStack>
+
+<MudDialog @bind-Visible="ShowDialog" Options="DialogOptions">
+  <TitleContent>
+    <MudText Typo="Typo.h6">@(IsDirectory ? "Select Directory" : "Select File")</MudText>
+  </TitleContent>
+  <DialogContent>
+    <MudStack Spacing="2">
+      <MudTextField @bind-Value="CurrentPath" Label="Path" Variant="Variant.Outlined" />
+      @if (IsDirectory)
+      {
+        <MudText Typo="Typo.body2">Enter the full path to the directory</MudText>
+        <MudText Typo="Typo.caption">Example: /home/user/music</MudText>
+      }
+      else
+      {
+        <MudText Typo="Typo.body2">Enter the full path to the file</MudText>
+        <MudText Typo="Typo.caption">Example: /home/user/music/song.mp3</MudText>
+      }
+    </MudStack>
+  </DialogContent>
+  <DialogActions>
+    <MudButton OnClick="CancelDialog">Cancel</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="ConfirmDialog">OK</MudButton>
+  </DialogActions>
+</MudDialog>
+
+@code {
+  [Parameter]
+  public string Label { get; set; } = "Select Path";
+
+  [Parameter]
+  public bool IsDirectory { get; set; } = false;
+
+  [Parameter]
+  public string SelectedPath { get; set; } = "";
+
+  [Parameter]
+  public EventCallback<string> SelectedPathChanged { get; set; }
+
+  [Parameter]
+  public string? FileFilter { get; set; }
+
+  private bool ShowDialog { get; set; } = false;
+  private string CurrentPath { get; set; } = "";
+
+  private DialogOptions DialogOptions = new DialogOptions
+  {
+    MaxWidth = MaxWidth.Small,
+    FullWidth = true
+  };
+
+  private void SelectFile()
+  {
+    CurrentPath = SelectedPath;
+    ShowDialog = true;
+  }
+
+  private void SelectDirectory()
+  {
+    CurrentPath = SelectedPath;
+    ShowDialog = true;
+  }
+
+  private void Clear()
+  {
+    SelectedPath = "";
+    SelectedPathChanged.InvokeAsync(SelectedPath);
+  }
+
+  private void CancelDialog()
+  {
+    ShowDialog = false;
+    CurrentPath = "";
+  }
+
+  private async Task ConfirmDialog()
+  {
+    if (!string.IsNullOrWhiteSpace(CurrentPath))
+    {
+      SelectedPath = CurrentPath;
+      await SelectedPathChanged.InvokeAsync(SelectedPath);
+    }
+    ShowDialog = false;
+  }
+}

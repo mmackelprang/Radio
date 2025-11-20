@@ -1,5 +1,6 @@
 @inject ILogger<AudioSetupPanel> Logger
 @inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
 @inject IAudioPlayer AudioPlayer
 @inject IRaddyRadioService RaddyRadioService
 @inject ISpotifyService SpotifyService
@@ -9,6 +10,40 @@
   <MudText Typo="Typo.h5" Class="mb-4">Audio Setup</MudText>
   
   <MudStack Spacing="3">
+    <MudDivider />
+    <MudText Typo="Typo.h6">Audio Devices</MudText>
+    
+    <MudSelect T="string" Label="Input Device" Value="@SelectedInputDevice" ValueChanged="OnInputDeviceChanged" Variant="Variant.Outlined">
+      @if (AvailableInputDevices.Any())
+      {
+        @foreach (var device in AvailableInputDevices)
+        {
+          <MudSelectItem Value="@device.Id">@device.Name @(device.IsDefault ? " (Default)" : "")</MudSelectItem>
+        }
+      }
+      else
+      {
+        <MudSelectItem Value="@string.Empty" Disabled="true">Loading devices...</MudSelectItem>
+      }
+    </MudSelect>
+
+    <MudSelect T="string" Label="Output Device" Value="@SelectedOutputDevice" ValueChanged="OnOutputDeviceChanged" Variant="Variant.Outlined">
+      @if (AvailableOutputDevices.Any())
+      {
+        @foreach (var device in AvailableOutputDevices)
+        {
+          <MudSelectItem Value="@device.Id">@device.Name @(device.IsDefault ? " (Default)" : "")</MudSelectItem>
+        }
+      }
+      else
+      {
+        <MudSelectItem Value="@string.Empty" Disabled="true">Loading devices...</MudSelectItem>
+      }
+    </MudSelect>
+
+    <MudDivider />
+    <MudText Typo="Typo.h6">Audio Source</MudText>
+    
     <MudSelect T="string" Label="Input Source" Value="@SelectedInput" ValueChanged="OnInputChanged" Variant="Variant.Outlined">
       <MudSelectItem Value="@("Radio")">Radio (Raddy RF320)</MudSelectItem>
       <MudSelectItem Value="@("Vinyl")">Vinyl Turntable</MudSelectItem>
@@ -60,11 +95,16 @@
     public EventCallback<string> SelectedInputChanged { get; set; }
     private string SelectedOutput { get; set; } = "Local";
     private string SelectedCastDevice { get; set; } = "";
+    private string SelectedInputDevice { get; set; } = "";
+    private string SelectedOutputDevice { get; set; } = "";
     private bool IsPlaying { get; set; } = false;
     private int Volume { get; set; } = 75;
     private int Balance { get; set; } = 0;
 
     private List<string> AvailableCastDevices { get; set; } = new();
+    private List<AudioDeviceInfo> AvailableInputDevices { get; set; } = new();
+    private List<AudioDeviceInfo> AvailableOutputDevices { get; set; } = new();
+    private HttpClient? _httpClient;
 
     private async Task OnPlayPause()
     {
@@ -205,12 +245,120 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _httpClient = HttpClientFactory.CreateClient("API");
+        
         if (!AudioPlayer.IsInitialized)
         {
             await AudioPlayer.InitializeAsync("default");
         }
+        await LoadAudioDevices();
         await LoadCastDevices();
         // TODO: Load current audio settings
+    }
+
+    private async Task LoadAudioDevices()
+    {
+        if (_httpClient == null) return;
+        
+        try
+        {
+            var inputDevices = await _httpClient.GetFromJsonAsync<List<AudioDeviceInfo>>("/api/audiodevicemanager/inputs");
+            if (inputDevices != null)
+            {
+                AvailableInputDevices = inputDevices;
+                
+                // Try to get current input device
+                try
+                {
+                    var currentInput = await _httpClient.GetFromJsonAsync<AudioDeviceInfo>("/api/audiodevicemanager/inputs/current");
+                    if (currentInput != null)
+                    {
+                        SelectedInputDevice = currentInput.Id;
+                    }
+                }
+                catch
+                {
+                    // No current device selected, use default or first
+                    SelectedInputDevice = AvailableInputDevices.FirstOrDefault(d => d.IsDefault)?.Id 
+                                        ?? AvailableInputDevices.FirstOrDefault()?.Id 
+                                        ?? "";
+                }
+            }
+
+            var outputDevices = await _httpClient.GetFromJsonAsync<List<AudioDeviceInfo>>("/api/audiodevicemanager/outputs");
+            if (outputDevices != null)
+            {
+                AvailableOutputDevices = outputDevices;
+                
+                // Try to get current output device
+                try
+                {
+                    var currentOutput = await _httpClient.GetFromJsonAsync<AudioDeviceInfo>("/api/audiodevicemanager/outputs/current");
+                    if (currentOutput != null)
+                    {
+                        SelectedOutputDevice = currentOutput.Id;
+                    }
+                }
+                catch
+                {
+                    // No current device selected, use default or first
+                    SelectedOutputDevice = AvailableOutputDevices.FirstOrDefault(d => d.IsDefault)?.Id 
+                                         ?? AvailableOutputDevices.FirstOrDefault()?.Id 
+                                         ?? "";
+                }
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading audio devices");
+            Snackbar.Add("Error loading audio devices", Severity.Warning);
+        }
+    }
+
+    private async Task OnInputDeviceChanged(string deviceId)
+    {
+        if (_httpClient == null || string.IsNullOrEmpty(deviceId)) return;
+        
+        try
+        {
+            var request = new { DeviceId = deviceId };
+            var response = await _httpClient.PostAsJsonAsync("/api/audiodevicemanager/inputs/current", request);
+            response.EnsureSuccessStatusCode();
+            
+            SelectedInputDevice = deviceId;
+            var deviceName = AvailableInputDevices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? "Unknown";
+            Snackbar.Add($"Input device changed to: {deviceName}", Severity.Success);
+            Logger.LogInformation("Input device changed to: {DeviceId}", deviceId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error changing input device");
+            Snackbar.Add("Error changing input device", Severity.Error);
+        }
+    }
+
+    private async Task OnOutputDeviceChanged(string deviceId)
+    {
+        if (_httpClient == null || string.IsNullOrEmpty(deviceId)) return;
+        
+        try
+        {
+            var request = new { DeviceId = deviceId };
+            var response = await _httpClient.PostAsJsonAsync("/api/audiodevicemanager/outputs/current", request);
+            response.EnsureSuccessStatusCode();
+            
+            SelectedOutputDevice = deviceId;
+            var deviceName = AvailableOutputDevices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? "Unknown";
+            Snackbar.Add($"Output device changed to: {deviceName}", Severity.Success);
+            Logger.LogInformation("Output device changed to: {DeviceId}", deviceId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error changing output device");
+            Snackbar.Add("Error changing output device", Severity.Error);
+        }
     }
 
     private async Task LoadCastDevices()

@@ -79,6 +79,62 @@
 
     <MudDivider />
 
+    <MudText Typo="Typo.h6">Custom TTS Alert</MudText>
+    <MudStack Spacing="2">
+      <MudTextField @bind-Value="CustomTtsText" Label="TTS Message" Variant="Variant.Outlined" 
+                    Lines="2" Placeholder="Enter text to speak..." />
+      <MudGrid>
+        <MudItem xs="12" sm="6">
+          <MudSelect @bind-Value="CustomTtsGender" Label="Voice Gender" Variant="Variant.Outlined">
+            <MudSelectItem Value="@("male")">Male</MudSelectItem>
+            <MudSelectItem Value="@("female")">Female</MudSelectItem>
+          </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+          <MudNumericField @bind-Value="CustomTtsSpeed" Label="Speed" Variant="Variant.Outlined" 
+                          Min="0.5" Max="2.0" Step="0.1" />
+        </MudItem>
+      </MudGrid>
+      <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                 FullWidth="true" OnClick="TestCustomTTS"
+                 Disabled="@(IsTestRunning || string.IsNullOrWhiteSpace(CustomTtsText))">
+        <MudIcon Icon="@Icons.Material.Filled.VolumeUp" Class="mr-2" />
+        Play Custom TTS
+      </MudButton>
+    </MudStack>
+
+    <MudDivider />
+
+    <MudText Typo="Typo.h6">File-Based Alert</MudText>
+    <MudStack Spacing="2">
+      <FileSelector Label="Audio File Path" @bind-SelectedPath="AlertFilePath" IsDirectory="false" FileFilter=".mp3,.wav" />
+      <MudButton Variant="Variant.Filled" Color="Color.Info" 
+                 FullWidth="true" OnClick="TestFileAlert"
+                 Disabled="@(IsTestRunning || string.IsNullOrWhiteSpace(AlertFilePath))">
+        <MudIcon Icon="@Icons.Material.Filled.PlayCircle" Class="mr-2" />
+        Play File Alert (with Ducking)
+      </MudButton>
+    </MudStack>
+
+    <MudDivider />
+
+    <MudText Typo="Typo.h6">Priority Service Configuration</MudText>
+    <MudStack Spacing="2">
+      <MudSlider @bind-Value="DuckPercentage" Min="0" Max="100" Step="5" Color="Color.Primary">
+        Duck Volume: @DuckPercentage%
+      </MudSlider>
+      <MudButton Variant="Variant.Outlined" Color="Color.Primary" 
+                 FullWidth="true" OnClick="UpdateDuckPercentage">
+        <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
+        Update Duck Percentage
+      </MudButton>
+      <MudAlert Severity="Severity.Info" Dense="true">
+        Current Status: @(IsHighPriorityActive ? "High priority active - Music ducked" : "Normal playback")
+      </MudAlert>
+    </MudStack>
+
+    <MudDivider />
+
     <MudText Typo="Typo.h6">System Status</MudText>
     <MudSimpleTable Dense="true" Style="background-color: #1e1e1e;">
       <tbody>
@@ -114,9 +170,15 @@
 
 @code {
     private bool IsTestRunning { get; set; } = false;
+    private bool IsHighPriorityActive { get; set; } = false;
     private int CpuUsage { get; set; } = 25;
     private int MemoryUsage { get; set; } = 512;
     private string Uptime { get; set; } = "1d 5h 23m";
+    private int DuckPercentage { get; set; } = 20;
+    private string CustomTtsText { get; set; } = "";
+    private string CustomTtsGender { get; set; } = "male";
+    private double CustomTtsSpeed { get; set; } = 1.0;
+    private string AlertFilePath { get; set; } = "";
     private HttpClient? _httpClient;
     private Timer? _timer;
 
@@ -139,6 +201,14 @@
                 MemoryUsage = response.MemoryUsage;
                 Uptime = response.Uptime ?? "Unknown";
                 IsTestRunning = response.IsTestRunning;
+            }
+
+            // Also get priority service status
+            var priorityStatus = await _httpClient.GetFromJsonAsync<PriorityStatusResponse>("/api/audiopriority/status");
+            if (priorityStatus != null)
+            {
+                IsHighPriorityActive = priorityStatus.IsHighPriorityActive;
+                DuckPercentage = (int)(priorityStatus.DuckPercentage * 100);
             }
         }
         catch (Exception ex)
@@ -216,6 +286,63 @@
     public void Dispose()
     {
         _timer?.Dispose();
+    }
+
+    private async Task TestCustomTTS()
+    {
+        await RunTest(async () =>
+        {
+            if (_httpClient == null) return;
+            var request = new { phrase = CustomTtsText, voiceGender = CustomTtsGender, speed = (float)CustomTtsSpeed };
+            var response = await _httpClient.PostAsJsonAsync("/api/test/tts", request);
+            response.EnsureSuccessStatusCode();
+            Snackbar.Add($"Playing custom TTS...", Severity.Info);
+        });
+    }
+
+    private async Task TestFileAlert()
+    {
+        await RunTest(async () =>
+        {
+            if (_httpClient == null) return;
+            
+            // For now, log that we would play the file
+            // In a full implementation, this would send the file path to an API endpoint
+            Logger.LogInformation("Would play audio file: {FilePath}", AlertFilePath);
+            Snackbar.Add($"File alert testing not fully implemented yet. File: {AlertFilePath}", Severity.Info);
+            
+            // Simulate the alert by triggering a tone instead
+            var request = new { frequency = 440, durationSeconds = 2 };
+            var response = await _httpClient.PostAsJsonAsync("/api/test/tone", request);
+            response.EnsureSuccessStatusCode();
+        });
+    }
+
+    private async Task UpdateDuckPercentage()
+    {
+        try
+        {
+            if (_httpClient == null) return;
+            
+            var request = new { duckPercentage = DuckPercentage / 100.0f };
+            var response = await _httpClient.PostAsJsonAsync("/api/audiopriority/config/duck-percentage", request);
+            response.EnsureSuccessStatusCode();
+            
+            Snackbar.Add($"Duck percentage updated to {DuckPercentage}%", Severity.Success);
+            Logger.LogInformation("Duck percentage updated to {Percentage}%", DuckPercentage);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating duck percentage");
+            Snackbar.Add("Error updating duck percentage", Severity.Error);
+        }
+    }
+
+    public class PriorityStatusResponse
+    {
+        public bool IsHighPriorityActive { get; set; }
+        public float DuckPercentage { get; set; }
+        public string? Message { get; set; }
     }
 
     public class SystemStatusResponse
