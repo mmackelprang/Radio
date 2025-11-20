@@ -1,17 +1,22 @@
 @inject ILogger<AudioSetupPanel> Logger
+@inject ISnackbar Snackbar
+@inject IAudioPlayer AudioPlayer
+@inject IRaddyRadioService RaddyRadioService
+@inject ISpotifyService SpotifyService
+@inject CastAudioOutput CastAudioOutput
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
   <MudText Typo="Typo.h5" Class="mb-4">Audio Setup</MudText>
   
   <MudStack Spacing="3">
-    <MudSelect T="string" Label="Input Source" @bind-Value="SelectedInput" Variant="Variant.Outlined">
+    <MudSelect T="string" Label="Input Source" @bind-Value="SelectedInput" Variant="Variant.Outlined" ValueChanged="OnInputChanged">
       <MudSelectItem Value="@("Radio")">Radio (Raddy RF320)</MudSelectItem>
       <MudSelectItem Value="@("Vinyl")">Vinyl Turntable</MudSelectItem>
       <MudSelectItem Value="@("Spotify")">Spotify</MudSelectItem>
       <MudSelectItem Value="@("Local")">Local MP3s</MudSelectItem>
     </MudSelect>
 
-    <MudSelect T="string" Label="Output Destination" @bind-Value="SelectedOutput" Variant="Variant.Outlined">
+    <MudSelect T="string" Label="Output Destination" @bind-Value="SelectedOutput" Variant="Variant.Outlined" ValueChanged="OnOutputChanged">
       <MudSelectItem Value="@("Local")">Local Speakers</MudSelectItem>
       <MudSelectItem Value="@("Cast")">Google Cast</MudSelectItem>
     </MudSelect>
@@ -40,7 +45,7 @@
 
     <MudStack Spacing="2">
       <MudText Typo="Typo.body2">Volume</MudText>
-      <MudSlider @bind-Value="Volume" Min="0" Max="100" Step="1" Color="Color.Primary" />
+      <MudSlider @bind-Value="Volume" Min="0" Max="100" Step="1" Color="Color.Primary" OnInput="OnVolumeChanged" />
       
       <MudText Typo="Typo.body2">Balance</MudText>
       <MudSlider @bind-Value="Balance" Min="-100" Max="100" Step="1" Color="Color.Primary" />
@@ -49,49 +54,224 @@
 </MudPaper>
 
 @code {
-  private string SelectedInput { get; set; } = "Radio";
-  private string SelectedOutput { get; set; } = "Local";
-  private string SelectedCastDevice { get; set; } = "";
-  private bool IsPlaying { get; set; } = false;
-  private int Volume { get; set; } = 75;
-  private int Balance { get; set; } = 0;
+    [Parameter]
+    public string SelectedInput { get; set; } = "Radio";
+    [Parameter]
+    public EventCallback<string> SelectedInputChanged { get; set; }
+    private string SelectedOutput { get; set; } = "Local";
+    private string SelectedCastDevice { get; set; } = "";
+    private bool IsPlaying { get; set; } = false;
+    private int Volume { get; set; } = 75;
+    private int Balance { get; set; } = 0;
 
-  private List<string> AvailableCastDevices { get; set; } = new()
-  {
-    "Living Room Speaker",
-    "Kitchen Display",
-    "Bedroom Speaker"
-  };
+    private List<string> AvailableCastDevices { get; set; } = new();
 
-  private void OnPlayPause()
-  {
-    IsPlaying = !IsPlaying;
-    Logger.LogInformation("Play/Pause toggled. IsPlaying: {IsPlaying}", IsPlaying);
-    // TODO: Connect to audio service
-  }
+    private async Task OnPlayPause()
+    {
+        try
+        {
+            IsPlaying = !IsPlaying;
+            if (IsPlaying)
+            {
+                await PlayCurrentSource();
+            }
+            else
+            {
+                await AudioPlayer.StopAsync(SelectedInput);
+            }
+            Logger.LogInformation("Play/Pause toggled. IsPlaying: {IsPlaying}", IsPlaying);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error toggling play/pause");
+            Snackbar.Add("Error toggling play/pause", Severity.Error);
+        }
+    }
 
-  private void OnStop()
-  {
-    IsPlaying = false;
-    Logger.LogInformation("Stop pressed");
-    // TODO: Connect to audio service
-  }
+    private async Task OnStop()
+    {
+        try
+        {
+            IsPlaying = false;
+            await AudioPlayer.StopAsync(SelectedInput);
+            Logger.LogInformation("Stop pressed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error stopping audio");
+            Snackbar.Add("Error stopping audio", Severity.Error);
+        }
+    }
 
-  private void OnPrevious()
-  {
-    Logger.LogInformation("Previous pressed");
-    // TODO: Connect to audio service
-  }
+    private async Task OnPrevious()
+    {
+        try
+        {
+            switch (SelectedInput)
+            {
+                case "Spotify":
+                    await SpotifyService.PreviousTrack();
+                    break;
+                case "Radio":
+                    RaddyRadioService.SeekDown();
+                    break;
+                case "Local":
+                    // TODO: Implement previous track logic for local files
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error going to previous track");
+            Snackbar.Add("Error going to previous track", Severity.Error);
+        }
+    }
 
-  private void OnNext()
-  {
-    Logger.LogInformation("Next pressed");
-    // TODO: Connect to audio service
-  }
+    private async Task OnNext()
+    {
+        try
+        {
+            switch (SelectedInput)
+            {
+                case "Spotify":
+                    await SpotifyService.NextTrack();
+                    break;
+                case "Radio":
+                    RaddyRadioService.SeekUp();
+                    break;
+                case "Local":
+                    // TODO: Implement next track logic for local files
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error going to next track");
+            Snackbar.Add("Error going to next track", Severity.Error);
+        }
+    }
 
-  protected override void OnInitialized()
-  {
-    // TODO: Load available cast devices from cast service
-    // TODO: Load current audio settings
-  }
+    private async Task PlayCurrentSource()
+    {
+        try
+        {
+            Stream audioStream = SelectedInput switch
+            {
+                "Radio" => RaddyRadioService.GetRadioStream(),
+                "Spotify" => await SpotifyService.GetSpotifyStream(),
+            "Vinyl" => new MemoryStream(), // TODO: Implement Vinyl playback
+            "Local" => GetLocalFileStream(),
+                _ => new MemoryStream()
+            };
+
+            if (audioStream != null)
+            {
+                await AudioPlayer.PlayAsync(SelectedInput, audioStream);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error playing audio source");
+            Snackbar.Add("Error playing audio source", Severity.Error);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AudioPlayer.IsInitialized)
+        {
+            await AudioPlayer.InitializeAsync("default");
+        }
+        await LoadCastDevices();
+        // TODO: Load current audio settings
+    }
+
+    private async Task LoadCastDevices()
+    {
+        try
+        {
+            var devices = await CastAudioOutput.DiscoverDevicesAsync();
+            AvailableCastDevices = devices.Select(d => d.Name).ToList();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading cast devices");
+            Snackbar.Add("Error loading cast devices", Severity.Error);
+        }
+    }
+
+    private async Task OnVolumeChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            if (int.TryParse(e.Value.ToString(), out int volume))
+            {
+                Volume = volume;
+                await AudioPlayer.SetVolumeAsync(SelectedInput, volume / 100f);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error changing volume");
+            Snackbar.Add("Error changing volume", Severity.Error);
+        }
+    }
+
+    private async Task OnInputChanged(string newInput)
+    {
+        try
+        {
+            if (SelectedInput != newInput)
+            {
+                await AudioPlayer.StopAsync(SelectedInput);
+                SelectedInput = newInput;
+                await SelectedInputChanged.InvokeAsync(newInput);
+                if (IsPlaying)
+                {
+                    await PlayCurrentSource();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error changing input");
+            Snackbar.Add("Error changing input", Severity.Error);
+        }
+    }
+
+    private async Task OnOutputChanged(string newOutput)
+    {
+        try
+        {
+            if (SelectedOutput != newOutput)
+            {
+                SelectedOutput = newOutput;
+                if (IsPlaying)
+                {
+                    await AudioPlayer.StopAsync(SelectedInput);
+                    if (newOutput == "Cast")
+                    {
+                        await CastAudioOutput.StartAsync(AudioPlayer);
+                    }
+                    else
+                    {
+                        await CastAudioOutput.StopAsync();
+                    }
+                    await PlayCurrentSource();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error changing output");
+            Snackbar.Add("Error changing output", Severity.Error);
+        }
+    }
+
+    private Stream GetLocalFileStream()
+    {
+        // TODO: Implement a way to select and stream local audio files.
+        return new MemoryStream();
+    }
 }

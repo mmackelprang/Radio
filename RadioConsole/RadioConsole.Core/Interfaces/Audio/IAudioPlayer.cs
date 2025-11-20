@@ -43,4 +43,10 @@ public interface IAudioPlayer
   /// Check if the audio player is currently initialized.
   /// </summary>
   bool IsInitialized { get; }
+
+  /// <summary>
+  /// Enable or disable FFT data generation.
+  /// </summary>
+  /// <param name="enabled">True to enable, false to disable.</param>
+  void EnableFftDataGeneration(bool enabled);
 }
