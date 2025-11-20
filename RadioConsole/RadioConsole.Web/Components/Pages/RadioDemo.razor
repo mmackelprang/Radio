@@ -1,0 +1,284 @@
+@page "/radio-demo"
+@inject ISnackbar Snackbar
+
+<PageTitle>Radio Control Demo</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">Radio Control & Keyboard Demo</MudText>
+
+<MudTabs Elevation="4" Rounded="true" Color="Color.Primary">
+  @* Tab 1 - Radio Control Panel *@
+  <MudTabPanel Text="Radio Control" Icon="@Icons.Material.Filled.Radio">
+    <MudPaper Class="pa-4 ma-4">
+      <MudText Typo="Typo.h5" Class="mb-3">USB Radio Control Panel</MudText>
+      <MudText Typo="Typo.body1" Class="mb-4">
+        This panel provides comprehensive control over the Raddy RF320 USB radio. 
+        Features include LED-style frequency display, band selection, tuning controls, 
+        and radio-specific volume adjustment.
+      </MudText>
+      <MudDivider Class="mb-4" />
+      <RaddyRadioControlPanel />
+    </MudPaper>
+  </MudTabPanel>
+
+  @* Tab 2 - Numeric Keypad *@
+  <MudTabPanel Text="Numeric Keypad" Icon="@Icons.Material.Filled.Dialpad">
+    <MudPaper Class="pa-4 ma-4">
+      <MudText Typo="Typo.h5" Class="mb-3">Numeric Keypad Component</MudText>
+      <MudText Typo="Typo.body1" Class="mb-4">
+        A Material 3 design touchscreen-optimized numeric keypad for entering numbers with decimal support.
+        Used for frequency entry, favorites, and configuration values.
+      </MudText>
+      <MudDivider Class="mb-4" />
+      
+      <MudGrid>
+        <MudItem xs="12" md="6">
+          <NumericKeypad Title="Enter Frequency (MHz)"
+                         InitialValue=""
+                         MaxLength="8"
+                         AllowDecimal="true"
+                         DecimalSeparator="."
+                         SubmitLabel="Set Frequency"
+                         OnSubmitted="OnNumericSubmit"
+                         OnValueChanged="OnNumericChange"
+                         OnCleared="OnNumericClear" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+          <MudPaper Class="pa-4" Style="background-color: #f5f5f5;">
+            <MudText Typo="Typo.h6" Class="mb-2">Events Log</MudText>
+            <MudText Typo="Typo.body2" Class="mb-2">Last Value: <strong>@NumericLastValue</strong></MudText>
+            <MudText Typo="Typo.body2" Class="mb-2">Submitted: <strong>@NumericSubmitted</strong></MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+              Try entering a frequency like 101.5 and clicking "Set Frequency"
+            </MudText>
+          </MudPaper>
+        </MudItem>
+      </MudGrid>
+    </MudPaper>
+  </MudTabPanel>
+
+  @* Tab 3 - Touch Keyboard *@
+  <MudTabPanel Text="Touch Keyboard" Icon="@Icons.Material.Filled.Keyboard">
+    <MudPaper Class="pa-4 ma-4">
+      <MudText Typo="Typo.h5" Class="mb-3">Touch Keyboard Component</MudText>
+      <MudText Typo="Typo.body1" Class="mb-4">
+        A Material 3 design full QWERTY keyboard optimized for touchscreen input.
+        Features shift key for uppercase and special characters.
+      </MudText>
+      <MudDivider Class="mb-4" />
+      
+      <MudGrid>
+        <MudItem xs="12">
+          <TouchKeyboard Title="Enter Station Name or Description"
+                         InitialValue=""
+                         MaxLength="50"
+                         SubmitLabel="Save"
+                         OnSubmitted="OnKeyboardSubmit"
+                         OnValueChanged="OnKeyboardChange"
+                         OnCleared="OnKeyboardClear" />
+        </MudItem>
+        <MudItem xs="12">
+          <MudPaper Class="pa-4" Style="background-color: #f5f5f5;">
+            <MudText Typo="Typo.h6" Class="mb-2">Events Log</MudText>
+            <MudText Typo="Typo.body2" Class="mb-2">Last Value: <strong>@KeyboardLastValue</strong></MudText>
+            <MudText Typo="Typo.body2" Class="mb-2">Submitted: <strong>@KeyboardSubmitted</strong></MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+              Try typing a station name like "NPR Morning Edition" and clicking "Save"
+            </MudText>
+          </MudPaper>
+        </MudItem>
+      </MudGrid>
+    </MudPaper>
+  </MudTabPanel>
+
+  @* Tab 4 - Usage Documentation *@
+  <MudTabPanel Text="Documentation" Icon="@Icons.Material.Filled.Description">
+    <MudPaper Class="pa-4 ma-4">
+      <MudText Typo="Typo.h5" Class="mb-3">Component Usage</MudText>
+      
+      <MudExpansionPanels MultiExpansion="true">
+        <MudExpansionPanel Text="NumericKeypad Component">
+          <MudText Typo="Typo.body1" Class="mb-2">
+            The NumericKeypad component provides a touchscreen-friendly numeric input interface.
+          </MudText>
+          <MudText Typo="Typo.h6" Class="mt-3 mb-2">Parameters:</MudText>
+          <MudSimpleTable Dense="true" Hover="true" Style="background-color: white;">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Title</td>
+                <td>string</td>
+                <td>Title displayed above the keypad</td>
+              </tr>
+              <tr>
+                <td>InitialValue</td>
+                <td>string</td>
+                <td>Initial value to display</td>
+              </tr>
+              <tr>
+                <td>MaxLength</td>
+                <td>int</td>
+                <td>Maximum number of digits allowed (default: 10)</td>
+              </tr>
+              <tr>
+                <td>AllowDecimal</td>
+                <td>bool</td>
+                <td>Whether to allow decimal point entry (default: true)</td>
+              </tr>
+              <tr>
+                <td>DecimalSeparator</td>
+                <td>string</td>
+                <td>Decimal separator character (default: ".")</td>
+              </tr>
+              <tr>
+                <td>SubmitLabel</td>
+                <td>string</td>
+                <td>Label for the submit button (default: "Enter")</td>
+              </tr>
+              <tr>
+                <td>OnValueChanged</td>
+                <td>EventCallback&lt;string&gt;</td>
+                <td>Called when value changes</td>
+              </tr>
+              <tr>
+                <td>OnSubmitted</td>
+                <td>EventCallback&lt;string&gt;</td>
+                <td>Called when submit button is pressed</td>
+              </tr>
+              <tr>
+                <td>ValidateValue</td>
+                <td>Func&lt;string, string?&gt;</td>
+                <td>Validation function (returns error or null)</td>
+              </tr>
+            </tbody>
+          </MudSimpleTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="TouchKeyboard Component">
+          <MudText Typo="Typo.body1" Class="mb-2">
+            The TouchKeyboard component provides a full QWERTY keyboard interface for text input.
+          </MudText>
+          <MudText Typo="Typo.h6" Class="mt-3 mb-2">Parameters:</MudText>
+          <MudSimpleTable Dense="true" Hover="true" Style="background-color: white;">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Title</td>
+                <td>string</td>
+                <td>Title displayed above the keyboard</td>
+              </tr>
+              <tr>
+                <td>InitialValue</td>
+                <td>string</td>
+                <td>Initial value to display</td>
+              </tr>
+              <tr>
+                <td>MaxLength</td>
+                <td>int</td>
+                <td>Maximum number of characters allowed (default: 100)</td>
+              </tr>
+              <tr>
+                <td>SubmitLabel</td>
+                <td>string</td>
+                <td>Label for the submit button (default: "Enter")</td>
+              </tr>
+              <tr>
+                <td>OnValueChanged</td>
+                <td>EventCallback&lt;string&gt;</td>
+                <td>Called when value changes</td>
+              </tr>
+              <tr>
+                <td>OnSubmitted</td>
+                <td>EventCallback&lt;string&gt;</td>
+                <td>Called when submit button is pressed</td>
+              </tr>
+            </tbody>
+          </MudSimpleTable>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="RaddyRadioControlPanel Component">
+          <MudText Typo="Typo.body1" Class="mb-2">
+            The RaddyRadioControlPanel component provides comprehensive control over the Raddy RF320 USB radio.
+          </MudText>
+          <MudText Typo="Typo.h6" Class="mt-3 mb-2">Features:</MudText>
+          <MudList T="string" Dense="true">
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Dialpad">
+              LED-style frequency display with auto-formatting based on band
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Radio">
+              Band display and selector (FM, AM, SW, AIR, VHF)
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Tune">
+              Tune Up/Down buttons with band-specific step sizes
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.FastForward">
+              Scan Up/Down buttons (stubbed for future implementation)
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.VolumeUp">
+              Radio-specific volume control (independent of main audio mix)
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Dialpad">
+              Set Frequency button with numeric keypad and validation
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.CheckCircle">
+              Band-based frequency validation and clamping
+            </MudListItem>
+          </MudList>
+        </MudExpansionPanel>
+      </MudExpansionPanels>
+    </MudPaper>
+  </MudTabPanel>
+</MudTabs>
+
+@code {
+  // Numeric keypad state
+  private string NumericLastValue { get; set; } = "(none)";
+  private string NumericSubmitted { get; set; } = "(none)";
+
+  // Touch keyboard state
+  private string KeyboardLastValue { get; set; } = "(none)";
+  private string KeyboardSubmitted { get; set; } = "(none)";
+
+  private void OnNumericChange(string value)
+  {
+    NumericLastValue = value;
+  }
+
+  private void OnNumericSubmit(string value)
+  {
+    NumericSubmitted = value;
+    Snackbar.Add($"Frequency submitted: {value} MHz", Severity.Success);
+  }
+
+  private void OnNumericClear()
+  {
+    Snackbar.Add("Numeric keypad cleared", Severity.Info);
+  }
+
+  private void OnKeyboardChange(string value)
+  {
+    KeyboardLastValue = value;
+  }
+
+  private void OnKeyboardSubmit(string value)
+  {
+    KeyboardSubmitted = value;
+    Snackbar.Add($"Station name submitted: {value}", Severity.Success);
+  }
+
+  private void OnKeyboardClear()
+  {
+    Snackbar.Add("Keyboard cleared", Severity.Info);
+  }
+}
