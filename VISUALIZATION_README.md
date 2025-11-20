@@ -2,6 +2,8 @@
 
 This document describes the audio visualization system implemented in the Radio Console application, based on the SoundFlow library examples.
 
+> **📸 UI Screenshots & Visuals:** See [UI Visualization Guide](docs/UI_VISUALIZATION_GUIDE.md) for visual representations and UI mockups of all three visualization types.
+
 ## Architecture Overview
 
 The visualization system follows a layered architecture with clear separation of concerns:
@@ -249,6 +251,8 @@ Visualization settings can be added to `appsettings.json`:
 
 ## References
 
+- **[UI Visualization Guide](docs/UI_VISUALIZATION_GUIDE.md)** - Visual mockups and UI examples
+- **[Code Review](CODE_REVIEW.md)** - Comprehensive code review findings and recommendations
 - SoundFlow Documentation: https://lsxprime.github.io/soundflow-docs/
 - Example Code: `/examples/ConsoleLevelMeter.cs`, `ConsoleWaveform.cs`, `ConsoleSpectrum.cs`
 - WPF Examples: `/examples/WaveformVisualizer.cs`, `WaveformRenderer.cs`
