@@ -9,14 +9,14 @@
   <MudText Typo="Typo.h5" Class="mb-4">Audio Setup</MudText>
   
   <MudStack Spacing="3">
-    <MudSelect T="string" Label="Input Source" @bind-Value="SelectedInput" Variant="Variant.Outlined" ValueChanged="OnInputChanged">
+    <MudSelect T="string" Label="Input Source" Value="@SelectedInput" ValueChanged="OnInputChanged" Variant="Variant.Outlined">
       <MudSelectItem Value="@("Radio")">Radio (Raddy RF320)</MudSelectItem>
       <MudSelectItem Value="@("Vinyl")">Vinyl Turntable</MudSelectItem>
       <MudSelectItem Value="@("Spotify")">Spotify</MudSelectItem>
       <MudSelectItem Value="@("Local")">Local MP3s</MudSelectItem>
     </MudSelect>
 
-    <MudSelect T="string" Label="Output Destination" @bind-Value="SelectedOutput" Variant="Variant.Outlined" ValueChanged="OnOutputChanged">
+    <MudSelect T="string" Label="Output Destination" Value="@SelectedOutput" ValueChanged="OnOutputChanged" Variant="Variant.Outlined">
       <MudSelectItem Value="@("Local")">Local Speakers</MudSelectItem>
       <MudSelectItem Value="@("Cast")">Google Cast</MudSelectItem>
     </MudSelect>
@@ -45,10 +45,10 @@
 
     <MudStack Spacing="2">
       <MudText Typo="Typo.body2">Volume</MudText>
-      <MudSlider @bind-Value="Volume" Min="0" Max="100" Step="1" Color="Color.Primary" OnInput="OnVolumeChanged" />
+      <MudSlider T="int" Value="@Volume" ValueChanged="OnVolumeChanged" Min="0" Max="100" Step="1" Color="Color.Primary" />
       
       <MudText Typo="Typo.body2">Balance</MudText>
-      <MudSlider @bind-Value="Balance" Min="-100" Max="100" Step="1" Color="Color.Primary" />
+      <MudSlider T="int" @bind-Value="Balance" Min="-100" Max="100" Step="1" Color="Color.Primary" />
     </MudStack>
   </MudStack>
 </MudPaper>
@@ -110,13 +110,18 @@
             switch (SelectedInput)
             {
                 case "Spotify":
-                    await SpotifyService.PreviousTrack();
+                    // TODO: Add SkipToPrevious method to ISpotifyService
+                    Logger.LogInformation("Previous track requested for Spotify (not yet implemented)");
+                    Snackbar.Add("Previous track not yet implemented for Spotify", Severity.Info);
                     break;
                 case "Radio":
-                    RaddyRadioService.SeekDown();
+                    // TODO: Add frequency seek down to IRaddyRadioService
+                    Logger.LogInformation("Seek down requested for Radio (not yet implemented)");
+                    Snackbar.Add("Seek down not yet implemented for Radio", Severity.Info);
                     break;
                 case "Local":
                     // TODO: Implement previous track logic for local files
+                    Logger.LogInformation("Previous track requested for Local (not yet implemented)");
                     break;
             }
         }
@@ -134,13 +139,18 @@
             switch (SelectedInput)
             {
                 case "Spotify":
-                    await SpotifyService.NextTrack();
+                    // TODO: Add SkipToNext method to ISpotifyService
+                    Logger.LogInformation("Next track requested for Spotify (not yet implemented)");
+                    Snackbar.Add("Next track not yet implemented for Spotify", Severity.Info);
                     break;
                 case "Radio":
-                    RaddyRadioService.SeekUp();
+                    // TODO: Add frequency seek up to IRaddyRadioService
+                    Logger.LogInformation("Seek up requested for Radio (not yet implemented)");
+                    Snackbar.Add("Seek up not yet implemented for Radio", Severity.Info);
                     break;
                 case "Local":
                     // TODO: Implement next track logic for local files
+                    Logger.LogInformation("Next track requested for Local (not yet implemented)");
                     break;
             }
         }
@@ -155,18 +165,35 @@
     {
         try
         {
-            Stream audioStream = SelectedInput switch
+            // TODO: Integrate with actual audio streaming from services
+            // For now, log the action
+            Logger.LogInformation("Play requested for source: {Source}", SelectedInput);
+            
+            switch (SelectedInput)
             {
-                "Radio" => RaddyRadioService.GetRadioStream(),
-                "Spotify" => await SpotifyService.GetSpotifyStream(),
-            "Vinyl" => new MemoryStream(), // TODO: Implement Vinyl playback
-            "Local" => GetLocalFileStream(),
-                _ => new MemoryStream()
-            };
-
-            if (audioStream != null)
-            {
-                await AudioPlayer.PlayAsync(SelectedInput, audioStream);
+                case "Radio":
+                    await RaddyRadioService.StartAsync();
+                    Snackbar.Add("Radio playback started", Severity.Success);
+                    break;
+                case "Spotify":
+                    if (SpotifyService.IsAuthenticated)
+                    {
+                        await SpotifyService.ResumeAsync();
+                        Snackbar.Add("Spotify playback started", Severity.Success);
+                    }
+                    else
+                    {
+                        Snackbar.Add("Spotify not authenticated", Severity.Warning);
+                    }
+                    break;
+                case "Vinyl":
+                    // TODO: Implement Vinyl playback
+                    Snackbar.Add("Vinyl playback not yet implemented", Severity.Info);
+                    break;
+                case "Local":
+                    // TODO: Implement local file playback
+                    Snackbar.Add("Local file playback not yet implemented", Severity.Info);
+                    break;
             }
         }
         catch (Exception ex)
@@ -201,15 +228,12 @@
         }
     }
 
-    private async Task OnVolumeChanged(ChangeEventArgs e)
+    private async Task OnVolumeChanged(int volume)
     {
         try
         {
-            if (int.TryParse(e.Value.ToString(), out int volume))
-            {
-                Volume = volume;
-                await AudioPlayer.SetVolumeAsync(SelectedInput, volume / 100f);
-            }
+            Volume = volume;
+            await AudioPlayer.SetVolumeAsync(SelectedInput, volume / 100f);
         }
         catch (Exception ex)
         {

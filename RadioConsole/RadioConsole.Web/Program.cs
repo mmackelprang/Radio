@@ -2,6 +2,8 @@ using RadioConsole.Infrastructure.Configuration;
 using RadioConsole.Infrastructure.Audio;
 using RadioConsole.Infrastructure.Inputs;
 using RadioConsole.Web.Components;
+using RadioConsole.Web.Services;
+using RadioConsole.Core.Interfaces.Audio;
 using Serilog;
 using MudBlazor.Services;
 
@@ -36,11 +38,15 @@ try
   // Add HttpClient for making API calls
   builder.Services.AddHttpClient("API", client =>
   {
-      client.BaseAddress = new Uri(builder.Configuration["RadioConsole:ApiBaseUrl"]);
+      var apiBaseUrl = builder.Configuration["RadioConsole:ApiBaseUrl"] ?? "http://localhost:5100";
+      client.BaseAddress = new Uri(apiBaseUrl);
   });
 
   // Add SignalR for real-time visualizer data
   builder.Services.AddSignalR();
+
+  // Register visualization service (SignalR implementation)
+  builder.Services.AddSingleton<IVisualizationService, SignalRVisualizationService>();
 
   // Add services to the container.
   builder.Services.AddRazorComponents()

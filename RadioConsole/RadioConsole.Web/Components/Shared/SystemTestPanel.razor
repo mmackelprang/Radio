@@ -117,8 +117,8 @@
     private int CpuUsage { get; set; } = 25;
     private int MemoryUsage { get; set; } = 512;
     private string Uptime { get; set; } = "1d 5h 23m";
-    private HttpClient _httpClient;
-    private Timer _timer;
+    private HttpClient? _httpClient;
+    private Timer? _timer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,6 +128,8 @@
 
     private async Task RefreshStatus()
     {
+        if (_httpClient == null) return;
+        
         try
         {
             var response = await _httpClient.GetFromJsonAsync<SystemStatusResponse>("/api/test/status");
@@ -135,7 +137,7 @@
             {
                 CpuUsage = response.CpuUsage;
                 MemoryUsage = response.MemoryUsage;
-                Uptime = response.Uptime;
+                Uptime = response.Uptime ?? "Unknown";
                 IsTestRunning = response.IsTestRunning;
             }
         }
@@ -150,6 +152,7 @@
     {
         await RunTest(async () =>
         {
+            if (_httpClient == null) return;
             var request = new { phrase, voiceGender, speed = 1.0 };
             var response = await _httpClient.PostAsJsonAsync("/api/test/tts", request);
             response.EnsureSuccessStatusCode();
@@ -161,6 +164,7 @@
     {
         await RunTest(async () =>
         {
+            if (_httpClient == null) return;
             var request = new { frequency, durationSeconds = duration };
             var response = await _httpClient.PostAsJsonAsync("/api/test/tone", request);
             response.EnsureSuccessStatusCode();
@@ -172,6 +176,7 @@
     {
         await RunTest(async () =>
         {
+            if (_httpClient == null) return;
             var response = await _httpClient.PostAsync("/api/test/doorbell", null);
             response.EnsureSuccessStatusCode();
             Snackbar.Add("Playing doorbell sound...", Severity.Info);
@@ -182,6 +187,7 @@
     {
         await RunTest(async () =>
         {
+            if (_httpClient == null) return;
             var response = await _httpClient.PostAsync("/api/test/broadcast", null);
             response.EnsureSuccessStatusCode();
             Snackbar.Add("Simulating broadcast receipt...", Severity.Info);
@@ -215,7 +221,7 @@
     {
         public int CpuUsage { get; set; }
         public int MemoryUsage { get; set; }
-        public string Uptime { get; set; }
+        public string? Uptime { get; set; }
         public bool IsTestRunning { get; set; }
     }
 }

@@ -96,7 +96,7 @@
     private int CurrentPosition { get; set; } = 125; // seconds
     private int TotalDuration { get; set; } = 280; // seconds
 
-    private Timer _timer;
+    private Timer? _timer;
 
     protected override void OnInitialized()
     {
@@ -110,11 +110,16 @@
             switch (CurrentInput)
             {
                 case "Radio":
-                    Frequency = RaddyRadioService.GetCurrentFrequency();
-                    SignalStrength = RaddyRadioService.GetSignalStrength();
+                    var freq = await RaddyRadioService.GetFrequencyAsync();
+                    if (freq.HasValue)
+                    {
+                        Frequency = freq.Value;
+                    }
+                    // TODO: Add signal strength to IRaddyRadioService
+                    SignalStrength = 85; // Placeholder
                     break;
                 case "Spotify":
-                    var track = await SpotifyService.GetCurrentTrack();
+                    var track = await SpotifyService.GetCurrentlyPlayingAsync();
                     if (track != null)
                     {
                         TrackTitle = track.Name;
