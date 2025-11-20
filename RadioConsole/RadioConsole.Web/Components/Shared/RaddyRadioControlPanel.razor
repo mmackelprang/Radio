@@ -167,11 +167,12 @@
 
   private string DetermineBandFromFrequency(double freq)
   {
-    if (freq >= 87.5 && freq <= 108.0) return "FM";
-    if (freq >= 0.53 && freq <= 1.71) return "AM";
-    if (freq >= 1.71 && freq <= 30.0) return "SW";
+    // Check ranges in order from highest to lowest to avoid overlaps
     if (freq >= 108.0 && freq <= 137.0) return "AIR";
+    if (freq >= 87.5 && freq < 108.0) return "FM";
     if (freq >= 30.0 && freq <= 300.0) return "VHF";
+    if (freq >= 1.71 && freq < 30.0) return "SW";
+    if (freq >= 0.53 && freq <= 1.71) return "AM";
     return "FM";
   }
 

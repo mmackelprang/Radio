@@ -124,17 +124,18 @@ public class NowPlayingController : ControllerBase
   {
     if (!frequency.HasValue) return "Unknown";
 
-    // Determine band based on frequency ranges
-    if (frequency >= 87.5 && frequency <= 108.0)
-      return "FM";
-    else if (frequency >= 0.53 && frequency <= 1.71)
-      return "AM";
-    else if (frequency >= 1.71 && frequency <= 30.0)
-      return "SW";
-    else if (frequency >= 108.0 && frequency <= 137.0)
+    // Check ranges in order from highest to lowest to avoid overlaps
+    var freq = frequency.Value;
+    if (freq >= 108.0 && freq <= 137.0)
       return "AIR";
-    else if (frequency >= 30.0 && frequency <= 300.0)
+    else if (freq >= 87.5 && freq < 108.0)
+      return "FM";
+    else if (freq >= 30.0 && freq <= 300.0)
       return "VHF";
+    else if (freq >= 1.71 && freq < 30.0)
+      return "SW";
+    else if (freq >= 0.53 && freq <= 1.71)
+      return "AM";
     else
       return "Unknown";
   }
