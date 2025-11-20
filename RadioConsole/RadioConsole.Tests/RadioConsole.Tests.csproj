@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RadioConsole.API\RadioConsole.API.csproj" />
     <ProjectReference Include="..\RadioConsole.Core\RadioConsole.Core.csproj" />
     <ProjectReference Include="..\RadioConsole.Infrastructure\RadioConsole.Infrastructure.csproj" />
     <ProjectReference Include="..\RadioConsole.Web\RadioConsole.Web.csproj" />
