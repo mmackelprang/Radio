@@ -1,5 +1,6 @@
 @using System.Timers
 @implements IDisposable
+@inject IHttpClientFactory HttpClientFactory
 
 <div class="global-header">
   <MudGrid Justify="Justify.SpaceBetween">
@@ -25,46 +26,63 @@
 </div>
 
 @code {
-  private System.Timers.Timer? timer;
-  private DateTime CurrentDateTime { get; set; } = DateTime.Now;
-  private bool IsWifiConnected { get; set; } = true;
-  private bool IsSystemHealthy { get; set; } = true;
+    private System.Timers.Timer? _timer;
+    private HttpClient? _httpClient;
+    private DateTime CurrentDateTime { get; set; } = DateTime.Now;
+    private bool IsWifiConnected { get; set; } = true;
+    private bool IsSystemHealthy { get; set; } = true;
 
-  protected override void OnInitialized()
-  {
-    // Update clock every second
-    timer = new System.Timers.Timer(1000);
-    timer.Elapsed += OnTimerElapsed;
-    timer.AutoReset = true;
-    timer.Start();
-
-    // TODO: Integrate with actual network status check
-    // TODO: Integrate with actual system health monitoring
-  }
-
-  private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
-  {
-    CurrentDateTime = DateTime.Now;
-    try
+    protected override void OnInitialized()
     {
-      InvokeAsync(StateHasChanged);
+        _httpClient = HttpClientFactory.CreateClient("API");
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (sender, e) => await OnTimerElapsed(sender, e);
+        _timer.AutoReset = true;
+        _timer.Start();
     }
-    catch (ObjectDisposedException)
-    {
-      // Component was disposed, stop the timer
-      timer?.Stop();
-    }
-  }
 
-  public void Dispose()
-  {
-    if (timer != null)
+    private async Task OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
-      timer.Elapsed -= OnTimerElapsed;
-      timer.Stop();
-      timer.Dispose();
+        CurrentDateTime = DateTime.Now;
+        if (CurrentDateTime.Second % 5 == 0) // Check status every 5 seconds
+        {
+            await UpdateSystemStatus();
+            UpdateWifiStatus();
+        }
+        await InvokeAsync(StateHasChanged);
     }
-  }
+
+    private void UpdateWifiStatus()
+    {
+        IsWifiConnected = System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable();
+    }
+
+    private async Task UpdateSystemStatus()
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<SystemStatusResponse>("/api/test/status");
+            if (response != null)
+            {
+                IsSystemHealthy = response.CpuUsage < 80 && response.MemoryUsage < 4000;
+            }
+        }
+        catch
+        {
+            IsSystemHealthy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+    public class SystemStatusResponse
+    {
+        public int CpuUsage { get; set; }
+        public int MemoryUsage { get; set; }
+    }
 }
 
 <style>

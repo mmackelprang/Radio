@@ -1,4 +1,7 @@
 @inject ILogger<NowPlayingPanel> Logger
+@inject IRaddyRadioService RaddyRadioService
+@inject ISpotifyService SpotifyService
+@inject ISnackbar Snackbar
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c; display: flex; flex-direction: column; justify-content: center; align-items: center;">
   @if (CurrentInput == "Radio")
@@ -72,48 +75,86 @@
 </MudPaper>
 
 @code {
-  [Parameter]
-  public string CurrentInput { get; set; } = "Radio";
+    [Parameter]
+    public string CurrentInput { get; set; } = "Radio";
 
-  // Radio properties
-  private double Frequency { get; set; } = 101.5;
-  private string Band { get; set; } = "FM";
-  private bool IsStereo { get; set; } = true;
-  private int SignalStrength { get; set; } = 85;
+    // Radio properties
+    private double Frequency { get; set; } = 101.5;
+    private string Band { get; set; } = "FM";
+    private bool IsStereo { get; set; } = true;
+    private int SignalStrength { get; set; } = 85;
 
-  // Spotify/Music properties
-  private string TrackTitle { get; set; } = "Now Playing";
-  private string Artist { get; set; } = "Artist Name";
-  private string Album { get; set; } = "Album Name";
-  private string AlbumArtUrl { get; set; } = "";
-  private string Lyrics { get; set; } = "";
+    // Spotify/Music properties
+    private string TrackTitle { get; set; } = "Now Playing";
+    private string Artist { get; set; } = "Artist Name";
+    private string Album { get; set; } = "Album Name";
+    private string AlbumArtUrl { get; set; } = "";
+    private string Lyrics { get; set; } = "";
 
-  // Playback properties
-  private double PlaybackProgress { get; set; } = 45;
-  private int CurrentPosition { get; set; } = 125; // seconds
-  private int TotalDuration { get; set; } = 280; // seconds
+    // Playback properties
+    private double PlaybackProgress { get; set; } = 45;
+    private int CurrentPosition { get; set; } = 125; // seconds
+    private int TotalDuration { get; set; } = 280; // seconds
 
-  protected override void OnInitialized()
-  {
-    // TODO: Subscribe to input source changes
-    // TODO: Load current playing info based on input type
-    LoadMockData();
-  }
+    private Timer? _timer;
 
-  private void LoadMockData()
-  {
-    // Mock data for demonstration
-    if (CurrentInput == "Spotify")
+    protected override void OnInitialized()
     {
-      TrackTitle = "Bohemian Rhapsody";
-      Artist = "Queen";
-      Album = "A Night at the Opera";
-      Lyrics = "Is this the real life? Is this just fantasy?\nCaught in a landslide, no escape from reality...";
+        _timer = new Timer(async _ => await UpdateNowPlayingInfo(), null, 0, 1000);
     }
-    else if (CurrentInput == "Local")
+
+    private async Task UpdateNowPlayingInfo()
     {
-      TrackTitle = "Symphony No. 5";
-      Artist = "Beethoven";
+        try
+        {
+            switch (CurrentInput)
+            {
+                case "Radio":
+                    var freq = await RaddyRadioService.GetFrequencyAsync();
+                    if (freq.HasValue)
+                    {
+                        Frequency = freq.Value;
+                    }
+                    // TODO: Add signal strength to IRaddyRadioService
+                    SignalStrength = 85; // Placeholder
+                    break;
+                case "Spotify":
+                    var track = await SpotifyService.GetCurrentlyPlayingAsync();
+                    if (track != null)
+                    {
+                        TrackTitle = track.Name;
+                        Artist = track.Artist;
+                        Album = track.Album;
+                        AlbumArtUrl = track.AlbumArtUrl;
+                    }
+                    break;
+                case "Vinyl":
+                    TrackTitle = "Vinyl Turntable";
+                    Artist = "Analog Playback";
+                    Album = "";
+                    AlbumArtUrl = "";
+                    break;
+                case "Local":
+                    TrackTitle = "Local File";
+                    Artist = "Now Playing";
+                    Album = "";
+                    AlbumArtUrl = "";
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating now playing info");
+            Snackbar.Add("Error updating now playing info", Severity.Error);
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
-  }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
 }

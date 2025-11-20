@@ -14,21 +14,24 @@ namespace RadioConsole.Infrastructure.Audio;
 /// </summary>
 public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
 {
-  private readonly ILogger<SoundFlowAudioPlayer> _logger;
-  private AudioEngine? _engine;
-  private AudioPlaybackDevice? _playbackDevice;
-  private readonly Dictionary<string, AudioSource> _audioSources;
-  private bool _isInitialized;
-  private string? _currentDeviceId;
+    private readonly ILogger<SoundFlowAudioPlayer> _logger;
+    private readonly IVisualizationService? _visualizationService;
+    private AudioEngine? _engine;
+    private AudioPlaybackDevice? _playbackDevice;
+    private readonly Dictionary<string, AudioSource> _audioSources;
+    private bool _isInitialized;
+    private string? _currentDeviceId;
+    private Timer? _fftTimer;
 
-  public bool IsInitialized => _isInitialized;
+    public bool IsInitialized => _isInitialized;
 
-  public SoundFlowAudioPlayer(ILogger<SoundFlowAudioPlayer> logger)
-  {
-    _logger = logger;
-    _audioSources = new Dictionary<string, AudioSource>();
-    _isInitialized = false;
-  }
+    public SoundFlowAudioPlayer(ILogger<SoundFlowAudioPlayer> logger, IVisualizationService? visualizationService = null)
+    {
+        _logger = logger;
+        _visualizationService = visualizationService;
+        _audioSources = new Dictionary<string, AudioSource>();
+        _isInitialized = false;
+    }
 
   public async Task InitializeAsync(string deviceId)
   {
@@ -201,26 +204,58 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
   }
 
   public void Dispose()
-  {
-    _logger.LogInformation("Disposing SoundFlow audio player");
-
-    foreach (var source in _audioSources.Values)
     {
-      source.Decoder?.Dispose();
-      source.Stream?.Dispose();
-    }
-    _audioSources.Clear();
+        _logger.LogInformation("Disposing SoundFlow audio player");
 
-    if (_playbackDevice != null)
+        _fftTimer?.Dispose();
+
+        foreach (var source in _audioSources.Values)
+        {
+            source.Decoder?.Dispose();
+            source.Stream?.Dispose();
+        }
+        _audioSources.Clear();
+
+        if (_playbackDevice != null)
+        {
+            _playbackDevice.Stop();
+            _playbackDevice.Dispose();
+        }
+
+        _engine?.Dispose();
+
+        _isInitialized = false;
+    }
+
+    public void EnableFftDataGeneration(bool enabled)
     {
-      _playbackDevice.Stop();
-      _playbackDevice.Dispose();
+        if (enabled)
+        {
+            _fftTimer = new Timer(async _ => await GenerateFftData(), null, 0, 50);
+        }
+        else
+        {
+            _fftTimer?.Dispose();
+        }
     }
 
-    _engine?.Dispose();
-
-    _isInitialized = false;
-  }
+    private async Task GenerateFftData()
+    {
+        if (_playbackDevice != null && _visualizationService != null)
+        {
+            var fftData = new float[256]; // Get 256 samples
+            // Note: This is a placeholder. A real implementation would need to get the FFT data from SoundFlow.
+            // SoundFlow uses MiniAudio, which does not have built-in FFT capabilities.
+            // A potential solution is to integrate a library like Kiss FFT.
+            // For now, we'll generate some random data to simulate the FFT data.
+            var rand = new Random();
+            for (int i = 0; i < fftData.Length; i++)
+            {
+                fftData[i] = (float)rand.NextDouble();
+            }
+            await _visualizationService.SendFFTDataAsync(fftData);
+        }
+    }
 
   private class AudioSource
   {
