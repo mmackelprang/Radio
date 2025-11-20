@@ -1,0 +1,90 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject ILogger<VisualizationPanel> Logger
+@implements IAsyncDisposable
+
+<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
+  <MudText Typo="Typo.h5" Class="mb-2">Audio Visualizer</MudText>
+  <canvas id="visualizer-canvas" class="visualizer-canvas" @ref="canvasElement"></canvas>
+</MudPaper>
+
+@code {
+  private HubConnection? hubConnection;
+  private ElementReference canvasElement;
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (firstRender)
+    {
+      await InitializeSignalR();
+      await InitializeCanvas();
+    }
+  }
+
+  private async Task InitializeSignalR()
+  {
+    try
+    {
+      hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/visualizerhub"))
+        .WithAutomaticReconnect()
+        .Build();
+
+      hubConnection.On<float[]>("ReceiveFFTData", async (fftData) =>
+      {
+        await UpdateVisualization(fftData);
+      });
+
+      await hubConnection.StartAsync();
+      Logger.LogInformation("Connected to VisualizerHub");
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error connecting to VisualizerHub");
+    }
+  }
+
+  private async Task InitializeCanvas()
+  {
+    try
+    {
+      await JS.InvokeVoidAsync("initializeVisualizer", canvasElement);
+      Logger.LogInformation("Visualizer canvas initialized");
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error initializing canvas");
+    }
+  }
+
+  private async Task UpdateVisualization(float[] fftData)
+  {
+    try
+    {
+      await JS.InvokeVoidAsync("updateVisualizerData", fftData);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error updating visualization");
+    }
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    if (hubConnection is not null)
+    {
+      await hubConnection.DisposeAsync();
+    }
+  }
+}
+
+<style>
+  .visualizer-canvas {
+    width: 100%;
+    height: calc(100% - 50px);
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+    border-radius: 4px;
+    border: 1px solid #424242;
+  }
+</style>

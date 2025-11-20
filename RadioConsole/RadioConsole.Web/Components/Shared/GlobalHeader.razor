@@ -1,0 +1,68 @@
+@using System.Timers
+@implements IDisposable
+
+<div class="global-header">
+  <MudGrid Justify="Justify.SpaceBetween">
+    <MudItem xs="8">
+      <MudText Typo="Typo.h3" Style="font-weight: 300; letter-spacing: 2px;">
+        @CurrentDateTime.ToString("dddd, MMMM dd, yyyy")
+      </MudText>
+      <MudText Typo="Typo.h2" Style="font-weight: 700; letter-spacing: 1px;">
+        @CurrentDateTime.ToString("hh:mm:ss tt")
+      </MudText>
+    </MudItem>
+    <MudItem xs="4" Style="text-align: right;">
+      <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+        <MudTooltip Text="WiFi Status">
+          <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@(IsWifiConnected ? Color.Success : Color.Error)" Size="Size.Large" />
+        </MudTooltip>
+        <MudTooltip Text="System Status">
+          <MudIcon Icon="@Icons.Material.Filled.Computer" Color="@(IsSystemHealthy ? Color.Success : Color.Warning)" Size="Size.Large" />
+        </MudTooltip>
+      </MudStack>
+    </MudItem>
+  </MudGrid>
+</div>
+
+@code {
+  private System.Timers.Timer? timer;
+  private DateTime CurrentDateTime { get; set; } = DateTime.Now;
+  private bool IsWifiConnected { get; set; } = true;
+  private bool IsSystemHealthy { get; set; } = true;
+
+  protected override void OnInitialized()
+  {
+    // Update clock every second
+    timer = new System.Timers.Timer(1000);
+    timer.Elapsed += OnTimerElapsed;
+    timer.AutoReset = true;
+    timer.Start();
+
+    // TODO: Integrate with actual network status check
+    // TODO: Integrate with actual system health monitoring
+  }
+
+  private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
+  {
+    CurrentDateTime = DateTime.Now;
+    InvokeAsync(StateHasChanged);
+  }
+
+  public void Dispose()
+  {
+    if (timer != null)
+    {
+      timer.Stop();
+      timer.Dispose();
+    }
+  }
+}
+
+<style>
+  .global-header {
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
+    border-bottom: 2px solid #424242;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+</style>
