@@ -32,6 +32,9 @@ public static class AudioServiceExtensions
     // Register system test service as singleton
     services.AddSingleton<ISystemTestService, SystemTestService>();
 
+    // Register metadata service as singleton
+    services.AddSingleton<IMetadataService, TagLibMetadataService>();
+
     // Register audio outputs as transient (new instance per request)
     services.AddTransient<LocalAudioOutput>();
     services.AddTransient(sp => 
