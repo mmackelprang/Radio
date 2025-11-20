@@ -1,0 +1,256 @@
+@inject HttpClient Http
+@inject ILogger<SystemTestPanel> Logger
+@inject ISnackbar Snackbar
+
+<MudPaper Class="pa-4" Style="background-color: #2c2c2c;">
+  <MudText Typo="Typo.h5" Class="mb-4">System Test Panel</MudText>
+
+  @if (IsTestRunning)
+  {
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+      Test in progress...
+    </MudAlert>
+  }
+
+  <MudStack Spacing="3">
+    <MudText Typo="Typo.h6">Text-to-Speech Tests</MudText>
+    <MudGrid>
+      <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                   FullWidth="true" OnClick="@(() => TestTTS("Now is the time for all good men to come to the aid of their country.", "male"))"
+                   Disabled="@IsTestRunning">
+          <MudIcon Icon="@Icons.Material.Filled.RecordVoiceOver" Class="mr-2" />
+          TTS - Male Voice
+        </MudButton>
+      </MudItem>
+      <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" 
+                   FullWidth="true" OnClick="@(() => TestTTS("Hello World! This is a test.", "female"))"
+                   Disabled="@IsTestRunning">
+          <MudIcon Icon="@Icons.Material.Filled.RecordVoiceOver" Class="mr-2" />
+          TTS - Female Voice
+        </MudButton>
+      </MudItem>
+    </MudGrid>
+
+    <MudDivider />
+
+    <MudText Typo="Typo.h6">Audio File Tests</MudText>
+    <MudGrid>
+      <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" Color="Color.Info" 
+                   FullWidth="true" OnClick="@(() => TestTone(300, 2))"
+                   Disabled="@IsTestRunning">
+          <MudIcon Icon="@Icons.Material.Filled.GraphicEq" Class="mr-2" />
+          300Hz Tone (2s)
+        </MudButton>
+      </MudItem>
+      <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" Color="Color.Success" 
+                   FullWidth="true" OnClick="@(() => TestTone(440, 1))"
+                   Disabled="@IsTestRunning">
+          <MudIcon Icon="@Icons.Material.Filled.MusicNote" Class="mr-2" />
+          440Hz Tone (1s)
+        </MudButton>
+      </MudItem>
+    </MudGrid>
+
+    <MudDivider />
+
+    <MudText Typo="Typo.h6">Event Simulations</MudText>
+    <MudGrid>
+      <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" 
+                   FullWidth="true" OnClick="TestDoorbell"
+                   Disabled="@IsTestRunning">
+          <MudIcon Icon="@Icons.Material.Filled.Doorbell" Class="mr-2" />
+          Doorbell Ring
+        </MudButton>
+      </MudItem>
+      <MudItem xs="12" sm="6">
+        <MudButton Variant="Variant.Filled" Color="Color.Tertiary" 
+                   FullWidth="true" OnClick="TestBroadcast"
+                   Disabled="@IsTestRunning">
+          <MudIcon Icon="@Icons.Material.Filled.Cast" Class="mr-2" />
+          Broadcast Receipt
+        </MudButton>
+      </MudItem>
+    </MudGrid>
+
+    <MudDivider />
+
+    <MudText Typo="Typo.h6">System Status</MudText>
+    <MudSimpleTable Dense="true" Style="background-color: #1e1e1e;">
+      <tbody>
+        <tr>
+          <td><strong>CPU Usage:</strong></td>
+          <td>@CpuUsage%</td>
+        </tr>
+        <tr>
+          <td><strong>Memory:</strong></td>
+          <td>@MemoryUsage MB</td>
+        </tr>
+        <tr>
+          <td><strong>Uptime:</strong></td>
+          <td>@Uptime</td>
+        </tr>
+        <tr>
+          <td><strong>Test Status:</strong></td>
+          <td>
+            @if (IsTestRunning)
+            {
+              <MudChip T="string" Color="Color.Warning" Size="Size.Small">Running</MudChip>
+            }
+            else
+            {
+              <MudChip T="string" Color="Color.Success" Size="Size.Small">Idle</MudChip>
+            }
+          </td>
+        </tr>
+      </tbody>
+    </MudSimpleTable>
+  </MudStack>
+</MudPaper>
+
+@code {
+  private bool IsTestRunning { get; set; } = false;
+  private int CpuUsage { get; set; } = 25;
+  private int MemoryUsage { get; set; } = 512;
+  private string Uptime { get; set; } = "1d 5h 23m";
+
+  // Base URL for the API - in production, this should come from configuration
+  private string ApiBaseUrl { get; set; } = "http://localhost:5100";
+
+  protected override async Task OnInitializedAsync()
+  {
+    // TODO: Load actual system status
+    await RefreshStatus();
+  }
+
+  private async Task RefreshStatus()
+  {
+    try
+    {
+      // TODO: Call actual status endpoint
+      // var response = await Http.GetFromJsonAsync<TestStatusResponse>($"{ApiBaseUrl}/api/test/status");
+      // IsTestRunning = response.IsTestRunning;
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error refreshing test status");
+    }
+  }
+
+  private async Task TestTTS(string phrase, string voiceGender)
+  {
+    IsTestRunning = true;
+    try
+    {
+      var request = new
+      {
+        phrase = phrase,
+        voiceGender = voiceGender,
+        speed = 1.0
+      };
+
+      // TODO: Uncomment when API is available
+      // var response = await Http.PostAsJsonAsync($"{ApiBaseUrl}/api/test/tts", request);
+      // response.EnsureSuccessStatusCode();
+      
+      Snackbar.Add($"Playing TTS with {voiceGender} voice...", Severity.Info);
+      Logger.LogInformation("TTS test triggered: {VoiceGender}", voiceGender);
+      
+      // Simulate test duration
+      await Task.Delay(3000);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing TTS");
+      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+    }
+    finally
+    {
+      IsTestRunning = false;
+    }
+  }
+
+  private async Task TestTone(int frequency, int duration)
+  {
+    IsTestRunning = true;
+    try
+    {
+      var request = new
+      {
+        frequency = frequency,
+        durationSeconds = duration
+      };
+
+      // TODO: Uncomment when API is available
+      // var response = await Http.PostAsJsonAsync($"{ApiBaseUrl}/api/test/tone", request);
+      // response.EnsureSuccessStatusCode();
+      
+      Snackbar.Add($"Playing {frequency}Hz tone for {duration} seconds...", Severity.Info);
+      Logger.LogInformation("Tone test triggered: {Frequency}Hz, {Duration}s", frequency, duration);
+      
+      // Simulate test duration
+      await Task.Delay(duration * 1000 + 500);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing tone");
+      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+    }
+    finally
+    {
+      IsTestRunning = false;
+    }
+  }
+
+  private async Task TestDoorbell()
+  {
+    IsTestRunning = true;
+    try
+    {
+      // TODO: Uncomment when API is available
+      // var response = await Http.PostAsync($"{ApiBaseUrl}/api/test/doorbell", null);
+      // response.EnsureSuccessStatusCode();
+      
+      Snackbar.Add("Playing doorbell sound...", Severity.Info);
+      Logger.LogInformation("Doorbell test triggered");
+      
+      // Simulate test duration
+      await Task.Delay(2000);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing doorbell");
+      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+    }
+    finally
+    {
+      IsTestRunning = false;
+    }
+  }
+
+  private async Task TestBroadcast()
+  {
+    IsTestRunning = true;
+    try
+    {
+      Snackbar.Add("Simulating broadcast receipt...", Severity.Info);
+      Logger.LogInformation("Broadcast test triggered");
+      
+      // TODO: Implement actual broadcast test
+      await Task.Delay(2000);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing broadcast");
+      Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+    }
+    finally
+    {
+      IsTestRunning = false;
+    }
+  }
+}

@@ -3,6 +3,7 @@ using RadioConsole.Infrastructure.Audio;
 using RadioConsole.Infrastructure.Inputs;
 using RadioConsole.Web.Components;
 using Serilog;
+using MudBlazor.Services;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -29,6 +30,15 @@ try
   // Add input services (Raddy Radio, Spotify, Broadcast Receiver)
   builder.Services.AddInputServices();
 
+  // Add MudBlazor services
+  builder.Services.AddMudServices();
+
+  // Add HttpClient for making API calls
+  builder.Services.AddHttpClient();
+
+  // Add SignalR for real-time visualizer data
+  builder.Services.AddSignalR();
+
   // Add services to the container.
   builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -50,6 +60,9 @@ try
 
   app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+  // Map SignalR hub for visualizer
+  app.MapHub<RadioConsole.Web.Hubs.VisualizerHub>("/visualizerhub");
 
   Log.Information("Radio Console Web Application started successfully");
   app.Run();

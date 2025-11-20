@@ -1,0 +1,119 @@
+@inject ILogger<NowPlayingPanel> Logger
+
+<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+  @if (CurrentInput == "Radio")
+  {
+    <div style="text-align: center;">
+      <MudText Typo="Typo.h6" Class="mb-2">FM Radio</MudText>
+      <MudText Typo="Typo.h2" Style="font-size: 4rem; font-weight: 700; letter-spacing: 4px;">
+        @Frequency.ToString("F1")
+      </MudText>
+      <MudText Typo="Typo.h5" Class="mt-2">MHz</MudText>
+      <MudStack Row="true" Justify="Justify.Center" Class="mt-4" Spacing="2">
+        <MudChip T="string" Color="Color.Primary" Size="Size.Small">@Band</MudChip>
+        @if (IsStereo)
+        {
+          <MudChip T="string" Color="Color.Success" Size="Size.Small">Stereo</MudChip>
+        }
+        <MudChip T="string" Color="Color.Info" Size="Size.Small">Signal: @SignalStrength%</MudChip>
+      </MudStack>
+    </div>
+  }
+  else if (CurrentInput == "Spotify")
+  {
+    <div style="text-align: center; max-width: 500px;">
+      @if (!string.IsNullOrEmpty(AlbumArtUrl))
+      {
+        <MudImage Src="@AlbumArtUrl" Alt="Album Art" Style="width: 250px; height: 250px; border-radius: 8px; margin-bottom: 1rem;" />
+      }
+      <MudText Typo="Typo.h4" Class="mb-2">@TrackTitle</MudText>
+      <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mb-2">@Artist</MudText>
+      <MudText Typo="Typo.body1" Color="Color.Tertiary">@Album</MudText>
+      
+      @if (!string.IsNullOrEmpty(Lyrics))
+      {
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.body2" Style="max-height: 200px; overflow-y: auto;">
+          @Lyrics
+        </MudText>
+      }
+    </div>
+  }
+  else if (CurrentInput == "Vinyl")
+  {
+    <div style="text-align: center;">
+      <MudIcon Icon="@Icons.Material.Filled.Album" Style="font-size: 200px;" Color="Color.Primary" />
+      <MudText Typo="Typo.h4" Class="mt-4">Vinyl Turntable</MudText>
+      <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-2">Analog Playback</MudText>
+      <div class="vinyl-animation mt-4">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+      </div>
+    </div>
+  }
+  else if (CurrentInput == "Local")
+  {
+    <div style="text-align: center;">
+      <MudIcon Icon="@Icons.Material.Filled.LibraryMusic" Style="font-size: 150px;" Color="Color.Primary" />
+      <MudText Typo="Typo.h4" Class="mt-4">@TrackTitle</MudText>
+      <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-2">@Artist</MudText>
+      <MudProgressLinear Color="Color.Primary" Value="@PlaybackProgress" Class="mt-4" />
+      <MudText Typo="Typo.body2" Class="mt-2">
+        @TimeSpan.FromSeconds(CurrentPosition).ToString(@"mm\:ss") / @TimeSpan.FromSeconds(TotalDuration).ToString(@"mm\:ss")
+      </MudText>
+    </div>
+  }
+  else
+  {
+    <div style="text-align: center;">
+      <MudIcon Icon="@Icons.Material.Filled.MusicNote" Style="font-size: 150px;" Color="Color.Tertiary" />
+      <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mt-4">No Input Selected</MudText>
+    </div>
+  }
+</MudPaper>
+
+@code {
+  [Parameter]
+  public string CurrentInput { get; set; } = "Radio";
+
+  // Radio properties
+  private double Frequency { get; set; } = 101.5;
+  private string Band { get; set; } = "FM";
+  private bool IsStereo { get; set; } = true;
+  private int SignalStrength { get; set; } = 85;
+
+  // Spotify/Music properties
+  private string TrackTitle { get; set; } = "Now Playing";
+  private string Artist { get; set; } = "Artist Name";
+  private string Album { get; set; } = "Album Name";
+  private string AlbumArtUrl { get; set; } = "";
+  private string Lyrics { get; set; } = "";
+
+  // Playback properties
+  private double PlaybackProgress { get; set; } = 45;
+  private int CurrentPosition { get; set; } = 125; // seconds
+  private int TotalDuration { get; set; } = 280; // seconds
+
+  protected override void OnInitialized()
+  {
+    // TODO: Subscribe to input source changes
+    // TODO: Load current playing info based on input type
+    LoadMockData();
+  }
+
+  private void LoadMockData()
+  {
+    // Mock data for demonstration
+    if (CurrentInput == "Spotify")
+    {
+      TrackTitle = "Bohemian Rhapsody";
+      Artist = "Queen";
+      Album = "A Night at the Opera";
+      Lyrics = "Is this the real life? Is this just fantasy?\nCaught in a landslide, no escape from reality...";
+    }
+    else if (CurrentInput == "Local")
+    {
+      TrackTitle = "Symphony No. 5";
+      Artist = "Beethoven";
+    }
+  }
+}
