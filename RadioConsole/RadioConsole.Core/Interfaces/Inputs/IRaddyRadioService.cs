@@ -38,6 +38,12 @@ public interface IRaddyRadioService
   bool IsDeviceDetected { get; }
 
   /// <summary>
+  /// Get the current signal strength (0-6 scale).
+  /// 0 = No Signal, 1 = Very Weak, 2 = Weak, 3 = Fair, 4 = Good, 5 = Very Good, 6 = Excellent
+  /// </summary>
+  int SignalStrength { get; }
+
+  /// <summary>
   /// Get the current frequency (placeholder for future BLE control).
   /// </summary>
   Task<double?> GetFrequencyAsync();

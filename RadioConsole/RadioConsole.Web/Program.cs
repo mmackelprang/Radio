@@ -68,10 +68,12 @@ try
   var app = builder.Build();
 
   // Log server configuration and API connection
-  var webUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"] ?? "http://localhost:5200";
+  var webUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"] ?? "http://0.0.0.0:5200";
+  var displayWebUrl = webUrl.Replace("0.0.0.0", "localhost"); // For display purposes
   var apiBaseUrl = builder.Configuration["RadioConsole:ApiBaseUrl"] ?? "http://localhost:5100";
   Log.Information("===== Radio Console Web Application Starting =====");
-  Log.Information("Web Server URL: {WebUrl}", webUrl);
+  Log.Information("Web Server URL: {WebUrl} (accessible from all interfaces)", webUrl);
+  Log.Information("Local access: {DisplayUrl}", displayWebUrl);
   Log.Information("Expected API URL: {ApiUrl}", apiBaseUrl);
   Log.Information("Environment: {Environment}", app.Environment.EnvironmentName);
   
@@ -116,7 +118,7 @@ try
   // Map SignalR hub for visualizer
   app.MapHub<RadioConsole.Web.Hubs.VisualizerHub>("/visualizerhub");
 
-  Log.Information("Radio Console Web Application started successfully at {WebUrl}", webUrl);
+  Log.Information("Radio Console Web Application started successfully at {WebUrl}", displayWebUrl);
   app.Run();
 }
 catch (Exception ex)
