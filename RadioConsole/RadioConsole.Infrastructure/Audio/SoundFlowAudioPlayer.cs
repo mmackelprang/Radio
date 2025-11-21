@@ -1,3 +1,4 @@
+using RadioConsole.Core;
 using RadioConsole.Core.Interfaces.Audio;
 using SoundFlow.Abstracts;
 using SoundFlow.Abstracts.Devices;
@@ -45,14 +46,14 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
       // Create audio format (standard CD quality: 44.1kHz, 2 channels, 16-bit)
       var format = new AudioFormat
       {
-        SampleRate = 44100,
-        Channels = 2,
+        SampleRate = AudioConstants.DefaultSampleRate,
+        Channels = AudioConstants.DefaultChannels,
         Format = SampleFormat.S16
       };
 
       // Find the device by ID
       DeviceInfo? targetDevice = null;
-      if (!string.IsNullOrEmpty(deviceId) && deviceId != "default")
+      if (!string.IsNullOrEmpty(deviceId) && deviceId != AudioConstants.DefaultDeviceId)
       {
         var devices = _engine.PlaybackDevices;
         if (devices != null)
@@ -109,8 +110,8 @@ public class SoundFlowAudioPlayer : IAudioPlayer, IDisposable
       // Create audio format for decoder
       var format = new AudioFormat
       {
-        SampleRate = 44100,
-        Channels = 2,
+        SampleRate = AudioConstants.DefaultSampleRate,
+        Channels = AudioConstants.DefaultChannels,
         Format = SampleFormat.S16
       };
 

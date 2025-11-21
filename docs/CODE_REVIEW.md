@@ -7,6 +7,21 @@
 
 **Update (Nov 21, 2025):** Document reviewed and updated to reflect current code state. PR #21 (AudioDeviceManager) has been merged since original review.
 
+## Recent Fixes (Nov 21, 2025)
+
+The following issues have been addressed:
+
+- ✅ **M1**: Added logger usage in LevelMeterVisualizer, WaveformVisualizer, and SpectrumVisualizer
+- ✅ **M2**: Enhanced null checks with logging in all visualizer Render methods
+- ✅ **M3**: Replaced Console.WriteLine with ILogger in ConfigurationServiceExtensions
+- ✅ **M6**: Verified bounds checking is correct in WaveformVisualizer loop
+- ✅ **M7**: Removed WeatherForecast boilerplate endpoint from API Program.cs
+- ✅ **M8**: Moved streaming endpoints to dedicated StreamingController
+- ✅ **L1**: Added value clamping to VisualizationColor.ToHex()
+- ✅ **L2**: Made VisualizationColor readonly struct with init properties
+- ✅ **L3**: Added FromHex() static method to VisualizationColor
+- ✅ **Testing**: Added 6 unit tests for VisualizationColor (145/154 tests passing)
+
 ## Overview
 
 This document consolidates findings from multiple code reviews of the RadioConsole application. Issues are organized by severity and component, with specific recommendations and sample solutions where applicable. Each issue is formatted to be actionable by an AI coding agent.
@@ -1145,9 +1160,11 @@ The application targets Raspberry Pi 5 - ensure:
 
 - **Total Issues:** 21
   - Critical: 0
-  - High: 2
-  - Medium: 11
-  - Low: 8
+  - High: 2 (still open)
+  - Medium: 11 (6 fixed, 5 remaining)
+  - Low: 8 (3 fixed, 5 remaining)
+- **Fixed Issues:** 9
+- **Remaining Issues:** 12
 
 - **Code Quality:** High (85/100)
 - **Architecture:** Excellent (95/100)
