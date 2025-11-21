@@ -125,76 +125,30 @@ private void OnVisualizationUpdated(object? sender, EventArgs e)
 
 ---
 
-### H2. SpectrumVisualizer Uses Placeholder FFT (Not Real Frequency Analysis)
+### H2. SpectrumVisualizer Uses Placeholder FFT (Not Real Frequency Analysis) - ❌ WON'T DO
 
 **Component:** RadioConsole.Infrastructure / Audio Visualization  
 **File:** `RadioConsole.Infrastructure/Audio/Visualization/SpectrumVisualizer.cs`
 
-**Issue:**
+**Status:** ❌ **WON'T DO** - Deferred in favor of SoundFlow's built-in visualizer
+
+**Decision:**
+The built-in visualizer in the SoundFlow library will be sufficient for this application. The current placeholder implementation provides adequate visualization for the Radio Console's needs. A full FFT implementation adds unnecessary complexity and dependencies.
+
+**Original Issue:**
 - Current implementation is NOT a real FFT
 - "Frequency analysis" is actually just energy binning across sample ranges
 - Will not produce accurate frequency spectrum visualization
 - Documented as placeholder, but needs real implementation
 
-**Recommendation:**
-Integrate a proper FFT library:
+**Original Recommendation (Not Implemented):**
+Integrate a proper FFT library like MathNet.Numerics or Kiss FFT.
 
-**Option A - MathNet.Numerics (Recommended):**
-```bash
-dotnet add package MathNet.Numerics
-```
-
-**Sample Solution:**
-```csharp
-using MathNet.Numerics;
-using MathNet.Numerics.IntegralTransforms;
-
-public override void ProcessAudioData(ReadOnlySpan<float> audioData)
-{
-    if (audioData.Length < _fftSize)
-        return;
-
-    // Convert to complex array
-    var complexData = new Complex32[_fftSize];
-    for (int i = 0; i < _fftSize; i++)
-    {
-        complexData[i] = new Complex32(audioData[i], 0);
-    }
-
-    // Apply windowing function (Hamming window)
-    for (int i = 0; i < _fftSize; i++)
-    {
-        float window = 0.54f - 0.46f * (float)Math.Cos(2 * Math.PI * i / (_fftSize - 1));
-        complexData[i] *= window;
-    }
-
-    // Perform FFT
-    Fourier.Forward(complexData, FourierOptions.Matlab);
-
-    // Calculate magnitudes
-    int numBins = _numBands;
-    for (int i = 0; i < numBins; i++)
-    {
-        float magnitude = complexData[i].Magnitude;
-        _frequencyBands[i] = magnitude;
-        
-        // Apply smoothing
-        _smoothedBands[i] = _smoothedBands[i] * _smoothingFactor + 
-                           _frequencyBands[i] * (1 - _smoothingFactor);
-    }
-
-    OnVisualizationUpdated();
-}
-```
-
-**Option B - Kiss FFT (C library with P/Invoke):**
-More complex but potentially faster for embedded systems like Raspberry Pi.
-
-**Verification:**
-- Build and test with real audio
-- Verify frequency peaks correspond to audio content (e.g., bass notes show in low frequencies)
-- Compare with other spectrum analyzers to validate accuracy
-- Monitor performance on Raspberry Pi
+**Rationale for Deferral:**
+- SoundFlow provides built-in visualization capabilities that meet project requirements
+- Adding external FFT libraries increases complexity without significant user-facing benefits
+- The simplified energy binning approach is adequate for decorative visualization
+- Can be revisited in a future iteration if more accurate frequency analysis is needed
 
 ---
 
@@ -1164,11 +1118,12 @@ The application targets Raspberry Pi 5 - ensure:
 
 - **Total Issues:** 21
   - Critical: 0
-  - High: 2 (still open)
+  - High: 2 (1 remaining, 1 deferred as Won't Do)
   - Medium: 11 (9 fixed, 2 remaining)
   - Low: 8 (5 fixed, 3 remaining)
 - **Fixed Issues:** 14
-- **Remaining Issues:** 7
+- **Remaining Issues:** 6
+- **Deferred Issues:** 1 (H2 - Won't Do)
 
 - **Code Quality:** High (85/100)
 - **Architecture:** Excellent (95/100)
@@ -1180,9 +1135,9 @@ The application targets Raspberry Pi 5 - ensure:
 
 ## Recommended Remediation Order
 
-1. **Phase 1 - Critical Functionality** (Issues H1, H2)
+1. **Phase 1 - Critical Functionality** (Issue H1, ~~H2~~)
    - Connect visualizers to real audio
-   - Implement real FFT
+   - ~~Implement real FFT~~ ❌ **WON'T DO** - Using SoundFlow's built-in visualizer
 
 2. **Phase 2 - Code Quality** (Issues M1-M6)
    - Fix logging issues
