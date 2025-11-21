@@ -37,7 +37,7 @@ try
   builder.Services.AddConfigurationService(builder.Configuration);
 
   // Add audio services
-  builder.Services.AddAudioServices();
+  builder.Services.AddAudioServices(builder.Configuration);
   builder.Services.AddSingleton<StreamAudioService>();
 
   // Add input services (Raddy Radio, Spotify, Broadcast Receiver)

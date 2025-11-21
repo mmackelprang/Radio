@@ -1,5 +1,7 @@
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Interfaces.Audio;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace RadioConsole.Infrastructure.Audio.Visualization;
 
@@ -16,10 +18,12 @@ public class WaveformVisualizer : IVisualizer
   public event EventHandler? VisualizationUpdated;
   public VisualizationType Type => VisualizationType.Waveform;
 
-  public WaveformVisualizer(ILogger<WaveformVisualizer>? logger = null, int bufferSize = 1024)
+  public WaveformVisualizer(
+    ILogger<WaveformVisualizer>? logger = null, 
+    IOptions<AudioVisualizationOptions>? options = null)
   {
     _logger = logger;
-    _bufferSize = bufferSize;
+    _bufferSize = options?.Value.WaveformBufferSize ?? 1024;
     _waveformBuffer = new List<float>(_bufferSize);
   }
 
