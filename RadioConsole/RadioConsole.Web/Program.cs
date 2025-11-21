@@ -155,6 +155,9 @@ try
   // Register visualization service (SignalR implementation)
   builder.Services.AddSingleton<IVisualizationService, SignalRVisualizationService>();
 
+  // Register panel management service (scoped for Blazor per-user state)
+  builder.Services.AddScoped<PanelService>();
+
   // Add services to the container.
   builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
