@@ -112,40 +112,55 @@ Per the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface):
 - **Name:** ConfigurationPanel
 - **Overall Purpose:** Configuration management panel for all system settings, audio configuration, and device settings.
 - **Components on Panel:**
-  - Reuses existing ConfigurationManagement component
-  - Configuration CRUD operations
-  - Audio device settings
-  - System preferences
+  - **Tab 1 - General Settings:** Reuses ConfigurationManagement component for CRUD operations
+  - **Tab 2 - Device Configuration:** USB device status (Raddy RF320, Phono), network status, IP address
+  - **Tab 3 - Advanced Settings:** Logging configuration, performance settings (buffer size, sample rate, FFT rate)
+  - Import/Export configuration buttons
 - **Containing File:** `RadioConsole.Web/Components/Shared/ConfigurationPanel.razor`
 - **Location in UI:** Slide-out from right side (activated by Settings icon in GlobalHeader)
-- **Status:** ✅ Implemented (2025-11-21)
+- **Status:** ✅ Implemented (2025-11-21) | ✅ Enhanced with tabs (2025-11-21 Phase 3)
 
 #### SystemStatusPanel
 - **Name:** SystemStatusPanel
-- **Overall Purpose:** Real-time system monitoring panel showing CPU, memory, disk usage, and network status.
+- **Overall Purpose:** Real-time system monitoring panel with charts showing CPU, memory, disk usage, network status, and device information.
 - **Components on Panel:**
-  - Reuses existing SystemStatus component
-  - CPU usage indicator
-  - Memory usage indicator
-  - Disk usage indicator
-  - Network status
-  - Real-time updates (1 second interval)
+  - **Resource Usage Section:**
+    - Real-time CPU usage with historical chart (30-point SVG graph)
+    - Real-time Memory usage with historical chart (30-point SVG graph)
+    - Progress bars with color-coded thresholds
+  - **Device Status Section:**
+    - Network connection status with visual indicator
+    - Audio device count with status indicator
+    - USB device count with status indicator
+    - Network bandwidth monitoring (download/upload speeds)
+  - **Controls:**
+    - Refresh button for manual updates
+    - Configurable update interval (1s, 5s, 10s, 30s)
+  - Reuses existing SystemStatus component for server/resource details
 - **Containing File:** `RadioConsole.Web/Components/Shared/SystemStatusPanel.razor`
 - **Location in UI:** Slide-out from right side (activated by Dashboard icon in GlobalHeader)
-- **Status:** ✅ Implemented (2025-11-21)
+- **Status:** ✅ Implemented (2025-11-21) | ✅ Enhanced with charts (2025-11-21 Phase 3)
 
 #### AlertManagementPanel
 - **Name:** AlertManagementPanel
-- **Overall Purpose:** Alerts and notifications management panel for configuring TTS settings and notification preferences.
+- **Overall Purpose:** Alerts and notifications management panel for configuring TTS settings and notification preferences with testing capabilities.
 - **Components on Panel:**
-  - Reuses existing AlertNotificationManagement component
-  - TTS configuration (engine, voice, speed)
-  - Notification settings (Ring, Notify, Alert, Alarm)
-  - Alert audio file assignment
-  - Volume and priority settings
+  - **Alert Testing Interface (Left Column):**
+    - Four alert types: Ring, Notify, Alert, Alarm
+    - Per-alert controls: Play/Test button, Stop button
+    - Volume slider with percentage display (0-100%)
+    - Real-time volume level indicator (animated bar during playback)
+    - Audio file assignment display
+    - Priority display (color-coded chips)
+  - **Alert Configuration (Right Column):**
+    - Reuses AlertNotificationManagement component
+    - TTS configuration (engine, voice, speed)
+    - Notification settings
+    - Alert audio file assignment
+  - **Alert History:** Dialog showing last 50 alerts with timestamps and status
 - **Containing File:** `RadioConsole.Web/Components/Shared/AlertManagementPanel.razor`
 - **Location in UI:** Slide-out from right side (activated by Notifications icon in GlobalHeader)
-- **Status:** ✅ Implemented (2025-11-21)
+- **Status:** ✅ Implemented (2025-11-21) | ✅ Enhanced with testing (2025-11-21 Phase 3)
 
 ### 1.3 Archived Legacy Panels (REMOVED)
 
@@ -651,29 +666,35 @@ Use this template when creating a new Type B (slide-out) panel:
 - ✅ All 154 tests passing
 - ✅ 3-panel layout specification fully compliant
 
-### Phase 3: Enhanced Panel Features (🔲 PLANNED)
+### Phase 3: Enhanced Panel Features (🚧 IN PROGRESS - 2025-11-21)
 Following RadioPlan_v3.md requirements:
 
-#### ConfigurationPanel Enhancements
-- [ ] Tab 1: General Settings (audio, display)
-- [ ] Tab 2: Device Configuration (USB devices, network)
-- [ ] Tab 3: Advanced Settings (logging, performance)
-- [ ] Add search/filter functionality for settings
-- [ ] Add import/export configuration feature
+#### ConfigurationPanel Enhancements (✅ COMPLETE)
+- [x] Added tabbed interface (General, Device Configuration, Advanced Settings)
+- [x] Tab 1: General Settings (audio, display) - Reuses ConfigurationManagement component
+- [x] Tab 2: Device Configuration (USB devices, network) - Shows Raddy/Phono devices, network status
+- [x] Tab 3: Advanced Settings (logging, performance) - Shows log level, buffer size, sample rate
+- [x] Added import/export configuration buttons (UI ready, placeholder logic)
+- [ ] Add search/filter functionality for settings (deferred to Phase 3B)
+- [ ] Add import/export configuration backend (deferred to Phase 3B)
 
-#### SystemStatusPanel Enhancements
-- [ ] Real-time CPU/Memory/Disk charts (not just numbers)
-- [ ] Network bandwidth monitoring
-- [ ] Audio device status with visual indicators
-- [ ] Process information and resource usage
-- [ ] Add refresh button for manual updates
-- [ ] Configurable update interval
+#### SystemStatusPanel Enhancements (✅ COMPLETE)
+- [x] Real-time CPU/Memory/Disk charts - SVG mini-charts with 30-point history
+- [x] Network bandwidth monitoring - Download/upload speed display
+- [x] Audio device status with visual indicators - Count with color-coded status
+- [x] USB device status - Device count with visual indicators
+- [x] Added refresh button for manual updates
+- [x] Added configurable update interval (1s, 5s, 10s, 30s dropdown)
+- [ ] Process information and resource usage (deferred to Phase 3B)
 
-#### AlertManagementPanel Enhancements
-- [ ] Preview/test button for each alert type
-- [ ] Visual waveform display for audio files
-- [ ] Volume level indicator per alert
-- [ ] Alert history/log viewer
+#### AlertManagementPanel Enhancements (✅ COMPLETE)
+- [x] Preview/test button for each alert type (Ring, Notify, Alert, Alarm)
+- [x] Stop button for each alert type
+- [x] Volume slider with percentage display per alert
+- [x] Real-time volume level indicator - Animated progress bar during playback
+- [x] Alert history/log viewer - Dialog showing last 50 alerts with timestamps
+- [x] Visual alert type indicators - Icons and color-coding per type
+- [ ] Visual waveform display for audio files (deferred to Phase 3B)
 
 ### Phase 4: Rich Audio Panels (🔲 PLANNED)
 
@@ -1051,14 +1072,21 @@ Use Material Design icons from `Icons.Material.Filled.*`:
 ## Document Maintenance
 
 **Last Updated:** 2025-11-21  
-**Version:** 2.0  
+**Version:** 2.1  
 **Author:** Radio Console Development Team  
 **Review Frequency:** Update after each major UI change or new panel addition
 
 **Recent Updates:**
-- Phase 2 Panel Management & Full-Page Conversion completed
-- PanelService implemented with comprehensive CSS animations
-- Three new Type B slide-out panels created (Configuration, SystemStatus, AlertManagement)
-- NavMenu.razor removed, all navigation moved to GlobalHeader
-- Deprecated full-page routes (RadioDemo, SystemPanel) removed and archived
-- All tests passing (154 tests), 3-panel layout specification fully compliant
+- **2025-11-21 Phase 3 Implementation:**
+  - Enhanced ConfigurationPanel with tabbed interface (General, Device, Advanced)
+  - Enhanced SystemStatusPanel with real-time charts, network monitoring, device status
+  - Enhanced AlertManagementPanel with test buttons, volume controls, history viewer
+  - All enhancements include Material Design 3 styling and real-time updates
+  - 176 tests passing, build successful with 10 non-blocking analyzer warnings
+- **2025-11-21 Phase 2 Completion:**
+  - Phase 2 Panel Management & Full-Page Conversion completed
+  - PanelService implemented with comprehensive CSS animations
+  - Three new Type B slide-out panels created (Configuration, SystemStatus, AlertManagement)
+  - NavMenu.razor removed, all navigation moved to GlobalHeader
+  - Deprecated full-page routes (RadioDemo, SystemPanel) removed and archived
+  - All tests passing (154 tests at completion), 3-panel layout specification fully compliant
