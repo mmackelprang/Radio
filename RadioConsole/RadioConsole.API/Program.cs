@@ -65,23 +65,6 @@ try
   // Map controllers
   app.MapControllers();
 
-  // Audio streaming endpoints
-  app.MapGet("/stream.mp3", async (HttpContext context, StreamAudioService streamService) =>
-  {
-    await streamService.StreamMp3Async(context);
-  })
-  .WithName("StreamAudioMp3")
-  .WithOpenApi()
-  .ExcludeFromDescription(); // Don't show in Swagger as it's a streaming endpoint
-
-  app.MapGet("/stream.wav", async (HttpContext context, StreamAudioService streamService) =>
-  {
-    await streamService.StreamWavAsync(context);
-  })
-  .WithName("StreamAudioWav")
-  .WithOpenApi()
-  .ExcludeFromDescription(); // Don't show in Swagger as it's a streaming endpoint
-
   app.Run();
 }
 catch (Exception ex)
