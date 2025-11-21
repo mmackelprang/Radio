@@ -23,6 +23,7 @@ The following issues have been addressed:
 - ✅ **L2**: Made VisualizationColor readonly struct with init properties
 - ✅ **L3**: Added FromHex() static method to VisualizationColor
 - ✅ **L6**: Replaced magic strings with AudioConstants
+- ✅ **L7**: Added TextToSpeechOptions configuration for provider selection
 - ✅ **Testing**: Fixed TestHardwareHelper and added 6 unit tests for VisualizationColor (154/154 tests passing)
 
 ## Overview
@@ -1165,9 +1166,9 @@ The application targets Raspberry Pi 5 - ensure:
   - Critical: 0
   - High: 2 (still open)
   - Medium: 11 (9 fixed, 2 remaining)
-  - Low: 8 (4 fixed, 4 remaining)
-- **Fixed Issues:** 13
-- **Remaining Issues:** 8
+  - Low: 8 (5 fixed, 3 remaining)
+- **Fixed Issues:** 14
+- **Remaining Issues:** 7
 
 - **Code Quality:** High (85/100)
 - **Architecture:** Excellent (95/100)

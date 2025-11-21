@@ -1,7 +1,10 @@
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Enums;
 using RadioConsole.Core.Interfaces.Audio;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace RadioConsole.Infrastructure.Audio;
 
@@ -12,11 +15,36 @@ public class TextToSpeechFactory
 {
   private readonly IServiceProvider _serviceProvider;
   private readonly ILogger<TextToSpeechFactory> _logger;
+  private readonly TextToSpeechOptions? _options;
 
-  public TextToSpeechFactory(IServiceProvider serviceProvider, ILogger<TextToSpeechFactory> logger)
+  public TextToSpeechFactory(
+    IServiceProvider serviceProvider, 
+    ILogger<TextToSpeechFactory> logger,
+    IOptions<TextToSpeechOptions>? options = null)
   {
     _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
     _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    _options = options?.Value;
+  }
+
+  /// <summary>
+  /// Create a TTS service instance using the configured default provider.
+  /// </summary>
+  /// <returns>An ITextToSpeechService instance for the configured provider.</returns>
+  public ITextToSpeechService CreateDefault()
+  {
+    var providerName = _options?.Provider ?? "ESpeak";
+    _logger.LogInformation("Creating default TTS service for provider: {Provider}", providerName);
+
+    var provider = providerName.ToLowerInvariant() switch
+    {
+      "espeak" => TtsProvider.ESpeak,
+      "azure" or "azurecloud" => TtsProvider.AzureCloud,
+      "google" or "googlecloud" => TtsProvider.GoogleCloud,
+      _ => TtsProvider.ESpeak
+    };
+
+    return Create(provider);
   }
 
   /// <summary>

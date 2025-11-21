@@ -27,6 +27,8 @@ public static class AudioServiceExtensions
     {
       services.Configure<AudioVisualizationOptions>(
         configuration.GetSection("AudioVisualization"));
+      services.Configure<TextToSpeechOptions>(
+        configuration.GetSection("TextToSpeech"));
     }
 
     // Register audio player as singleton to maintain state across requests
