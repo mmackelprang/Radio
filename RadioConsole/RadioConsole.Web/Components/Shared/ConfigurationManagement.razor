@@ -1,0 +1,493 @@
+@inject ILogger<ConfigurationManagement> Logger
+@inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+@using RadioConsole.Core.Models
+
+<MudGrid>
+  @* Left Column - Component & Category Management *@
+  <MudItem xs="12" md="4">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudText Typo="Typo.h6" Class="mb-3">Components</MudText>
+      
+      @* Component Selector *@
+      <MudSelect T="string" Label="Select Component" Variant="Variant.Outlined" 
+                 @bind-Value="SelectedComponent" FullWidth="true"
+                 AdornmentIcon="@Icons.Material.Filled.Folder">
+        @foreach (var component in Components)
+        {
+          <MudSelectItem Value="@component">@component</MudSelectItem>
+        }
+      </MudSelect>
+
+      @* Add/Delete Component Buttons *@
+      <MudStack Row="true" Spacing="2" Class="mt-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="ShowAddComponentDialog">
+          Add
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" 
+                   StartIcon="@Icons.Material.Filled.Delete" OnClick="DeleteComponent"
+                   Disabled="@(string.IsNullOrEmpty(SelectedComponent) || SelectedComponent == SecretsComponentName)">
+          Delete
+        </MudButton>
+      </MudStack>
+
+      <MudDivider Class="my-4" />
+
+      <MudText Typo="Typo.h6" Class="mb-3">Categories</MudText>
+      
+      @* Category Selector *@
+      <MudSelect T="string" Label="Select Category" Variant="Variant.Outlined" 
+                 @bind-Value="SelectedCategory" FullWidth="true"
+                 AdornmentIcon="@Icons.Material.Filled.Category">
+        <MudSelectItem Value="@("")">All Categories</MudSelectItem>
+        @foreach (var category in Categories)
+        {
+          <MudSelectItem Value="@category">@category</MudSelectItem>
+        }
+      </MudSelect>
+
+      @* Add/Delete Category Buttons *@
+      <MudStack Row="true" Spacing="2" Class="mt-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="ShowAddCategoryDialog">
+          Add
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" 
+                   StartIcon="@Icons.Material.Filled.Delete" OnClick="DeleteCategory"
+                   Disabled="@(string.IsNullOrEmpty(SelectedCategory))">
+          Delete
+        </MudButton>
+      </MudStack>
+    </MudPaper>
+  </MudItem>
+
+  @* Right Column - Key/Value Grid *@
+  <MudItem xs="12" md="8">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+        <MudText Typo="Typo.h6">Configuration Items</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="ShowAddConfigDialog">
+          Add Item
+        </MudButton>
+      </MudStack>
+
+      @if (IsLoading)
+      {
+        <MudProgressCircular Indeterminate="true" />
+      }
+      else if (FilteredConfigItems.Any())
+      {
+        <MudTable Items="@FilteredConfigItems" Hover="true" Striped="true" Dense="true">
+          <HeaderContent>
+            <MudTh>Key</MudTh>
+            <MudTh>Value</MudTh>
+            <MudTh>Category</MudTh>
+            <MudTh>Last Updated</MudTh>
+            <MudTh>Actions</MudTh>
+          </HeaderContent>
+          <RowTemplate>
+            <MudTd DataLabel="Key">@context.Key</MudTd>
+            <MudTd DataLabel="Value">
+              @if (IsSecretsComponent())
+              {
+                <MudText>••••••••</MudText>
+              }
+              else
+              {
+                <MudText>@context.Value</MudText>
+              }
+            </MudTd>
+            <MudTd DataLabel="Category">@context.Category</MudTd>
+            <MudTd DataLabel="Last Updated">@context.LastUpdated.ToString("yyyy-MM-dd HH:mm")</MudTd>
+            <MudTd DataLabel="Actions">
+              <MudStack Row="true" Spacing="1">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                               OnClick="@(() => ShowEditConfigDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => DeleteConfigItem(context))" />
+              </MudStack>
+            </MudTd>
+          </RowTemplate>
+        </MudTable>
+      }
+      else
+      {
+        <MudText Color="Color.Secondary" Class="pa-4">
+          No configuration items found. Click "Add Item" to create one.
+        </MudText>
+      }
+    </MudPaper>
+  </MudItem>
+</MudGrid>
+
+@* Add Component Dialog *@
+<MudDialog @bind-IsVisible="ShowAddComponentDialogVisible">
+  <DialogContent>
+    <MudText Typo="Typo.h6" Class="mb-4">Add New Component</MudText>
+    <MudTextField @bind-Value="NewComponentName" Label="Component Name" Variant="Variant.Outlined" 
+                  FullWidth="true" Required="true" />
+  </DialogContent>
+  <DialogActions>
+    <MudButton OnClick="@(() => ShowAddComponentDialogVisible = false)">Cancel</MudButton>
+    <MudButton Color="Color.Primary" OnClick="AddComponent">Add</MudButton>
+  </DialogActions>
+</MudDialog>
+
+@* Add Category Dialog *@
+<MudDialog @bind-IsVisible="ShowAddCategoryDialogVisible">
+  <DialogContent>
+    <MudText Typo="Typo.h6" Class="mb-4">Add New Category</MudText>
+    <MudTextField @bind-Value="NewCategoryName" Label="Category Name" Variant="Variant.Outlined" 
+                  FullWidth="true" Required="true" />
+  </DialogContent>
+  <DialogActions>
+    <MudButton OnClick="@(() => ShowAddCategoryDialogVisible = false)">Cancel</MudButton>
+    <MudButton Color="Color.Primary" OnClick="AddCategory">Add</MudButton>
+  </DialogActions>
+</MudDialog>
+
+@* Add/Edit Config Item Dialog *@
+<MudDialog @bind-IsVisible="ShowConfigDialogVisible">
+  <DialogContent>
+    <MudText Typo="Typo.h6" Class="mb-4">@(IsEditMode ? "Edit" : "Add") Configuration Item</MudText>
+    <MudStack Spacing="3">
+      <MudTextField @bind-Value="EditingItem.Key" Label="Key" Variant="Variant.Outlined" 
+                    FullWidth="true" Required="true" Disabled="@IsEditMode" />
+      
+      @if (IsSecretsComponent())
+      {
+        <MudTextField @bind-Value="EditingItem.Value" Label="Value (Hidden)" Variant="Variant.Outlined" 
+                      FullWidth="true" Required="true" InputType="InputType.Password"
+                      HelperText="Secret values are never displayed after saving" />
+      }
+      else
+      {
+        <MudTextField @bind-Value="EditingItem.Value" Label="Value" Variant="Variant.Outlined" 
+                      FullWidth="true" Required="true" Lines="3" />
+      }
+      
+      <MudSelect T="string" @bind-Value="EditingItem.Category" Label="Category" Variant="Variant.Outlined" 
+                 FullWidth="true">
+        @foreach (var category in Categories)
+        {
+          <MudSelectItem Value="@category">@category</MudSelectItem>
+        }
+      </MudSelect>
+    </MudStack>
+  </DialogContent>
+  <DialogActions>
+    <MudButton OnClick="@(() => ShowConfigDialogVisible = false)">Cancel</MudButton>
+    <MudButton Color="Color.Primary" OnClick="SaveConfigItem">Save</MudButton>
+  </DialogActions>
+</MudDialog>
+
+@code {
+  private const string SecretToken = "[SECRET]";
+  private const string SecretsComponentName = "Secrets";
+  
+  // State
+  private List<string> Components { get; set; } = new();
+  private List<string> Categories { get; set; } = new();
+  private List<ConfigurationItem> ConfigItems { get; set; } = new();
+  private string? SelectedComponent { get; set; }
+  private string? SelectedCategory { get; set; }
+  private bool IsLoading { get; set; } = false;
+
+  // Dialog state
+  private bool ShowAddComponentDialogVisible { get; set; } = false;
+  private bool ShowAddCategoryDialogVisible { get; set; } = false;
+  private bool ShowConfigDialogVisible { get; set; } = false;
+  private bool IsEditMode { get; set; } = false;
+  private string NewComponentName { get; set; } = string.Empty;
+  private string NewCategoryName { get; set; } = string.Empty;
+  private ConfigurationItem EditingItem { get; set; } = new();
+
+  private HttpClient HttpClient => HttpClientFactory.CreateClient("API");
+
+  private IEnumerable<ConfigurationItem> FilteredConfigItems
+  {
+    get
+    {
+      var items = ConfigItems.AsEnumerable();
+      
+      if (!string.IsNullOrEmpty(SelectedComponent))
+      {
+        items = items.Where(x => x.Component == SelectedComponent);
+      }
+      
+      if (!string.IsNullOrEmpty(SelectedCategory))
+      {
+        items = items.Where(x => x.Category == SelectedCategory);
+      }
+      
+      return items.OrderBy(x => x.Key).ToList();
+    }
+  }
+
+  private bool IsSecretsComponent() => SelectedComponent == SecretsComponentName;
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadComponents();
+    await LoadAllConfigItems();
+  }
+
+  private async Task LoadComponents()
+  {
+    try
+    {
+      IsLoading = true;
+      var response = await HttpClient.GetFromJsonAsync<List<string>>("/api/configuration/components");
+      if (response != null)
+      {
+        Components = response;
+        
+        // Ensure "Secrets" component exists
+        if (!Components.Contains(SecretsComponentName))
+        {
+          Components.Add(SecretsComponentName);
+        }
+        
+        if (Components.Any() && string.IsNullOrEmpty(SelectedComponent))
+        {
+          SelectedComponent = Components.First();
+        }
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading components");
+      Snackbar.Add("Failed to load components", Severity.Error);
+    }
+    finally
+    {
+      IsLoading = false;
+    }
+  }
+
+  private async Task LoadAllConfigItems()
+  {
+    try
+    {
+      IsLoading = true;
+      var response = await HttpClient.GetFromJsonAsync<List<ConfigurationItem>>("/api/configuration");
+      if (response != null)
+      {
+        ConfigItems = response;
+        
+        // Extract unique categories
+        Categories = ConfigItems
+          .Select(x => x.Category)
+          .Where(x => !string.IsNullOrEmpty(x))
+          .Distinct()
+          .OrderBy(x => x)
+          .ToList();
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading configuration items");
+      Snackbar.Add("Failed to load configuration items", Severity.Error);
+    }
+    finally
+    {
+      IsLoading = false;
+    }
+  }
+
+  private void ShowAddComponentDialog()
+  {
+    NewComponentName = string.Empty;
+    ShowAddComponentDialogVisible = true;
+  }
+
+  private async Task AddComponent()
+  {
+    if (string.IsNullOrWhiteSpace(NewComponentName))
+    {
+      Snackbar.Add("Component name is required", Severity.Warning);
+      return;
+    }
+
+    if (Components.Contains(NewComponentName))
+    {
+      Snackbar.Add("Component already exists", Severity.Warning);
+      return;
+    }
+
+    Components.Add(NewComponentName);
+    SelectedComponent = NewComponentName;
+    ShowAddComponentDialogVisible = false;
+    Snackbar.Add($"Component '{NewComponentName}' added", Severity.Success);
+  }
+
+  private async Task DeleteComponent()
+  {
+    if (string.IsNullOrEmpty(SelectedComponent))
+      return;
+
+    if (SelectedComponent == SecretsComponentName)
+    {
+      Snackbar.Add("Cannot delete Secrets component", Severity.Warning);
+      return;
+    }
+
+    try
+    {
+      // Delete all items in the component
+      var itemsToDelete = ConfigItems.Where(x => x.Component == SelectedComponent).ToList();
+      foreach (var item in itemsToDelete)
+      {
+        await HttpClient.DeleteAsync($"/api/configuration/{item.Component}/{item.Key}");
+      }
+
+      Components.Remove(SelectedComponent);
+      SelectedComponent = Components.FirstOrDefault();
+      await LoadAllConfigItems();
+      Snackbar.Add("Component deleted successfully", Severity.Success);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error deleting component");
+      Snackbar.Add("Failed to delete component", Severity.Error);
+    }
+  }
+
+  private void ShowAddCategoryDialog()
+  {
+    NewCategoryName = string.Empty;
+    ShowAddCategoryDialogVisible = true;
+  }
+
+  private async Task AddCategory()
+  {
+    if (string.IsNullOrWhiteSpace(NewCategoryName))
+    {
+      Snackbar.Add("Category name is required", Severity.Warning);
+      return;
+    }
+
+    if (Categories.Contains(NewCategoryName))
+    {
+      Snackbar.Add("Category already exists", Severity.Warning);
+      return;
+    }
+
+    Categories.Add(NewCategoryName);
+    SelectedCategory = NewCategoryName;
+    ShowAddCategoryDialogVisible = false;
+    Snackbar.Add($"Category '{NewCategoryName}' added", Severity.Success);
+  }
+
+  private async Task DeleteCategory()
+  {
+    if (string.IsNullOrEmpty(SelectedCategory))
+      return;
+
+    // Just remove from local list - categories are derived from items
+    Categories.Remove(SelectedCategory);
+    SelectedCategory = string.Empty;
+    Snackbar.Add("Category removed from list", Severity.Success);
+  }
+
+  private void ShowAddConfigDialog()
+  {
+    if (string.IsNullOrEmpty(SelectedComponent))
+    {
+      Snackbar.Add("Please select a component first", Severity.Warning);
+      return;
+    }
+
+    IsEditMode = false;
+    EditingItem = new ConfigurationItem
+    {
+      Component = SelectedComponent,
+      Category = SelectedCategory ?? string.Empty
+    };
+    ShowConfigDialogVisible = true;
+  }
+
+  private void ShowEditConfigDialog(ConfigurationItem item)
+  {
+    IsEditMode = true;
+    EditingItem = new ConfigurationItem
+    {
+      Id = item.Id,
+      Component = item.Component,
+      Key = item.Key,
+      Value = IsSecretsComponent() ? "[EDIT TO UPDATE]" : item.Value, // Placeholder for secrets
+      Category = item.Category,
+      LastUpdated = item.LastUpdated
+    };
+    ShowConfigDialogVisible = true;
+  }
+
+  private async Task SaveConfigItem()
+  {
+    if (string.IsNullOrWhiteSpace(EditingItem.Key))
+    {
+      Snackbar.Add("Key is required", Severity.Warning);
+      return;
+    }
+
+    if (string.IsNullOrWhiteSpace(EditingItem.Value))
+    {
+      Snackbar.Add("Value is required", Severity.Warning);
+      return;
+    }
+
+    // Don't save if editing a secret and the placeholder hasn't been changed
+    if (IsEditMode && IsSecretsComponent() && EditingItem.Value == "[EDIT TO UPDATE]")
+    {
+      Snackbar.Add("Please enter a new secret value or cancel to keep the existing value", Severity.Warning);
+      return;
+    }
+
+    try
+    {
+      EditingItem.LastUpdated = DateTime.UtcNow;
+      
+      var response = await HttpClient.PostAsJsonAsync("/api/configuration", EditingItem);
+      if (response.IsSuccessStatusCode)
+      {
+        await LoadAllConfigItems();
+        ShowConfigDialogVisible = false;
+        Snackbar.Add($"Configuration item {(IsEditMode ? "updated" : "added")} successfully", Severity.Success);
+      }
+      else
+      {
+        Snackbar.Add($"Failed to save configuration item: {response.StatusCode}", Severity.Error);
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error saving configuration item");
+      Snackbar.Add("Failed to save configuration item", Severity.Error);
+    }
+  }
+
+  private async Task DeleteConfigItem(ConfigurationItem item)
+  {
+    try
+    {
+      var response = await HttpClient.DeleteAsync($"/api/configuration/{item.Component}/{item.Key}");
+      if (response.IsSuccessStatusCode)
+      {
+        await LoadAllConfigItems();
+        Snackbar.Add("Configuration item deleted successfully", Severity.Success);
+      }
+      else
+      {
+        Snackbar.Add($"Failed to delete configuration item: {response.StatusCode}", Severity.Error);
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error deleting configuration item");
+      Snackbar.Add("Failed to delete configuration item", Severity.Error);
+    }
+  }
+}

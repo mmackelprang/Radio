@@ -17,10 +17,12 @@ public class RaddyRadioService : IRaddyRadioService
   
   private string? _deviceId;
   private bool _isStreaming;
+  private int _signalStrength = 0; // 0-6 scale, placeholder for future BLE implementation
   private const string RaddyDeviceIdentifier = "Raddy"; // USB Audio device name contains "Raddy"
   
   public bool IsStreaming => _isStreaming;
   public bool IsDeviceDetected => _deviceId != null;
+  public int SignalStrength => _signalStrength;
 
   public RaddyRadioService(
     IAudioDeviceManager audioDeviceManager,
@@ -99,6 +101,9 @@ public class RaddyRadioService : IRaddyRadioService
       // audio mixer to the configured output device.
       _isStreaming = true;
       
+      // Simulate initial signal strength (would come from BLE in future)
+      _signalStrength = 4; // Default to "Good" signal
+      
       _logger.LogInformation("Raddy RF320 audio stream started successfully.");
     }
     catch (Exception ex)
@@ -125,6 +130,7 @@ public class RaddyRadioService : IRaddyRadioService
       await _audioPlayer.StopAsync("raddy_radio");
       
       _isStreaming = false;
+      _signalStrength = 0; // No signal when stopped
       
       _logger.LogInformation("Raddy RF320 audio stream stopped successfully.");
     }

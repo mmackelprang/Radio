@@ -1,0 +1,36 @@
+@page "/system"
+@inject ILogger<SystemPanel> Logger
+@inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
+@rendermode InteractiveServer
+
+<PageTitle>System Panel - Radio Console</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+  <MudText Typo="Typo.h3" Class="mb-4">System Panel</MudText>
+
+  <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    @* Configuration Management Tab *@
+    <MudTabPanel Text="Configuration" Icon="@Icons.Material.Filled.Settings">
+      <ConfigurationManagement />
+    </MudTabPanel>
+
+    @* Alert/Notification Management Tab *@
+    <MudTabPanel Text="Alerts & Notifications" Icon="@Icons.Material.Filled.Notifications">
+      <AlertNotificationManagement />
+    </MudTabPanel>
+
+    @* System Status Tab *@
+    <MudTabPanel Text="System Status" Icon="@Icons.Material.Filled.Info">
+      <SystemStatus />
+    </MudTabPanel>
+  </MudTabs>
+</MudContainer>
+
+@code {
+  protected override async Task OnInitializedAsync()
+  {
+    Logger.LogInformation("System Panel loaded");
+    await Task.CompletedTask;
+  }
+}

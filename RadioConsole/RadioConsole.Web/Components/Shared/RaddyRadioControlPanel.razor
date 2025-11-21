@@ -107,6 +107,9 @@
     <MudChip T="string" Color="@(IsDeviceDetected ? Color.Info : Color.Warning)" Icon="@Icons.Material.Filled.Usb">
       @(IsDeviceDetected ? "Device Detected" : "Device Not Found")
     </MudChip>
+    <MudChip T="string" Color="@GetSignalColor()" Icon="@GetSignalIcon()">
+      Signal: @GetSignalText()
+    </MudChip>
   </MudStack>
 </MudPaper>
 
@@ -134,11 +137,52 @@
   private int RadioVolume { get; set; } = 50;
   private bool IsStreaming { get; set; } = false;
   private bool IsDeviceDetected { get; set; } = false;
+  private int SignalStrength { get; set; } = 0; // 0-6 scale
 
   // UI state
   private bool ShowKeypad { get; set; } = false;
 
   private string FrequencyFormat => SelectedBand == "AM" || SelectedBand == "SW" ? "F3" : "F1";
+
+  private string GetSignalIcon()
+  {
+    return SignalStrength switch
+    {
+      0 => Icons.Material.Filled.SignalCellularOff,
+      1 or 2 => Icons.Material.Filled.SignalCellularAlt,
+      3 or 4 => Icons.Material.Filled.SignalCellularAlt,
+      5 or 6 => Icons.Material.Filled.SignalCellularAlt,
+      _ => Icons.Material.Filled.SignalCellularOff
+    };
+  }
+
+  private Color GetSignalColor()
+  {
+    return SignalStrength switch
+    {
+      0 => Color.Default,
+      1 or 2 => Color.Error,
+      3 => Color.Warning,
+      4 => Color.Info,
+      5 or 6 => Color.Success,
+      _ => Color.Default
+    };
+  }
+
+  private string GetSignalText()
+  {
+    return SignalStrength switch
+    {
+      0 => "No Signal",
+      1 => "Very Weak",
+      2 => "Weak",
+      3 => "Fair",
+      4 => "Good",
+      5 => "Very Good",
+      6 => "Excellent",
+      _ => "Unknown"
+    };
+  }
 
   protected override async Task OnInitializedAsync()
   {
@@ -151,6 +195,7 @@
     {
       IsStreaming = RaddyRadioService.IsStreaming;
       IsDeviceDetected = RaddyRadioService.IsDeviceDetected;
+      SignalStrength = RaddyRadioService.SignalStrength;
       
       var freq = await RaddyRadioService.GetFrequencyAsync();
       if (freq.HasValue)

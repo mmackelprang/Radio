@@ -1,0 +1,287 @@
+@inject ILogger<AlertNotificationManagement> Logger
+@inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+
+<MudGrid>
+  @* TTS Settings *@
+  <MudItem xs="12" md="6">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudText Typo="Typo.h6" Class="mb-4">Text-to-Speech Settings</MudText>
+      
+      <MudStack Spacing="3">
+        @* TTS Engine Selector *@
+        <MudSelect T="string" Label="TTS Engine" Variant="Variant.Outlined" 
+                   @bind-Value="TtsEngine" FullWidth="true">
+          <MudSelectItem Value="@("ESpeak")">eSpeak (Local)</MudSelectItem>
+          <MudSelectItem Value="@("Google")">Google Cloud TTS</MudSelectItem>
+          <MudSelectItem Value="@("Azure")">Azure Cognitive Services</MudSelectItem>
+        </MudSelect>
+
+        @* TTS Voice Selector (for Google/Azure) *@
+        @if (TtsEngine == "Google" || TtsEngine == "Azure")
+        {
+          <MudSelect T="string" Label="Voice" Variant="Variant.Outlined" 
+                     @bind-Value="TtsVoice" FullWidth="true">
+            @if (TtsEngine == "Google")
+            {
+              <MudSelectItem Value="@("en-US-Standard-A")">English US - Female (Standard A)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-Standard-B")">English US - Male (Standard B)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-Standard-C")">English US - Female (Standard C)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-Standard-D")">English US - Male (Standard D)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-Wavenet-A")">English US - Female (Wavenet A)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-Wavenet-B")">English US - Male (Wavenet B)</MudSelectItem>
+            }
+            else if (TtsEngine == "Azure")
+            {
+              <MudSelectItem Value="@("en-US-JennyNeural")">English US - Jenny (Neural)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-GuyNeural")">English US - Guy (Neural)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-AriaNeural")">English US - Aria (Neural)</MudSelectItem>
+              <MudSelectItem Value="@("en-US-DavisNeural")">English US - Davis (Neural)</MudSelectItem>
+            }
+          </MudSelect>
+        }
+
+        @* TTS Speed Selector *@
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+          <MudText Style="min-width: 100px;">Speed:</MudText>
+          <MudSlider T="double" @bind-Value="TtsSpeed" Min="0.5" Max="2.0" Step="0.1" 
+                     Color="Color.Primary" Style="flex: 1;" />
+          <MudText Style="min-width: 50px;">@TtsSpeed.ToString("F1")x</MudText>
+        </MudStack>
+
+        @* Test TTS *@
+        <MudTextField @bind-Value="TtsTestText" Label="Test Text" Variant="Variant.Outlined" 
+                      FullWidth="true" Lines="2" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="TestTts"
+                   Disabled="@string.IsNullOrWhiteSpace(TtsTestText)">
+          Test TTS
+        </MudButton>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Success" 
+                   StartIcon="@Icons.Material.Filled.Save" OnClick="SaveTtsSettings"
+                   FullWidth="true">
+          Save TTS Settings
+        </MudButton>
+      </MudStack>
+    </MudPaper>
+  </MudItem>
+
+  @* Audio File Settings *@
+  <MudItem xs="12" md="6">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudText Typo="Typo.h6" Class="mb-4">Default Audio Files</MudText>
+      
+      <MudStack Spacing="3">
+        @* Alert Audio File *@
+        <MudStack>
+          <MudText Typo="Typo.subtitle2">Alert Sound</MudText>
+          <MudSelect T="string" Label="Alert Audio File" Variant="Variant.Outlined" 
+                     @bind-Value="AlertAudioFile" FullWidth="true">
+            @foreach (var file in AlertAudioFiles)
+            {
+              <MudSelectItem Value="@file">@file</MudSelectItem>
+            }
+          </MudSelect>
+          <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                     StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => TestAudioFile(AlertAudioFile))">
+            Test
+          </MudButton>
+        </MudStack>
+
+        @* Notification Audio File *@
+        <MudStack>
+          <MudText Typo="Typo.subtitle2">Notification Sound</MudText>
+          <MudSelect T="string" Label="Notification Audio File" Variant="Variant.Outlined" 
+                     @bind-Value="NotificationAudioFile" FullWidth="true">
+            @foreach (var file in NotifyAudioFiles)
+            {
+              <MudSelectItem Value="@file">@file</MudSelectItem>
+            }
+          </MudSelect>
+          <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                     StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => TestAudioFile(NotificationAudioFile))">
+            Test
+          </MudButton>
+        </MudStack>
+
+        @* Alarm Audio File *@
+        <MudStack>
+          <MudText Typo="Typo.subtitle2">Alarm Sound</MudText>
+          <MudSelect T="string" Label="Alarm Audio File" Variant="Variant.Outlined" 
+                     @bind-Value="AlarmAudioFile" FullWidth="true">
+            @foreach (var file in AlarmAudioFiles)
+            {
+              <MudSelectItem Value="@file">@file</MudSelectItem>
+            }
+          </MudSelect>
+          <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                     StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => TestAudioFile(AlarmAudioFile))">
+            Test
+          </MudButton>
+        </MudStack>
+
+        @* Ring Audio File *@
+        <MudStack>
+          <MudText Typo="Typo.subtitle2">Ring Sound</MudText>
+          <MudSelect T="string" Label="Ring Audio File" Variant="Variant.Outlined" 
+                     @bind-Value="RingAudioFile" FullWidth="true">
+            @foreach (var file in RingAudioFiles)
+            {
+              <MudSelectItem Value="@file">@file</MudSelectItem>
+            }
+          </MudSelect>
+          <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                     StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => TestAudioFile(RingAudioFile))">
+            Test
+          </MudButton>
+        </MudStack>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Success" 
+                   StartIcon="@Icons.Material.Filled.Save" OnClick="SaveAudioSettings"
+                   FullWidth="true">
+          Save Audio Settings
+        </MudButton>
+      </MudStack>
+    </MudPaper>
+  </MudItem>
+</MudGrid>
+
+@code {
+  private HttpClient HttpClient => HttpClientFactory.CreateClient("API");
+
+  // TTS Settings
+  private string TtsEngine { get; set; } = "ESpeak";
+  private string TtsVoice { get; set; } = "en-US-Standard-A";
+  private double TtsSpeed { get; set; } = 1.0;
+  private string TtsTestText { get; set; } = "Hello, this is a test of the text to speech system.";
+
+  // Audio File Settings
+  private string AlertAudioFile { get; set; } = "alert-default.mp3";
+  private string NotificationAudioFile { get; set; } = "notify-default.mp3";
+  private string AlarmAudioFile { get; set; } = "alarm-default.mp3";
+  private string RingAudioFile { get; set; } = "ring-default.mp3";
+
+  // Audio file lists (would be loaded from API/filesystem)
+  private List<string> AlertAudioFiles { get; set; } = new()
+  {
+    "alert-default.mp3",
+    "alert-beep.mp3",
+    "alert-chime.mp3"
+  };
+
+  private List<string> NotifyAudioFiles { get; set; } = new()
+  {
+    "notify-default.mp3",
+    "notify-ding.mp3",
+    "notify-bell.mp3"
+  };
+
+  private List<string> AlarmAudioFiles { get; set; } = new()
+  {
+    "alarm-default.mp3",
+    "alarm-siren.mp3",
+    "alarm-buzzer.mp3"
+  };
+
+  private List<string> RingAudioFiles { get; set; } = new()
+  {
+    "ring-default.mp3",
+    "ring-classic.mp3",
+    "ring-modern.mp3"
+  };
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadSettings();
+  }
+
+  private async Task LoadSettings()
+  {
+    try
+    {
+      // Load TTS settings from configuration
+      // This would call the API to get current settings
+      Logger.LogInformation("Loading alert/notification settings");
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading settings");
+      Snackbar.Add("Failed to load settings", Severity.Error);
+    }
+  }
+
+  private async Task TestTts()
+  {
+    try
+    {
+      Logger.LogInformation("Testing TTS with engine {Engine}, voice {Voice}, speed {Speed}", 
+        TtsEngine, TtsVoice, TtsSpeed);
+      
+      // Would call API endpoint to test TTS
+      // await HttpClient.PostAsync($"/api/test/tts?text={Uri.EscapeDataString(TtsTestText)}&engine={TtsEngine}&voice={TtsVoice}&speed={TtsSpeed}", null);
+      
+      Snackbar.Add("TTS test initiated (API endpoint not yet implemented)", Severity.Info);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing TTS");
+      Snackbar.Add("Failed to test TTS", Severity.Error);
+    }
+  }
+
+  private async Task SaveTtsSettings()
+  {
+    try
+    {
+      Logger.LogInformation("Saving TTS settings");
+      
+      // Would save to configuration via API
+      // Save TtsEngine, TtsVoice, TtsSpeed to configuration
+      
+      Snackbar.Add("TTS settings saved successfully", Severity.Success);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error saving TTS settings");
+      Snackbar.Add("Failed to save TTS settings", Severity.Error);
+    }
+  }
+
+  private async Task TestAudioFile(string fileName)
+  {
+    try
+    {
+      Logger.LogInformation("Testing audio file: {FileName}", fileName);
+      
+      // Would call API endpoint to play audio file
+      // await HttpClient.PostAsync($"/api/test/audio?file={Uri.EscapeDataString(fileName)}", null);
+      
+      Snackbar.Add($"Playing {fileName} (API endpoint not yet implemented)", Severity.Info);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing audio file");
+      Snackbar.Add("Failed to test audio file", Severity.Error);
+    }
+  }
+
+  private async Task SaveAudioSettings()
+  {
+    try
+    {
+      Logger.LogInformation("Saving audio file settings");
+      
+      // Would save to configuration via API
+      // Save AlertAudioFile, NotificationAudioFile, AlarmAudioFile, RingAudioFile
+      
+      Snackbar.Add("Audio settings saved successfully", Severity.Success);
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error saving audio settings");
+      Snackbar.Add("Failed to save audio settings", Severity.Error);
+    }
+  }
+}

@@ -53,6 +53,15 @@ try
 
   var app = builder.Build();
 
+  // Log server configuration
+  var serverUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"] ?? "http://0.0.0.0:5100";
+  var displayUrl = serverUrl.Replace("0.0.0.0", "localhost"); // For display purposes
+  Log.Information("===== Radio Console API Starting =====");
+  Log.Information("API Server URL: {ServerUrl} (accessible from all interfaces)", serverUrl);
+  Log.Information("Swagger UI: {SwaggerUrl}/swagger", displayUrl);
+  Log.Information("Environment: {Environment}", app.Environment.EnvironmentName);
+  Log.Information("======================================");
+
   // Configure the HTTP request pipeline.
   if (app.Environment.IsDevelopment())
   {
