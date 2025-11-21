@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject PanelService PanelService
+@implements IDisposable
 
 <MudThemeProvider Theme="@_customTheme" />
 <MudPopoverProvider />
@@ -24,33 +26,56 @@
     </div>
   </div>
 
-  <!-- System Test Panel - Slide-out -->
-  <MudIconButton Icon="@Icons.Material.Filled.Settings" 
-                 Color="Color.Primary" 
-                 Class="system-test-toggle"
-                 OnClick="ToggleSystemTestPanel" />
-  
-  <div class="system-test-panel @(IsSystemTestPanelOpen ? "open" : "")">
+  @* System Test Panel - Slide-out (Updated to use PanelService) *@
+  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("SystemTest") ? "open" : "")">
     <MudStack>
       <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h5">System Test & Configuration</MudText>
+        <MudText Typo="Typo.h5">
+          <MudIcon Icon="@Icons.Material.Filled.Science" Class="mr-2" />
+          System Test & Configuration
+        </MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" 
                        Color="Color.Default" 
-                       OnClick="ToggleSystemTestPanel" />
+                       OnClick="@(() => PanelService.ClosePanel("SystemTest"))" />
       </MudStack>
       <MudDivider />
       <SystemTestPanel />
     </MudStack>
   </div>
+
+  @* Configuration Panel - Slide-out *@
+  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("Configuration") ? "open" : "")">
+    <ConfigurationPanel />
+  </div>
+
+  @* System Status Panel - Slide-out *@
+  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("SystemStatus") ? "open" : "")">
+    <SystemStatusPanel />
+  </div>
+
+  @* Alert Management Panel - Slide-out *@
+  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("AlertManagement") ? "open" : "")">
+    <AlertManagementPanel />
+  </div>
+
+  @* Backdrop overlay - shown when any panel is open *@
+  @if (PanelService.GetOpenPanelCount() > 0)
+  {
+    <div class="panel-backdrop visible" @onclick="@(() => PanelService.CloseAllPanels())"></div>
+  }
 </div>
 
 @code {
-  private bool IsSystemTestPanelOpen { get; set; } = false;
   private string CurrentInput { get; set; } = "Radio";
 
-  private void ToggleSystemTestPanel()
+  protected override void OnInitialized()
   {
-    IsSystemTestPanelOpen = !IsSystemTestPanelOpen;
+    PanelService.OnPanelStateChanged += StateHasChanged;
+  }
+
+  public void Dispose()
+  {
+    PanelService.OnPanelStateChanged -= StateHasChanged;
   }
 
   // Custom Material Design 3 theme for dark mode console

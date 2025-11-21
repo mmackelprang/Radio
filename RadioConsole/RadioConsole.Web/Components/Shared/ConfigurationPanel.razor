@@ -1,0 +1,40 @@
+@inject ILogger<ConfigurationPanel> Logger
+@inject ISnackbar Snackbar
+@inject PanelService PanelService
+@implements IDisposable
+
+<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
+  @* Panel Header *@
+  <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h5">
+      <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
+      Configuration Management
+    </MudText>
+    <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                   Color="Color.Default" 
+                   OnClick="ClosePanel" />
+  </MudStack>
+
+  <MudDivider Class="mb-4" />
+
+  @* Panel Content - Reuse existing ConfigurationManagement component *@
+  <ConfigurationManagement />
+</MudPaper>
+
+@code {
+  protected override void OnInitialized()
+  {
+    Logger.LogInformation("ConfigurationPanel initialized");
+    PanelService.OnPanelStateChanged += StateHasChanged;
+  }
+
+  private void ClosePanel()
+  {
+    PanelService.ClosePanel("Configuration");
+  }
+
+  public void Dispose()
+  {
+    PanelService.OnPanelStateChanged -= StateHasChanged;
+  }
+}
