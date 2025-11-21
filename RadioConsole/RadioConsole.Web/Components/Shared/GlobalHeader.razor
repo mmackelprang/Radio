@@ -1,10 +1,11 @@
 @using System.Timers
 @implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
+@inject PanelService PanelService
 
 <div class="global-header">
   <MudGrid Justify="Justify.SpaceBetween">
-    <MudItem xs="8">
+    <MudItem xs="6">
       <MudText Typo="Typo.h3" Style="font-weight: 300; letter-spacing: 2px;">
         @CurrentDateTime.ToString("dddd, MMMM dd, yyyy")
       </MudText>
@@ -12,13 +13,45 @@
         @CurrentDateTime.ToString("hh:mm:ss tt")
       </MudText>
     </MudItem>
-    <MudItem xs="4" Style="text-align: right;">
-      <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+    <MudItem xs="6" Style="text-align: right;">
+      <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" AlignItems="AlignItems.Center">
+        @* Status Icons (existing) *@
         <MudTooltip Text="WiFi Status">
           <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@(IsWifiConnected ? Color.Success : Color.Error)" Size="Size.Large" />
         </MudTooltip>
         <MudTooltip Text="System Status">
           <MudIcon Icon="@Icons.Material.Filled.Computer" Color="@(IsSystemHealthy ? Color.Success : Color.Warning)" Size="Size.Large" />
+        </MudTooltip>
+        
+        @* Panel Control Icons (new) *@
+        <MudDivider Vertical="true" FlexItem="true" />
+        
+        <MudTooltip Text="Configuration">
+          <MudIconButton Icon="@Icons.Material.Filled.Settings" 
+                         Color="@(PanelService.IsPanelOpen("Configuration") ? Color.Primary : Color.Default)" 
+                         OnClick="@(() => PanelService.TogglePanel("Configuration"))"
+                         Size="Size.Large" />
+        </MudTooltip>
+        
+        <MudTooltip Text="System Status">
+          <MudIconButton Icon="@Icons.Material.Filled.Dashboard" 
+                         Color="@(PanelService.IsPanelOpen("SystemStatus") ? Color.Primary : Color.Default)" 
+                         OnClick="@(() => PanelService.TogglePanel("SystemStatus"))"
+                         Size="Size.Large" />
+        </MudTooltip>
+        
+        <MudTooltip Text="Alerts & Notifications">
+          <MudIconButton Icon="@Icons.Material.Filled.Notifications" 
+                         Color="@(PanelService.IsPanelOpen("AlertManagement") ? Color.Primary : Color.Default)" 
+                         OnClick="@(() => PanelService.TogglePanel("AlertManagement"))"
+                         Size="Size.Large" />
+        </MudTooltip>
+        
+        <MudTooltip Text="System Test Panel">
+          <MudIconButton Icon="@Icons.Material.Filled.Science" 
+                         Color="@(PanelService.IsPanelOpen("SystemTest") ? Color.Primary : Color.Default)" 
+                         OnClick="@(() => PanelService.TogglePanel("SystemTest"))"
+                         Size="Size.Large" />
         </MudTooltip>
       </MudStack>
     </MudItem>
@@ -35,6 +68,7 @@
     protected override void OnInitialized()
     {
         _httpClient = HttpClientFactory.CreateClient("API");
+        PanelService.OnPanelStateChanged += StateHasChanged;
         _timer = new System.Timers.Timer(1000);
         _timer.Elapsed += async (sender, e) => await OnTimerElapsed(sender, e);
         _timer.AutoReset = true;
@@ -76,6 +110,7 @@
 
     public void Dispose()
     {
+        PanelService.OnPanelStateChanged -= StateHasChanged;
         _timer?.Dispose();
     }
 
