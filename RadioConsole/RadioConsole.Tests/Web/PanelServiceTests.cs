@@ -297,6 +297,7 @@ public class PanelServiceTests
   [InlineData("SystemStatus")]
   [InlineData("AlertManagement")]
   [InlineData("SystemTest")]
+  [InlineData("RadioControl")]
   public void PanelService_ShouldHandleExpectedPanelNames(string panelName)
   {
     // Arrange
@@ -307,5 +308,44 @@ public class PanelServiceTests
 
     // Assert
     Assert.True(service.IsPanelOpen(panelName));
+  }
+
+  [Fact]
+  public void RadioControlPanel_CanBeOpenedAndClosed()
+  {
+    // Arrange
+    var service = new PanelService();
+
+    // Act - Open RadioControl panel
+    service.OpenPanel("RadioControl");
+
+    // Assert - Panel should be open
+    Assert.True(service.IsPanelOpen("RadioControl"));
+    Assert.Equal(1, service.GetOpenPanelCount());
+
+    // Act - Close RadioControl panel
+    service.ClosePanel("RadioControl");
+
+    // Assert - Panel should be closed
+    Assert.False(service.IsPanelOpen("RadioControl"));
+    Assert.Equal(0, service.GetOpenPanelCount());
+  }
+
+  [Fact]
+  public void RadioControlPanel_CanBeToggledWithOtherPanels()
+  {
+    // Arrange
+    var service = new PanelService();
+    service.OpenPanel("Configuration");
+    service.OpenPanel("SystemStatus");
+
+    // Act
+    service.TogglePanel("RadioControl");
+
+    // Assert
+    Assert.True(service.IsPanelOpen("RadioControl"));
+    Assert.True(service.IsPanelOpen("Configuration"));
+    Assert.True(service.IsPanelOpen("SystemStatus"));
+    Assert.Equal(3, service.GetOpenPanelCount());
   }
 }
