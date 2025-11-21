@@ -62,6 +62,17 @@ public class SystemStatusController : ControllerBase
   }
 
   /// <summary>
+  /// Simple health check endpoint.
+  /// </summary>
+  /// <returns>OK if the system is alive and well.</returns>
+  [HttpGet("/health")]
+  [ProducesResponseType(StatusCodes.Status200OK)]
+  public ActionResult<object> HealthCheck()
+  {
+    return Ok(new { status = "OK" });
+  }
+
+  /// <summary>
   /// Get uptime in a human-readable format.
   /// </summary>
   /// <returns>Uptime string.</returns>
