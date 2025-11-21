@@ -1,0 +1,26 @@
+[
+  {
+    "Id": "spotify-client-id",
+    "Component": "Spotify",
+    "Category": "Spotify",
+    "Key": "ClientId",
+    "Value": "YOUR_SPOTIFY_CLIENT_ID_HERE",
+    "LastUpdated": "2025-01-01T00:00:00Z"
+  },
+  {
+    "Id": "spotify-client-secret",
+    "Component": "Spotify",
+    "Category": "Spotify",
+    "Key": "ClientSecret",
+    "Value": "YOUR_SPOTIFY_CLIENT_SECRET_HERE",
+    "LastUpdated": "2025-01-01T00:00:00Z"
+  },
+  {
+    "Id": "spotify-refresh-token",
+    "Component": "Spotify",
+    "Category": "Spotify",
+    "Key": "RefreshToken",
+    "Value": "YOUR_SPOTIFY_REFRESH_TOKEN_HERE",
+    "LastUpdated": "2025-01-01T00:00:00Z"
+  }
+]
