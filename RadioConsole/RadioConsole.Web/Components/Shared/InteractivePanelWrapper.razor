@@ -6,7 +6,7 @@
 </div>
 
 @code {
-  [Parameter]
+  [Parameter, EditorRequired]
   public string PanelName { get; set; } = string.Empty;
 
   [Parameter]
@@ -14,11 +14,17 @@
 
   protected override void OnInitialized()
   {
-    PanelService.OnPanelStateChanged += StateHasChanged;
+    if (PanelService != null)
+    {
+      PanelService.OnPanelStateChanged += StateHasChanged;
+    }
   }
 
   public void Dispose()
   {
-    PanelService.OnPanelStateChanged -= StateHasChanged;
+    if (PanelService != null)
+    {
+      PanelService.OnPanelStateChanged -= StateHasChanged;
+    }
   }
 }

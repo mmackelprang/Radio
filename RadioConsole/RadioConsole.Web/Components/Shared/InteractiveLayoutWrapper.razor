@@ -10,11 +10,17 @@
 @code {
   protected override void OnInitialized()
   {
-    PanelService.OnPanelStateChanged += StateHasChanged;
+    if (PanelService != null)
+    {
+      PanelService.OnPanelStateChanged += StateHasChanged;
+    }
   }
 
   public void Dispose()
   {
-    PanelService.OnPanelStateChanged -= StateHasChanged;
+    if (PanelService != null)
+    {
+      PanelService.OnPanelStateChanged -= StateHasChanged;
+    }
   }
 }
