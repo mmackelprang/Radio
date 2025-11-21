@@ -67,6 +67,36 @@ try
 
   var app = builder.Build();
 
+  // Log server configuration and API connection
+  var webUrl = builder.Configuration["Kestrel:Endpoints:Http:Url"] ?? "http://localhost:5200";
+  var apiBaseUrl = builder.Configuration["RadioConsole:ApiBaseUrl"] ?? "http://localhost:5100";
+  Log.Information("===== Radio Console Web Application Starting =====");
+  Log.Information("Web Server URL: {WebUrl}", webUrl);
+  Log.Information("Expected API URL: {ApiUrl}", apiBaseUrl);
+  Log.Information("Environment: {Environment}", app.Environment.EnvironmentName);
+  
+  // Test API connectivity
+  try
+  {
+    var httpClientFactory = app.Services.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("API");
+    var response = await httpClient.GetAsync("/api/configuration/components", HttpCompletionOption.ResponseHeadersRead);
+    if (response.IsSuccessStatusCode)
+    {
+      Log.Information("✓ API Connection: SUCCESS - API is reachable at {ApiUrl}", apiBaseUrl);
+    }
+    else
+    {
+      Log.Warning("⚠ API Connection: API responded with status {StatusCode}", response.StatusCode);
+    }
+  }
+  catch (Exception ex)
+  {
+    Log.Warning("✗ API Connection: FAILED - Could not reach API at {ApiUrl}. Error: {Error}", apiBaseUrl, ex.Message);
+    Log.Warning("  The Web UI will function with limited features. Please ensure the API is running.");
+  }
+  Log.Information("==================================================");
+
   // Configure the HTTP request pipeline.
   if (!app.Environment.IsDevelopment())
   {
@@ -86,7 +116,7 @@ try
   // Map SignalR hub for visualizer
   app.MapHub<RadioConsole.Web.Hubs.VisualizerHub>("/visualizerhub");
 
-  Log.Information("Radio Console Web Application started successfully");
+  Log.Information("Radio Console Web Application started successfully at {WebUrl}", webUrl);
   app.Run();
 }
 catch (Exception ex)
