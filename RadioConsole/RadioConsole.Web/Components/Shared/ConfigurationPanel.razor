@@ -1,31 +1,191 @@
 @inject ILogger<ConfigurationPanel> Logger
 @inject ISnackbar Snackbar
 @inject PanelService PanelService
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+@using RadioConsole.Core.Models
 @implements IDisposable
 
-<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
+<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c; overflow-y: auto;">
   @* Panel Header *@
   <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
     <MudText Typo="Typo.h5">
       <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
       Configuration Management
     </MudText>
-    <MudIconButton Icon="@Icons.Material.Filled.Close" 
-                   Color="Color.Default" 
-                   OnClick="ClosePanel" />
+    <MudStack Row="true" Spacing="2">
+      @* Import/Export Buttons *@
+      <MudTooltip Text="Export Configuration">
+        <MudIconButton Icon="@Icons.Material.Filled.FileDownload" 
+                       Color="Color.Info" 
+                       OnClick="ExportConfiguration" />
+      </MudTooltip>
+      <MudTooltip Text="Import Configuration">
+        <MudIconButton Icon="@Icons.Material.Filled.FileUpload" 
+                       Color="Color.Info" 
+                       OnClick="ImportConfiguration" />
+      </MudTooltip>
+      <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                     Color="Color.Default" 
+                     OnClick="ClosePanel" />
+    </MudStack>
   </MudStack>
 
   <MudDivider Class="mb-4" />
 
-  @* Panel Content - Reuse existing ConfigurationManagement component *@
-  <ConfigurationManagement />
+  @* Tabbed Interface *@
+  <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    @* Tab 1: General Settings *@
+    <MudTabPanel Text="General Settings" Icon="@Icons.Material.Filled.Tune">
+      <MudStack Spacing="3">
+        <MudText Typo="Typo.h6">Audio & Display Settings</MudText>
+        <ConfigurationManagement />
+      </MudStack>
+    </MudTabPanel>
+
+    @* Tab 2: Device Configuration *@
+    <MudTabPanel Text="Device Configuration" Icon="@Icons.Material.Filled.Devices">
+      <MudStack Spacing="3">
+        <MudText Typo="Typo.h6">USB Devices & Network</MudText>
+        @if (deviceSettings != null)
+        {
+          <MudPaper Class="pa-3" Elevation="1">
+            <MudStack Spacing="2">
+              <MudText Typo="Typo.subtitle1"><strong>USB Audio Devices</strong></MudText>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Raddy RF320 Device:</MudText>
+                <MudText Typo="Typo.body2">@(deviceSettings.RaddyDevice ?? "Not configured")</MudText>
+              </MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Vinyl/Phono Device:</MudText>
+                <MudText Typo="Typo.body2">@(deviceSettings.PhonoDevice ?? "Not configured")</MudText>
+              </MudStack>
+            </MudStack>
+          </MudPaper>
+          
+          <MudPaper Class="pa-3" Elevation="1">
+            <MudStack Spacing="2">
+              <MudText Typo="Typo.subtitle1"><strong>Network Settings</strong></MudText>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Network Status:</MudText>
+                <MudText Typo="Typo.body2" Color="@(deviceSettings.NetworkConnected ? Color.Success : Color.Error)">
+                  @(deviceSettings.NetworkConnected ? "Connected" : "Disconnected")
+                </MudText>
+              </MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">IP Address:</MudText>
+                <MudText Typo="Typo.body2">@(deviceSettings.IpAddress ?? "Not available")</MudText>
+              </MudStack>
+            </MudStack>
+          </MudPaper>
+        }
+        else
+        {
+          <MudProgressCircular Indeterminate="true" />
+        }
+      </MudStack>
+    </MudTabPanel>
+
+    @* Tab 3: Advanced Settings *@
+    <MudTabPanel Text="Advanced Settings" Icon="@Icons.Material.Filled.Build">
+      <MudStack Spacing="3">
+        <MudText Typo="Typo.h6">Logging & Performance</MudText>
+        @if (advancedSettings != null)
+        {
+          <MudPaper Class="pa-3" Elevation="1">
+            <MudStack Spacing="2">
+              <MudText Typo="Typo.subtitle1"><strong>Logging Configuration</strong></MudText>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Log Level:</MudText>
+                <MudText Typo="Typo.body2">@(advancedSettings.LogLevel ?? "Information")</MudText>
+              </MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Log to File:</MudText>
+                <MudText Typo="Typo.body2">@(advancedSettings.LogToFile ? "Enabled" : "Disabled")</MudText>
+              </MudStack>
+            </MudStack>
+          </MudPaper>
+          
+          <MudPaper Class="pa-3" Elevation="1">
+            <MudStack Spacing="2">
+              <MudText Typo="Typo.subtitle1"><strong>Performance Settings</strong></MudText>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Buffer Size:</MudText>
+                <MudText Typo="Typo.body2">@advancedSettings.BufferSize ms</MudText>
+              </MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Sample Rate:</MudText>
+                <MudText Typo="Typo.body2">@advancedSettings.SampleRate Hz</MudText>
+              </MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">FFT Update Rate:</MudText>
+                <MudText Typo="Typo.body2">@advancedSettings.FftUpdateRate fps</MudText>
+              </MudStack>
+            </MudStack>
+          </MudPaper>
+        }
+        else
+        {
+          <MudProgressCircular Indeterminate="true" />
+        }
+      </MudStack>
+    </MudTabPanel>
+  </MudTabs>
 </MudPaper>
 
 @code {
-  protected override void OnInitialized()
+  private DeviceSettings? deviceSettings;
+  private AdvancedSettings? advancedSettings;
+
+  protected override async Task OnInitializedAsync()
   {
     Logger.LogInformation("ConfigurationPanel initialized");
     PanelService.OnPanelStateChanged += StateHasChanged;
+    await LoadSettingsAsync();
+  }
+
+  private async Task LoadSettingsAsync()
+  {
+    try
+    {
+      // Load device settings (simulated for now - will connect to actual API)
+      deviceSettings = new DeviceSettings
+      {
+        RaddyDevice = "USB Audio Device",
+        PhonoDevice = "USB ADC",
+        NetworkConnected = true,
+        IpAddress = "192.168.1.100"
+      };
+
+      // Load advanced settings (simulated for now - will connect to actual API)
+      advancedSettings = new AdvancedSettings
+      {
+        LogLevel = "Information",
+        LogToFile = true,
+        BufferSize = 256,
+        SampleRate = 48000,
+        FftUpdateRate = 30
+      };
+
+      await Task.CompletedTask;
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading configuration settings");
+      Snackbar.Add("Failed to load configuration settings", Severity.Error);
+    }
+  }
+
+  private void ExportConfiguration()
+  {
+    Logger.LogInformation("Export configuration requested");
+    Snackbar.Add("Configuration export feature coming soon", Severity.Info);
+  }
+
+  private void ImportConfiguration()
+  {
+    Logger.LogInformation("Import configuration requested");
+    Snackbar.Add("Configuration import feature coming soon", Severity.Info);
   }
 
   private void ClosePanel()
@@ -36,5 +196,23 @@
   public void Dispose()
   {
     PanelService.OnPanelStateChanged -= StateHasChanged;
+  }
+
+  // Helper classes for settings
+  private class DeviceSettings
+  {
+    public string? RaddyDevice { get; set; }
+    public string? PhonoDevice { get; set; }
+    public bool NetworkConnected { get; set; }
+    public string? IpAddress { get; set; }
+  }
+
+  private class AdvancedSettings
+  {
+    public string? LogLevel { get; set; }
+    public bool LogToFile { get; set; }
+    public int BufferSize { get; set; }
+    public int SampleRate { get; set; }
+    public int FftUpdateRate { get; set; }
   }
 }
