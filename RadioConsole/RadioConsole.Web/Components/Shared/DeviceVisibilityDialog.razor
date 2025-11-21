@@ -1,0 +1,92 @@
+@inject ISnackbar Snackbar
+@using MudBlazor
+
+<MudDialog>
+  <DialogContent>
+    <MudText Typo="Typo.body1" Class="mb-4">
+      Select which devices to hide from the device list. Protected devices cannot be hidden.
+    </MudText>
+    
+    <MudStack Spacing="2">
+      @foreach (var device in Devices)
+      {
+        var isProtected = CannotHideDeviceNames.Any(name => device.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+        var isHidden = LocalHiddenDevices.Contains(device.Id);
+        
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+          <MudStack Spacing="0">
+            <MudText Typo="Typo.body1">@device.Name</MudText>
+            @if (device.IsDefault)
+            {
+              <MudText Typo="Typo.caption" Color="Color.Primary">(Default)</MudText>
+            }
+            @if (isProtected)
+            {
+              <MudText Typo="Typo.caption" Color="Color.Warning">(Protected - Cannot Hide)</MudText>
+            }
+          </MudStack>
+          
+          @if (!isProtected)
+          {
+            <MudSwitch T="bool" 
+                       Checked="@(!isHidden)" 
+                       CheckedChanged="@((bool visible) => ToggleDeviceVisibility(device.Id, visible))"
+                       Color="Color.Success" 
+                       Label="@(isHidden ? "Hidden" : "Visible")" />
+          }
+        </MudStack>
+      }
+    </MudStack>
+  </DialogContent>
+  
+  <DialogActions>
+    <MudButton OnClick="Cancel">Cancel</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveChanges">Save</MudButton>
+  </DialogActions>
+</MudDialog>
+
+@code {
+  [CascadingParameter]
+  private MudBlazor.IDialogReference? MudDialog { get; set; }
+
+  [Parameter]
+  public List<AudioDeviceInfo> Devices { get; set; } = new();
+
+  [Parameter]
+  public HashSet<string> HiddenDevices { get; set; } = new();
+
+  [Parameter]
+  public string Title { get; set; } = "Configure Devices";
+
+  [Parameter]
+  public List<string> CannotHideDeviceNames { get; set; } = new();
+
+  private HashSet<string> LocalHiddenDevices { get; set; } = new();
+
+  protected override void OnInitialized()
+  {
+    LocalHiddenDevices = new HashSet<string>(HiddenDevices);
+  }
+
+  private void ToggleDeviceVisibility(string deviceId, bool visible)
+  {
+    if (visible)
+    {
+      LocalHiddenDevices.Remove(deviceId);
+    }
+    else
+    {
+      LocalHiddenDevices.Add(deviceId);
+    }
+  }
+
+  private void Cancel()
+  {
+    MudDialog?.Close();
+  }
+
+  private void SaveChanges()
+  {
+    MudDialog?.Close(DialogResult.Ok(LocalHiddenDevices));
+  }
+}

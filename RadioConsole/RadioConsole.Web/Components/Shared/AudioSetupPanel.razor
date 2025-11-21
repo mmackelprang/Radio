@@ -5,70 +5,12 @@
 @inject IRaddyRadioService RaddyRadioService
 @inject ISpotifyService SpotifyService
 @inject CastAudioOutput CastAudioOutput
+@inject IDialogService DialogService
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
-  <MudText Typo="Typo.h5" Class="mb-4">Audio Setup</MudText>
-  
   <MudStack Spacing="3">
-    <MudDivider />
-    <MudText Typo="Typo.h6">Audio Devices</MudText>
-    
-    <MudSelect T="string" Label="Input Device" Value="@SelectedInputDevice" ValueChanged="OnInputDeviceChanged" Variant="Variant.Outlined">
-      @if (AvailableInputDevices.Any())
-      {
-        @foreach (var device in AvailableInputDevices)
-        {
-          <MudSelectItem Value="@device.Id">@device.Name @(device.IsDefault ? " (Default)" : "")</MudSelectItem>
-        }
-      }
-      else
-      {
-        <MudSelectItem Value="@string.Empty" Disabled="true">Loading devices...</MudSelectItem>
-      }
-    </MudSelect>
-
-    <MudSelect T="string" Label="Output Device" Value="@SelectedOutputDevice" ValueChanged="OnOutputDeviceChanged" Variant="Variant.Outlined">
-      @if (AvailableOutputDevices.Any())
-      {
-        @foreach (var device in AvailableOutputDevices)
-        {
-          <MudSelectItem Value="@device.Id">@device.Name @(device.IsDefault ? " (Default)" : "")</MudSelectItem>
-        }
-      }
-      else
-      {
-        <MudSelectItem Value="@string.Empty" Disabled="true">Loading devices...</MudSelectItem>
-      }
-    </MudSelect>
-
-    <MudDivider />
-    <MudText Typo="Typo.h6">Audio Source</MudText>
-    
-    <MudSelect T="string" Label="Input Source" Value="@SelectedInput" ValueChanged="OnInputChanged" Variant="Variant.Outlined">
-      <MudSelectItem Value="@("Radio")">Radio (Raddy RF320)</MudSelectItem>
-      <MudSelectItem Value="@("Vinyl")">Vinyl Turntable</MudSelectItem>
-      <MudSelectItem Value="@("Spotify")">Spotify</MudSelectItem>
-      <MudSelectItem Value="@("Local")">Local MP3s</MudSelectItem>
-    </MudSelect>
-
-    <MudSelect T="string" Label="Output Destination" Value="@SelectedOutput" ValueChanged="OnOutputChanged" Variant="Variant.Outlined">
-      <MudSelectItem Value="@("Local")">Local Speakers</MudSelectItem>
-      <MudSelectItem Value="@("Cast")">Google Cast</MudSelectItem>
-    </MudSelect>
-
-    @if (SelectedOutput == "Cast")
-    {
-      <MudSelect T="string" Label="Cast Device" @bind-Value="SelectedCastDevice" Variant="Variant.Outlined">
-        @foreach (var device in AvailableCastDevices)
-        {
-          <MudSelectItem Value="@device">@device</MudSelectItem>
-        }
-      </MudSelect>
-    }
-
-    <MudDivider />
-
-    <MudText Typo="Typo.h6">Transport Controls</MudText>
+    @* Player Controls Section - Moved to Top *@
+    <MudText Typo="Typo.h6">Player Controls</MudText>
     
     <MudStack Row="true" Justify="Justify.Center" Spacing="2">
       <MudIconButton Icon="@Icons.Material.Filled.SkipPrevious" Color="Color.Primary" Size="Size.Large" OnClick="OnPrevious" />
@@ -85,6 +27,160 @@
       <MudText Typo="Typo.body2">Balance</MudText>
       <MudSlider T="int" @bind-Value="Balance" Min="-100" Max="100" Step="1" Color="Color.Primary" />
     </MudStack>
+
+    <MudDivider />
+
+    @* Audio Devices Section - Redesigned *@
+    <MudText Typo="Typo.h6">Audio Devices</MudText>
+    
+    @* Input Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="() => ShowInputDevices = !ShowInputDevices">
+      <MudStack Spacing="0">
+        <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.6);">Input</MudText>
+        <MudText Typo="Typo.body1">@GetSelectedInputName()</MudText>
+      </MudStack>
+      <div @onclick:stopPropagation="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Info" Size="Size.Small" OnClick="OpenInputConfig" />
+      </div>
+    </MudStack>
+    
+    @if (ShowInputDevices && VisibleInputDevices.Any())
+    {
+      <MudPaper Class="pa-2" Style="background-color: #1e1e1e;">
+        @foreach (var device in VisibleInputDevices)
+        {
+          <MudButton Variant="@(SelectedInputDevice == device.Id ? Variant.Filled : Variant.Text)" 
+                     Color="@(SelectedInputDevice == device.Id ? Color.Primary : Color.Default)"
+                     FullWidth="true" 
+                     OnClick="@(() => OnInputDeviceChanged(device.Id))"
+                     Style="text-align: left; justify-content: flex-start;">
+            @device.Name @(device.IsDefault ? " (Default)" : "")
+          </MudButton>
+        }
+      </MudPaper>
+    }
+
+    @* Output Section *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="() => ShowOutputDevices = !ShowOutputDevices">
+      <MudStack Spacing="0">
+        <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.6);">Output</MudText>
+        <MudText Typo="Typo.body1">@GetSelectedOutputName()</MudText>
+      </MudStack>
+      <div @onclick:stopPropagation="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Info" Size="Size.Small" OnClick="OpenOutputConfig" />
+      </div>
+    </MudStack>
+    
+    @if (ShowOutputDevices && VisibleOutputDevices.Any())
+    {
+      <MudPaper Class="pa-2" Style="background-color: #1e1e1e;">
+        @foreach (var device in VisibleOutputDevices)
+        {
+          <MudButton Variant="@(SelectedOutputDevice == device.Id ? Variant.Filled : Variant.Text)" 
+                     Color="@(SelectedOutputDevice == device.Id ? Color.Primary : Color.Default)"
+                     FullWidth="true" 
+                     OnClick="@(() => OnOutputDeviceChanged(device.Id))"
+                     Style="text-align: left; justify-content: flex-start;">
+            @device.Name @(device.IsDefault ? " (Default)" : "")
+          </MudButton>
+        }
+      </MudPaper>
+    }
+
+    @if (SelectedOutput == "Cast")
+    {
+      <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="cursor: pointer;">
+        <MudStack Spacing="0">
+          <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.6);">ChromeCast</MudText>
+          <MudText Typo="Typo.body1">@(string.IsNullOrEmpty(SelectedCastDevice) ? "Select Device..." : SelectedCastDevice)</MudText>
+        </MudStack>
+        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Info" Size="Size.Small" OnClick="OpenCastConfig" />
+      </MudStack>
+    }
+
+    <MudDivider />
+
+    @* Audio Source Section *@
+    <MudText Typo="Typo.h6">Audio Source</MudText>
+    
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="() => ShowInputSources = !ShowInputSources">
+      <MudStack Spacing="0">
+        <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.6);">Input Source</MudText>
+        <MudText Typo="Typo.body1">@GetInputSourceDisplayName()</MudText>
+      </MudStack>
+    </MudStack>
+    
+    @if (ShowInputSources)
+    {
+      <MudPaper Class="pa-2" Style="background-color: #1e1e1e;">
+        <MudButton Variant="@(SelectedInput == "Radio" ? Variant.Filled : Variant.Text)" 
+                   Color="@(SelectedInput == "Radio" ? Color.Primary : Color.Default)"
+                   FullWidth="true" 
+                   OnClick="@(() => OnInputChanged("Radio"))"
+                   Style="text-align: left; justify-content: flex-start;">
+          Radio (Raddy RF320)
+        </MudButton>
+        <MudButton Variant="@(SelectedInput == "Vinyl" ? Variant.Filled : Variant.Text)" 
+                   Color="@(SelectedInput == "Vinyl" ? Color.Primary : Color.Default)"
+                   FullWidth="true" 
+                   OnClick="@(() => OnInputChanged("Vinyl"))"
+                   Style="text-align: left; justify-content: flex-start;">
+          Vinyl Turntable
+        </MudButton>
+        <MudButton Variant="@(SelectedInput == "Spotify" ? Variant.Filled : Variant.Text)" 
+                   Color="@(SelectedInput == "Spotify" ? Color.Primary : Color.Default)"
+                   FullWidth="true" 
+                   OnClick="@(() => OnInputChanged("Spotify"))"
+                   Style="text-align: left; justify-content: flex-start;">
+          Spotify
+        </MudButton>
+        <MudButton Variant="@(SelectedInput == "Local" ? Variant.Filled : Variant.Text)" 
+                   Color="@(SelectedInput == "Local" ? Color.Primary : Color.Default)"
+                   FullWidth="true" 
+                   OnClick="@(() => OnInputChanged("Local"))"
+                   Style="text-align: left; justify-content: flex-start;">
+          Local MP3s
+        </MudButton>
+      </MudPaper>
+    }
+
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="cursor: pointer;" @onclick="() => ShowOutputDestinations = !ShowOutputDestinations">
+      <MudStack Spacing="0">
+        <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.6);">Output Destination</MudText>
+        <MudText Typo="Typo.body1">@(SelectedOutput == "Local" ? "Local Speakers" : "Google Cast")</MudText>
+      </MudStack>
+    </MudStack>
+    
+    @if (ShowOutputDestinations)
+    {
+      <MudPaper Class="pa-2" Style="background-color: #1e1e1e;">
+        <MudButton Variant="@(SelectedOutput == "Local" ? Variant.Filled : Variant.Text)" 
+                   Color="@(SelectedOutput == "Local" ? Color.Primary : Color.Default)"
+                   FullWidth="true" 
+                   OnClick="@(() => OnOutputChanged("Local"))"
+                   Style="text-align: left; justify-content: flex-start;">
+          Local Speakers
+        </MudButton>
+        <MudButton Variant="@(SelectedOutput == "Cast" ? Variant.Filled : Variant.Text)" 
+                   Color="@(SelectedOutput == "Cast" ? Color.Primary : Color.Default)"
+                   FullWidth="true" 
+                   OnClick="@(() => OnOutputChanged("Cast"))"
+                   Style="text-align: left; justify-content: flex-start;">
+          Google Cast
+        </MudButton>
+      </MudPaper>
+    }
+
+    <MudDivider />
+
+    @* Save Preferences Button *@
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Success" 
+               StartIcon="@Icons.Material.Filled.Save" 
+               FullWidth="true"
+               OnClick="SavePreferences">
+      Save Preferences
+    </MudButton>
   </MudStack>
 </MudPaper>
 
@@ -101,10 +197,195 @@
     private int Volume { get; set; } = 75;
     private int Balance { get; set; } = 0;
 
+    // UI state for showing/hiding dropdowns
+    private bool ShowInputDevices { get; set; } = false;
+    private bool ShowOutputDevices { get; set; } = false;
+    private bool ShowInputSources { get; set; } = false;
+    private bool ShowOutputDestinations { get; set; } = false;
+
+    // Device visibility tracking
+    private HashSet<string> HiddenInputDevices { get; set; } = new();
+    private HashSet<string> HiddenOutputDevices { get; set; } = new();
+
     private List<string> AvailableCastDevices { get; set; } = new();
     private List<AudioDeviceInfo> AvailableInputDevices { get; set; } = new();
     private List<AudioDeviceInfo> AvailableOutputDevices { get; set; } = new();
+    
+    // Filtered lists based on visibility settings
+    private List<AudioDeviceInfo> VisibleInputDevices => 
+        AvailableInputDevices.Where(d => !HiddenInputDevices.Contains(d.Id)).ToList();
+    private List<AudioDeviceInfo> VisibleOutputDevices => 
+        AvailableOutputDevices.Where(d => !HiddenOutputDevices.Contains(d.Id)).ToList();
+    
     private HttpClient? _httpClient;
+
+    private string GetSelectedInputName()
+    {
+        var device = AvailableInputDevices.FirstOrDefault(d => d.Id == SelectedInputDevice);
+        return device?.Name ?? "Select Input...";
+    }
+
+    private string GetSelectedOutputName()
+    {
+        var device = AvailableOutputDevices.FirstOrDefault(d => d.Id == SelectedOutputDevice);
+        return device?.Name ?? "Select Output...";
+    }
+
+    private string GetInputSourceDisplayName()
+    {
+        return SelectedInput switch
+        {
+            "Radio" => "Radio (Raddy RF320)",
+            "Vinyl" => "Vinyl Turntable",
+            "Spotify" => "Spotify",
+            "Local" => "Local MP3s",
+            _ => "Unknown"
+        };
+    }
+
+    private async Task OpenInputConfig()
+    {
+        var parameters = new DialogParameters
+        {
+            ["Devices"] = AvailableInputDevices,
+            ["HiddenDevices"] = HiddenInputDevices,
+            ["Title"] = "Configure Input Devices",
+            ["CannotHideDeviceNames"] = new List<string> { "Vinyl Phonograph", "USB Radio", "Spotify" }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceVisibilityDialog>("Configure Input Devices", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is HashSet<string> hiddenDevices)
+        {
+            HiddenInputDevices = hiddenDevices;
+            await SaveDeviceVisibilityConfiguration();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenOutputConfig()
+    {
+        var parameters = new DialogParameters
+        {
+            ["Devices"] = AvailableOutputDevices,
+            ["HiddenDevices"] = HiddenOutputDevices,
+            ["Title"] = "Configure Output Devices",
+            ["CannotHideDeviceNames"] = new List<string> { "ChromeCast", "Hardware Default Sound device" }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceVisibilityDialog>("Configure Output Devices", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is HashSet<string> hiddenDevices)
+        {
+            HiddenOutputDevices = hiddenDevices;
+            await SaveDeviceVisibilityConfiguration();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenCastConfig()
+    {
+        if (AvailableCastDevices.Count == 0)
+        {
+            Snackbar.Add("No ChromeCast devices found. Searching...", Severity.Info);
+            await LoadCastDevices();
+        }
+
+        if (AvailableCastDevices.Count == 0)
+        {
+            Snackbar.Add("No ChromeCast devices available", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            ["CastDevices"] = AvailableCastDevices,
+            ["SelectedDevice"] = SelectedCastDevice
+        };
+
+        var dialog = await DialogService.ShowAsync<ChromeCastSelectionDialog>("Select ChromeCast Device", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is string selectedDevice)
+        {
+            SelectedCastDevice = selectedDevice;
+            await SaveCastDevicePreference(selectedDevice);
+            Snackbar.Add($"ChromeCast device set to: {selectedDevice}", Severity.Success);
+            StateHasChanged();
+        }
+    }
+
+    private async Task SavePreferences()
+    {
+        if (_httpClient == null) return;
+
+        try
+        {
+            var preferences = new
+            {
+                InputDevice = SelectedInputDevice,
+                OutputDevice = SelectedOutputDevice,
+                InputSource = SelectedInput,
+                OutputDestination = SelectedOutput,
+                CastDevice = SelectedCastDevice
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/api/preferences/audio", preferences);
+            response.EnsureSuccessStatusCode();
+
+            Snackbar.Add("Preferences saved successfully!", Severity.Success);
+            Logger.LogInformation("Audio preferences saved");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving preferences");
+            Snackbar.Add("Error saving preferences", Severity.Error);
+        }
+    }
+
+    private async Task SaveDeviceVisibilityConfiguration()
+    {
+        if (_httpClient == null) return;
+
+        try
+        {
+            var config = new
+            {
+                HiddenInputDevices = HiddenInputDevices.ToList(),
+                HiddenOutputDevices = HiddenOutputDevices.ToList()
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/api/preferences/device-visibility", config);
+            response.EnsureSuccessStatusCode();
+
+            Logger.LogInformation("Device visibility configuration saved");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving device visibility configuration");
+            Snackbar.Add("Error saving device visibility", Severity.Error);
+        }
+    }
+
+    private async Task SaveCastDevicePreference(string deviceName)
+    {
+        if (_httpClient == null) return;
+
+        try
+        {
+            var preference = new { CastDevice = deviceName };
+            var response = await _httpClient.PostAsJsonAsync("/api/preferences/cast-device", preference);
+            response.EnsureSuccessStatusCode();
+
+            Logger.LogInformation("ChromeCast device preference saved: {Device}", deviceName);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving ChromeCast device preference");
+        }
+    }
 
     private async Task OnPlayPause()
     {
@@ -253,7 +534,72 @@
         }
         await LoadAudioDevices();
         await LoadCastDevices();
-        // TODO: Load current audio settings
+        await LoadSavedPreferences();
+        await LoadDeviceVisibilityConfiguration();
+    }
+
+    private async Task LoadSavedPreferences()
+    {
+        if (_httpClient == null) return;
+
+        try
+        {
+            var preferences = await _httpClient.GetFromJsonAsync<AudioPreferences>("/api/preferences/audio");
+            if (preferences != null)
+            {
+                if (!string.IsNullOrEmpty(preferences.InputDevice))
+                    SelectedInputDevice = preferences.InputDevice;
+                if (!string.IsNullOrEmpty(preferences.OutputDevice))
+                    SelectedOutputDevice = preferences.OutputDevice;
+                if (!string.IsNullOrEmpty(preferences.InputSource))
+                    SelectedInput = preferences.InputSource;
+                if (!string.IsNullOrEmpty(preferences.OutputDestination))
+                    SelectedOutput = preferences.OutputDestination;
+                if (!string.IsNullOrEmpty(preferences.CastDevice))
+                    SelectedCastDevice = preferences.CastDevice;
+                
+                Logger.LogInformation("Loaded saved audio preferences");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "No saved preferences found or error loading preferences");
+        }
+    }
+
+    private async Task LoadDeviceVisibilityConfiguration()
+    {
+        if (_httpClient == null) return;
+
+        try
+        {
+            var config = await _httpClient.GetFromJsonAsync<DeviceVisibilityConfig>("/api/preferences/device-visibility");
+            if (config != null)
+            {
+                HiddenInputDevices = config.HiddenInputDevices?.ToHashSet() ?? new HashSet<string>();
+                HiddenOutputDevices = config.HiddenOutputDevices?.ToHashSet() ?? new HashSet<string>();
+                Logger.LogInformation("Loaded device visibility configuration");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "No device visibility configuration found or error loading configuration");
+        }
+    }
+
+    private class AudioPreferences
+    {
+        public string? InputDevice { get; set; }
+        public string? OutputDevice { get; set; }
+        public string? InputSource { get; set; }
+        public string? OutputDestination { get; set; }
+        public string? CastDevice { get; set; }
+    }
+
+    private class DeviceVisibilityConfig
+    {
+        public List<string>? HiddenInputDevices { get; set; }
+        public List<string>? HiddenOutputDevices { get; set; }
     }
 
     private async Task LoadAudioDevices()

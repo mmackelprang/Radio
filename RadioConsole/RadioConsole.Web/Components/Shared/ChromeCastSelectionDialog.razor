@@ -1,0 +1,77 @@
+@inject ISnackbar Snackbar
+@using MudBlazor
+
+<MudDialog>
+  <DialogContent>
+    <MudText Typo="Typo.body1" Class="mb-4">
+      Select a ChromeCast device from the list below:
+    </MudText>
+    
+    @if (CastDevices.Count == 0)
+    {
+      <MudText Typo="Typo.body2" Color="Color.Warning">
+        No ChromeCast devices found on the network.
+      </MudText>
+    }
+    else
+    {
+      <MudStack Spacing="2">
+        @foreach (var device in CastDevices)
+        {
+          <MudButton Variant="@(SelectedCastDevice == device ? Variant.Filled : Variant.Outlined)"
+                     Color="@(SelectedCastDevice == device ? Color.Primary : Color.Default)"
+                     FullWidth="true"
+                     OnClick="@(() => SelectDevice(device))"
+                     Style="text-align: left; justify-content: flex-start;">
+            <MudIcon Icon="@Icons.Material.Filled.Cast" Class="mr-2" />
+            @device
+          </MudButton>
+        }
+      </MudStack>
+    }
+  </DialogContent>
+  
+  <DialogActions>
+    <MudButton OnClick="Cancel">Cancel</MudButton>
+    @if (!string.IsNullOrEmpty(SelectedCastDevice))
+    {
+      <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveSelection">Select</MudButton>
+    }
+  </DialogActions>
+</MudDialog>
+
+@code {
+  [CascadingParameter]
+  private MudBlazor.IDialogReference? MudDialog { get; set; }
+
+  [Parameter]
+  public List<string> CastDevices { get; set; } = new();
+
+  [Parameter]
+  public string SelectedDevice { get; set; } = "";
+
+  private string SelectedCastDevice { get; set; } = "";
+
+  protected override void OnInitialized()
+  {
+    SelectedCastDevice = SelectedDevice;
+  }
+
+  private void SelectDevice(string device)
+  {
+    SelectedCastDevice = device;
+  }
+
+  private void Cancel()
+  {
+    MudDialog?.Close();
+  }
+
+  private void SaveSelection()
+  {
+    if (!string.IsNullOrEmpty(SelectedCastDevice))
+    {
+      MudDialog?.Close(DialogResult.Ok(SelectedCastDevice));
+    }
+  }
+}
