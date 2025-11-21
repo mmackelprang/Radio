@@ -3,6 +3,26 @@
 ## Document Purpose
 This document provides a comprehensive overview of the Radio Console UI panel architecture, current implementation status, and a development plan for future panel creation. It serves as a guide for adding new panels and managing the UI layout following Material Design 3 principles.
 
+## Critical Specification Requirement
+
+**⚠️ ALL UI MUST FIT WITHIN THE 3-PANEL LAYOUT ⚠️**
+
+Per the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface):
+- The UI must maintain a **three-column layout** at all times: Left Panel / Center Panel / Right Panel
+- The **GlobalHeader** is always visible at the top
+- Additional functionality is accessed via **slide-out panels** that overlay the main layout
+- **No full-page routes** that replace or navigate away from the main layout
+- **No side navigation menu** - all navigation via icons in GlobalHeader
+
+### Current Compliance Status
+- ✅ **Compliant:** MainLayout with AudioSetupPanel, NowPlayingPanel, VisualizationPanel
+- ✅ **Compliant:** SystemTestPanel (slide-out overlay)
+- ❌ **NON-COMPLIANT:** RadioDemo.razor (`/radio-demo` route) - **Must be converted**
+- ❌ **NON-COMPLIANT:** SystemPanel.razor (`/system` route) - **Must be converted**
+- ❌ **NON-COMPLIANT:** NavMenu.razor (side navigation) - **Must be removed**
+
+**Phase 2 of the development plan focuses on eliminating these violations.**
+
 ---
 
 ## 1. Existing UI Panels
@@ -85,12 +105,14 @@ This document provides a comprehensive overview of the Radio Console UI panel ar
 - **Location in UI:** Slide-out from right side (activated by gear icon in MainLayout)
 - **Status:** ✅ Implemented (partially - slides in from right)
 
-### 1.3 Full Page Panels (Separate Routes)
+### 1.3 Legacy Full Page Panels (TO BE CONVERTED)
 
-#### RadioDemo Page
+**Note:** These panels currently exist as separate routes but violate the 3-panel layout specification. They must be converted to work within the main layout as slide-out panels or integrated into the existing 3-panel structure.
+
+#### RadioDemo Page (⚠️ DEPRECATED - TO BE CONVERTED)
 - **Name:** RadioDemo Page
-- **Overall Purpose:** Demonstration and documentation page for radio control components, numeric keypad, and touch keyboard.
-- **Components on Panel:**
+- **Current Implementation:** Separate full-page route
+- **Components:**
   - Tabbed interface with 4 tabs:
     1. Radio Control tab with RaddyRadioControlPanel
     2. Numeric Keypad tab with NumericKeypad component demo
@@ -98,19 +120,31 @@ This document provides a comprehensive overview of the Radio Console UI panel ar
     4. Documentation tab with component usage details
 - **Containing File:** `RadioConsole.Web/Components/Pages/RadioDemo.razor`
 - **Route:** `/radio-demo`
-- **Status:** ✅ Implemented (accessible via NavMenu)
+- **Status:** ⚠️ NEEDS CONVERSION - Currently accessible via NavMenu but breaks 3-panel layout
+- **Conversion Plan:** 
+  - Move RaddyRadioControlPanel integration to NowPlayingPanel (Radio Mode)
+  - Remove demo tabs (development/documentation only)
+  - Remove NavMenu entry
+  - Consider archiving the page for reference
 
-#### SystemPanel Page
+#### SystemPanel Page (⚠️ DEPRECATED - TO BE CONVERTED)
 - **Name:** SystemPanel Page
-- **Overall Purpose:** System configuration and status management page with multiple management interfaces.
-- **Components on Panel:**
+- **Current Implementation:** Separate full-page route
+- **Components:**
   - Tabbed interface with 3 tabs:
     1. Configuration Management (ConfigurationManagement component)
     2. Alerts & Notifications (AlertNotificationManagement component)
     3. System Status (SystemStatus component)
 - **Containing File:** `RadioConsole.Web/Components/Pages/SystemPanel.razor`
 - **Route:** `/system`
-- **Status:** ✅ Implemented (accessible via NavMenu)
+- **Status:** ⚠️ NEEDS CONVERSION - Currently accessible via NavMenu but breaks 3-panel layout
+- **Conversion Plan:**
+  - Create ConfigurationPanel as Type B slide-out panel
+  - Create SystemStatusPanel as Type B slide-out panel  
+  - Create AlertManagementPanel as Type B slide-out panel
+  - Remove SystemPanel page route
+  - Remove NavMenu entry
+  - Each panel gets its own icon in GlobalHeader
 
 ---
 
@@ -147,28 +181,29 @@ Based on the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface)
 
 ### 3.2 Panel Types
 
+**IMPORTANT:** All UI must fit within the 3-panel layout defined in the specification. No full-page routes that replace the main layout are permitted.
+
 #### Type A: Fixed Main Layout Panels
 - Always visible in the main layout
 - Occupy dedicated screen regions (Left/Center/Right)
+- Cannot be hidden or closed
 - Examples: AudioSetupPanel, NowPlayingPanel, VisualizationPanel
 
 #### Type B: Overlay/Slide-Out Panels
 - Hidden by default
 - Triggered by header icons or user actions
 - Slide in from a direction (right/left/bottom)
+- Overlay the 3-panel layout without replacing it
 - Modal/semi-modal behavior (can dim background)
-- Examples: SystemTestPanel, future ConfigurationPanel
-
-#### Type C: Full Page Panels
-- Separate routes accessible via navigation
-- Replace main layout entirely
-- Used for comprehensive settings and demo pages
-- Examples: RadioDemo, SystemPanel
+- Examples: SystemTestPanel, ConfigurationPanel, SystemStatusPanel
 
 #### Type D: Context-Aware Dynamic Panels
 - Change content based on application state
 - Embedded within Type A panels
+- Switch between different views/modes
 - Examples: NowPlayingPanel (shows different UI for Radio/Spotify/Vinyl)
+
+**Note:** Type C (Full Page Panels) has been eliminated per specification requirements. All existing full-page panels must be converted to Type B (slide-out) or integrated into Type A/D panels.
 
 ---
 
@@ -178,38 +213,54 @@ Based on the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface)
 
 ```
 RadioConsole.Web/Components/
-├── Pages/                          # Type C: Full Page Panels
-│   ├── Home.razor                 # Main entry point
-│   ├── RadioDemo.razor            # Demo page for radio components
-│   ├── SystemPanel.razor          # System management page
+├── Pages/                          # Minimal - Only essential pages
+│   ├── Home.razor                 # Main entry point (renders MainLayout with 3-panel structure)
 │   └── Error.razor                # Error handling page
+│   
+│   # DEPRECATED - TO BE REMOVED:
+│   ├── RadioDemo.razor            # ⚠️ TO BE REMOVED - Breaks 3-panel layout
+│   └── SystemPanel.razor          # ⚠️ TO BE REMOVED - Breaks 3-panel layout
 │
 ├── Shared/                        # Type A & B Panels + Reusable Components
+│   # Type A: Fixed Main Layout Panels (Always Visible)
 │   ├── GlobalHeader.razor         # Type A: Header panel
 │   ├── AudioSetupPanel.razor      # Type A: Left panel
 │   ├── NowPlayingPanel.razor      # Type A: Center panel (Type D behavior)
 │   ├── VisualizationPanel.razor   # Type A: Right panel
-│   ├── SystemTestPanel.razor      # Type B: Slide-out testing panel
+│   
+│   # Type B: Slide-Out Panels (Hidden by Default)
+│   ├── SystemTestPanel.razor      # Type B: Testing panel (slides from right)
+│   ├── ConfigurationPanel.razor   # Type B: Configuration panel (TO BE CREATED)
+│   ├── SystemStatusPanel.razor    # Type B: System status panel (TO BE CREATED)
+│   ├── AlertManagementPanel.razor # Type B: Alert/notification panel (TO BE CREATED)
 │   │
-│   ├── RaddyRadioControlPanel.razor    # Reusable component
-│   ├── NumericKeypad.razor             # Reusable component
-│   ├── TouchKeyboard.razor             # Reusable component
-│   ├── ConfigurationManagement.razor   # Reusable component
-│   ├── AlertNotificationManagement.razor  # Reusable component
-│   ├── SystemStatus.razor              # Reusable component
-│   └── FileSelector.razor              # Reusable component
+│   # Reusable Components (Building Blocks)
+│   ├── RaddyRadioControlPanel.razor    # Radio control UI
+│   ├── NumericKeypad.razor             # Numeric input
+│   ├── TouchKeyboard.razor             # Text input
+│   ├── ConfigurationManagement.razor   # Config CRUD UI
+│   ├── AlertNotificationManagement.razor  # Alert/TTS settings UI
+│   ├── SystemStatus.razor              # System metrics UI
+│   └── FileSelector.razor              # File browser
 │
 └── Layout/
-    ├── MainLayout.razor           # Main application layout
-    └── NavMenu.razor              # Navigation menu
+    ├── MainLayout.razor           # 3-panel layout + slide-out panel containers
+    └── NavMenu.razor              # Navigation menu (TO BE REMOVED - replaced by GlobalHeader icons)
 ```
 
 ### 4.2 Naming Conventions
 
-- **Panels:** End with `Panel` suffix (e.g., `AudioSetupPanel`, `SystemTestPanel`)
-- **Pages:** Descriptive names without suffix (e.g., `RadioDemo`, `SystemPanel`)
+- **Panels:** End with `Panel` suffix (e.g., `AudioSetupPanel`, `SystemTestPanel`, `ConfigurationPanel`)
+- **Pages:** Only `Home.razor` and `Error.razor` should remain in Pages/
 - **Components:** Descriptive names (e.g., `NumericKeypad`, `TouchKeyboard`)
 - **Files:** PascalCase matching the component name (e.g., `AudioSetupPanel.razor`)
+
+### 4.3 Migration Rules
+
+1. **No new full-page routes** - All new features must use Type A or Type B panels
+2. **Existing full-page panels must be converted** - See Phase 2 conversion plan
+3. **NavMenu will be deprecated** - All navigation via GlobalHeader icons
+4. **Home.razor is minimal** - Just renders MainLayout with 3-panel structure
 
 ---
 
@@ -509,34 +560,91 @@ Use this template when creating a new Type B (slide-out) panel:
 - [x] NowPlayingPanel (center column, context-aware)
 - [x] VisualizationPanel (right column)
 - [x] Basic slide-out SystemTestPanel
-- [x] RadioDemo and SystemPanel full-page routes
+- [x] RadioDemo and SystemPanel full-page routes (⚠️ TO BE DEPRECATED)
 
-### Phase 2: Panel Management Service (🚧 PROPOSED)
+### Phase 2: Panel Management & Full-Page Conversion (🚧 HIGH PRIORITY)
+
+**Goal:** Eliminate all full-page routes and implement proper panel management within the 3-panel layout.
+
+#### 2A: Panel Management Service
 - [ ] Create `PanelService` for centralized panel state management
-- [ ] Move panel control icons to `GlobalHeader`
 - [ ] Implement CSS animation classes for slide transitions
 - [ ] Add backdrop overlay for modal behavior
 - [ ] Update `SystemTestPanel` to use new service
+- [ ] Move all panel control icons to `GlobalHeader`
+- [ ] Remove `NavMenu.razor` (replaced by GlobalHeader icons)
 
-### Phase 3: Configuration & Status Panels (🔲 PLANNED)
+#### 2B: Convert RadioDemo Page to 3-Panel Layout
+**Current State:** RadioDemo.razor is a full-page route at `/radio-demo`  
+**Action Required:** 
+- [ ] Remove `/radio-demo` route entirely
+- [ ] Remove RadioDemo entry from NavMenu.razor
+- [ ] Integrate RaddyRadioControlPanel into NowPlayingPanel (Radio Mode)
+  - [ ] Add "Advanced Radio Controls" button in Radio Mode
+  - [ ] Opens slide-out panel with full radio control interface
+- [ ] Archive RadioDemo.razor to `/docs/archived/` for reference
+- [ ] Remove demo/documentation tabs (not needed in production UI)
+- [ ] Update UI_PANELS_PLAN.md to remove RadioDemo references
+
+#### 2C: Convert SystemPanel Page to Slide-Out Panels
+**Current State:** SystemPanel.razor is a full-page route at `/system`  
+**Action Required:**
+
+##### Create ConfigurationPanel (Type B - Slide-out)
+- [ ] Create `RadioConsole.Web/Components/Shared/ConfigurationPanel.razor`
+- [ ] Reuse existing `ConfigurationManagement.razor` component inside panel
+- [ ] Add close button and panel header
+- [ ] Wire up to PanelService
+- [ ] Add Settings icon to GlobalHeader → opens ConfigurationPanel
+- [ ] Slide-in from right side
+
+##### Create SystemStatusPanel (Type B - Slide-out)
+- [ ] Create `RadioConsole.Web/Components/Shared/SystemStatusPanel.razor`
+- [ ] Reuse existing `SystemStatus.razor` component inside panel
+- [ ] Add close button and panel header
+- [ ] Wire up to PanelService
+- [ ] Add Dashboard icon to GlobalHeader → opens SystemStatusPanel
+- [ ] Real-time updates (1 second interval)
+- [ ] Slide-in from right side
+
+##### Create AlertManagementPanel (Type B - Slide-out)
+- [ ] Create `RadioConsole.Web/Components/Shared/AlertManagementPanel.razor`
+- [ ] Reuse existing `AlertNotificationManagement.razor` component inside panel
+- [ ] Add close button and panel header
+- [ ] Wire up to PanelService
+- [ ] Add Notifications icon to GlobalHeader → opens AlertManagementPanel
+- [ ] Slide-in from right side
+
+##### Cleanup
+- [ ] Remove `/system` route entirely
+- [ ] Remove SystemPanel entry from NavMenu.razor
+- [ ] Archive SystemPanel.razor to `/docs/archived/` for reference
+- [ ] Update MainLayout to include new slide-out panel containers
+- [ ] Verify all three panels work independently with PanelService
+
+### Phase 3: Enhanced Panel Features (🔲 PLANNED)
 Following RadioPlan_v3.md requirements:
 
-#### ConfigurationPanel (Type B - Slide-out from right)
-- [ ] Comprehensive CRUD for all configuration settings
+#### ConfigurationPanel Enhancements
 - [ ] Tab 1: General Settings (audio, display)
 - [ ] Tab 2: Device Configuration (USB devices, network)
 - [ ] Tab 3: Advanced Settings (logging, performance)
-- [ ] Reuse `ConfigurationManagement` component
-- [ ] Trigger icon: `Settings` in GlobalHeader
+- [ ] Add search/filter functionality for settings
+- [ ] Add import/export configuration feature
 
-#### SystemStatusPanel (Type B - Slide-out from right)
-- [ ] Real-time CPU/Memory/Disk monitoring
-- [ ] Network status details
-- [ ] Audio device status
-- [ ] Process information
-- [ ] Reuse `SystemStatus` component
-- [ ] Trigger icon: `Dashboard` in GlobalHeader
-- [ ] Update interval: 1 second for real-time data
+#### SystemStatusPanel Enhancements
+- [ ] Real-time CPU/Memory/Disk charts (not just numbers)
+- [ ] Network bandwidth monitoring
+- [ ] Audio device status with visual indicators
+- [ ] Process information and resource usage
+- [ ] Add refresh button for manual updates
+- [ ] Configurable update interval
+
+#### AlertManagementPanel Enhancements
+- [ ] Preview/test button for each alert type
+- [ ] Visual waveform display for audio files
+- [ ] Volume level indicator per alert
+- [ ] Alert history/log viewer
 
 ### Phase 4: Rich Audio Panels (🔲 PLANNED)
 
@@ -620,23 +728,42 @@ Following RadioPlan_v3.md requirements:
 
 ### 9.1 Determine Panel Type
 
-First, determine which panel type fits your requirements:
+**IMPORTANT:** Type C (Full Page) panels are **not allowed**. All UI must fit within the 3-panel layout.
 
-- **Type A (Fixed Main Layout):** Panel is always visible in a dedicated screen region
+Choose the appropriate panel type:
+
+- **Type A (Fixed Main Layout):** Panel is always visible in a dedicated screen region (Left/Center/Right)
+  - Use only when the panel is a core part of the main UI
+  - Examples: AudioSetupPanel, NowPlayingPanel, VisualizationPanel
+  
 - **Type B (Slide-Out/Overlay):** Panel is hidden by default, triggered by user action
-- **Type C (Full Page):** Panel needs its own route and replaces main layout
+  - Use for configuration, settings, status, testing, and auxiliary features
+  - Slides in from right, left, or bottom
+  - Examples: SystemTestPanel, ConfigurationPanel, SystemStatusPanel
+  
 - **Type D (Dynamic Content):** Panel changes content based on application state
+  - Embedded within Type A panels
+  - Switches between different views/modes
+  - Examples: NowPlayingPanel content (Radio/Spotify/Vinyl modes)
+
+**Rule:** If you think you need a full-page panel (Type C), you should be creating a Type B (slide-out) panel instead.
 
 ### 9.2 Create Panel File
 
-1. **For Type A, B, or D panels:**
-   - Create file: `RadioConsole.Web/Components/Shared/[PanelName]Panel.razor`
-   - Use the panel template from Section 7.1
+**For Type A or Type B panels:**
+- Create file: `RadioConsole.Web/Components/Shared/[PanelName]Panel.razor`
+- Use the panel template from Section 7.1
+- End filename with `Panel` suffix
 
-2. **For Type C panels:**
-   - Create file: `RadioConsole.Web/Components/Pages/[PanelName].razor`
-   - Add `@page "/route-name"` directive at the top
-   - Add `@rendermode InteractiveServer` if needed
+**For Type D dynamic content:**
+- Implement within the parent Type A panel
+- Use conditional rendering based on state
+- See NowPlayingPanel.razor for example
+
+**NEVER create:**
+- New files in `Pages/` directory (except Home.razor and Error.razor)
+- New `@page` routes
+- New NavMenu entries
 
 ### 9.3 Implement Panel Logic
 
@@ -676,7 +803,7 @@ First, determine which panel type fits your requirements:
 
 **For Type B (Slide-Out) panels:**
 
-1. Add toggle method to `GlobalHeader.razor`:
+1. Add icon button to `GlobalHeader.razor`:
 
 ```razor
 <MudTooltip Text="[Panel Description]">
@@ -700,17 +827,22 @@ First, determine which panel type fits your requirements:
 }
 ```
 
-**For Type C (Full Page) panels:**
+**For Type A (Fixed Layout) panels:**
 
-1. Add navigation link to `NavMenu.razor`:
+Not applicable - Type A panels are hardcoded in MainLayout.razor as part of the 3-panel structure. They cannot be added dynamically.
+
+**For Type D (Dynamic Content):**
+
+Implement within the parent Type A panel using conditional rendering:
 
 ```razor
-<div class="nav-item px-3">
-  <NavLink class="nav-link" href="[route-name]">
-    <span class="bi bi-[icon-name]-nav-menu" aria-hidden="true"></span> [Display Name]
-  </NavLink>
-</div>
+@if (CurrentMode == "ModeName")
+{
+  <!-- Your mode-specific content -->
+}
 ```
+
+**REMOVED:** Instructions for Type C panels - no longer supported.
 
 ### 9.5 Style the Panel
 
@@ -726,11 +858,13 @@ Add custom styles to `wwwroot/css/app.css` or create panel-specific CSS file:
 ### 9.6 Test the Panel
 
 1. Build and run the application
-2. Verify panel opens/closes correctly
-3. Test all interactive elements
-4. Verify responsive behavior
-5. Test on target 12.5" x 3.75" display resolution
-6. Verify Material Design 3 styling consistency
+2. **Verify 3-panel layout is maintained** - Main layout should always show Left/Center/Right panels
+3. Verify panel opens/closes correctly (for Type B panels)
+4. Test all interactive elements
+5. Verify responsive behavior
+6. Test on target 12.5" x 3.75" display resolution
+7. Verify Material Design 3 styling consistency
+8. **Ensure no full-page routes** - URL should always remain at `/` (Home)
 
 ### 9.7 Document the Panel
 
@@ -827,17 +961,38 @@ Use Material Design icons from `Icons.Material.Filled.*`:
 ## 14. Known Issues and Future Improvements
 
 ### Current Known Issues
-1. **UI Click Events Not Received:** Investigation needed for Blazor event handling (mentioned in issue)
-2. **MudBlazor Warnings:** Some analyzer warnings for illegal attributes need cleanup
+
+1. **Full-Page Panels Break 3-Panel Layout (HIGH PRIORITY):**
+   - RadioDemo.razor (`/radio-demo` route) - Violates specification
+   - SystemPanel.razor (`/system` route) - Violates specification
+   - **Action Required:** Convert to Type B slide-out panels (See Phase 2 plan)
+   - **Impact:** Users can navigate away from main 3-panel layout
+   - **Status:** Scheduled for Phase 2 conversion
+
+2. **NavMenu.razor is Deprecated:**
+   - Side navigation menu is not part of the 3-panel specification
+   - Should be replaced by GlobalHeader icons
+   - **Action Required:** Remove NavMenu and update MainLayout
+   - **Status:** Scheduled for Phase 2
+
+3. **MudBlazor Analyzer Warnings:**
+   - ConfigurationManagement.razor: Illegal attributes `IsVisible` and `IsVisibleChanged` on MudDialog (6 warnings)
+   - SystemStatus.razor: Illegal attributes `Checked` and `CheckedChanged` on MudSwitch (2 warnings)
+   - **Impact:** Non-blocking analyzer warnings during build
+   - **Action Required:** Update to use correct MudBlazor attribute patterns (@bind-Value instead of custom)
+   - **Priority:** Low (does not affect functionality)
 
 ### Future Improvements
-1. Implement centralized `PanelService` for state management
-2. Move all panel control icons to `GlobalHeader`
-3. Add backdrop blur effect for better visual separation
-4. Implement panel keyboard shortcuts (ESC to close)
-5. Add panel resize capability for certain panels
-6. Implement panel position memory (remember last opened state)
-7. Add animation preferences (allow users to disable animations)
+
+1. **Implement centralized `PanelService`** for state management (Phase 2)
+2. **Complete Phase 2 conversions** - Eliminate all full-page panels
+3. **Move all navigation to GlobalHeader icons** - Remove NavMenu entirely
+4. **Add backdrop blur effect** for better visual separation of slide-out panels
+5. **Implement panel keyboard shortcuts** (ESC to close, Ctrl+P for specific panels)
+6. **Add panel resize capability** for certain panels (optional)
+7. **Implement panel position memory** - Remember which panels were open
+8. **Add animation preferences** - Allow users to disable animations for performance
+9. **Create panel preview/thumbnail system** for better UX
 8. Create panel preview/thumbnail system
 
 ---
