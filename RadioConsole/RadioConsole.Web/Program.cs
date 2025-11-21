@@ -213,28 +213,28 @@ try
     Log.Error("  Error: {ErrorType}: {ErrorMessage}", ex.GetType().Name, ex.Message);
   }
   
-  // If API health check failed, log error and exit gracefully
+  // If API health check failed, log warning but continue
   if (!apiHealthy)
   {
-    Log.Error("╔═══════════════════════════════════════════════════════════╗");
-    Log.Error("║  FATAL ERROR: API Health Check Failed                    ║");
-    Log.Error("╠═══════════════════════════════════════════════════════════╣");
-    Log.Error("║  The Web UI requires a healthy API connection to run.    ║");
-    Log.Error("║  Please ensure the API is running at:                    ║");
-    Log.Error("║    {ApiUrl,-54} ║", apiBaseUrl);
-    Log.Error("║                                                           ║");
-    Log.Error("║  To start the API, run:                                  ║");
-    Log.Error("║    dotnet run --project RadioConsole.API                 ║");
-    Log.Error("║                                                           ║");
-    Log.Error("║  Or use the provided startup scripts in the scripts/     ║");
-    Log.Error("║  directory to start both services with correct ports.    ║");
-    Log.Error("╚═══════════════════════════════════════════════════════════╝");
-    Log.CloseAndFlush();
-    Environment.Exit(1);
-    return; // This line won't be reached but helps with code analysis
+    Log.Warning("╔═══════════════════════════════════════════════════════════╗");
+    Log.Warning("║  WARNING: API Health Check Failed                        ║");
+    Log.Warning("╠═══════════════════════════════════════════════════════════╣");
+    Log.Warning("║  The Web UI will start in degraded mode.                 ║");
+    Log.Warning("║  Some features may not work until the API is available.  ║");
+    Log.Warning("║  Expected API location:                                  ║");
+    Log.Warning("║    {ApiUrl,-54} ║", apiBaseUrl);
+    Log.Warning("║                                                           ║");
+    Log.Warning("║  To start the API, run:                                  ║");
+    Log.Warning("║    dotnet run --project RadioConsole.API                 ║");
+    Log.Warning("║                                                           ║");
+    Log.Warning("║  Or use the provided startup scripts in the scripts/     ║");
+    Log.Warning("║  directory to start both services with correct ports.    ║");
+    Log.Warning("╚═══════════════════════════════════════════════════════════╝");
   }
-  
-  Log.Information("API health check passed. Continuing with Web UI startup...");
+  else
+  {
+    Log.Information("API health check passed. Continuing with Web UI startup...");
+  }
 
   // Configure the HTTP request pipeline.
   if (!app.Environment.IsDevelopment())
