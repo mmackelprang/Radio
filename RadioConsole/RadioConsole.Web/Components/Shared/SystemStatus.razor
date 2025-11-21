@@ -1,0 +1,255 @@
+@inject ILogger<SystemStatus> Logger
+@inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+@using RadioConsole.Core.Models
+@implements IDisposable
+
+<MudGrid>
+  @* Server Information *@
+  <MudItem xs="12" md="6">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudText Typo="Typo.h6" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Dns" Class="mr-2" />
+        Server Information
+      </MudText>
+      
+      @if (Status != null)
+      {
+        <MudStack Spacing="2">
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">API Server:</MudText>
+            <MudText Typo="Typo.body2">@Status.ApiUrl</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">API Port:</MudText>
+            <MudText Typo="Typo.body2">@Status.ApiPort</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Web Server:</MudText>
+            <MudText Typo="Typo.body2">@Status.WebUrl</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Web Port:</MudText>
+            <MudText Typo="Typo.body2">@Status.WebPort</MudText>
+          </MudStack>
+          <MudDivider Class="my-2" />
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Machine Name:</MudText>
+            <MudText Typo="Typo.body2">@Status.MachineName</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Operating System:</MudText>
+            <MudText Typo="Typo.body2">@Status.OperatingSystem</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">.NET Runtime:</MudText>
+            <MudText Typo="Typo.body2">@Status.RuntimeVersion</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Processor Cores:</MudText>
+            <MudText Typo="Typo.body2">@Status.ProcessorCount</MudText>
+          </MudStack>
+          <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Uptime:</MudText>
+            <MudText Typo="Typo.body2">@GetUptimeString()</MudText>
+          </MudStack>
+        </MudStack>
+      }
+      else
+      {
+        <MudProgressCircular Indeterminate="true" />
+      }
+    </MudPaper>
+  </MudItem>
+
+  @* System Resources *@
+  <MudItem xs="12" md="6">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudText Typo="Typo.h6" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Memory" Class="mr-2" />
+        System Resources
+      </MudText>
+      
+      @if (Status != null)
+      {
+        <MudStack Spacing="3">
+          @* CPU Usage *@
+          <MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+              <MudText Typo="Typo.body2">CPU Usage</MudText>
+              <MudText Typo="Typo.body2">@Status.CpuUsagePercent.ToString("F1")%</MudText>
+            </MudStack>
+            <MudProgressLinear Color="@GetCpuColor()" Value="@Status.CpuUsagePercent" Size="Size.Medium" />
+          </MudStack>
+
+          @* Memory Usage *@
+          <MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+              <MudText Typo="Typo.body2">Memory Usage</MudText>
+              <MudText Typo="Typo.body2">
+                @FormatBytes(Status.UsedMemoryBytes) / @FormatBytes(Status.TotalMemoryBytes)
+              </MudText>
+            </MudStack>
+            <MudProgressLinear Color="@GetMemoryColor()" Value="@GetMemoryPercent()" Size="Size.Medium" />
+          </MudStack>
+
+          @* Disk Usage *@
+          <MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+              <MudText Typo="Typo.body2">Disk Usage</MudText>
+              <MudText Typo="Typo.body2">
+                @FormatBytes(Status.UsedDiskBytes) / @FormatBytes(Status.TotalDiskBytes)
+              </MudText>
+            </MudStack>
+            <MudProgressLinear Color="@GetDiskColor()" Value="@GetDiskPercent()" Size="Size.Medium" />
+          </MudStack>
+
+          @* Detailed Stats *@
+          <MudDivider Class="my-2" />
+          <MudSimpleTable Dense="true" Hover="true">
+            <tbody>
+              <tr>
+                <td>Available Memory</td>
+                <td style="text-align: right;">@FormatBytes(Status.AvailableMemoryBytes)</td>
+              </tr>
+              <tr>
+                <td>Available Disk Space</td>
+                <td style="text-align: right;">@FormatBytes(Status.AvailableDiskBytes)</td>
+              </tr>
+            </tbody>
+          </MudSimpleTable>
+        </MudStack>
+      }
+      else
+      {
+        <MudProgressCircular Indeterminate="true" />
+      }
+    </MudPaper>
+  </MudItem>
+
+  @* Auto-refresh control *@
+  <MudItem xs="12">
+    <MudPaper Class="pa-4" Elevation="2">
+      <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+          <MudSwitch T="bool" @bind-Checked="AutoRefresh" Color="Color.Primary" />
+          <MudText Typo="Typo.body2">Auto-refresh every 5 seconds</MudText>
+        </MudStack>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadSystemStatus">
+          Refresh Now
+        </MudButton>
+      </MudStack>
+    </MudPaper>
+  </MudItem>
+</MudGrid>
+
+@code {
+  private HttpClient HttpClient => HttpClientFactory.CreateClient("API");
+  private RadioConsole.Core.Models.SystemStatus? Status { get; set; }
+  private bool AutoRefresh { get; set; } = true;
+  private System.Threading.Timer? _refreshTimer;
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadSystemStatus();
+    
+    // Setup auto-refresh timer
+    _refreshTimer = new System.Threading.Timer(async _ =>
+    {
+      if (AutoRefresh)
+      {
+        await InvokeAsync(async () =>
+        {
+          await LoadSystemStatus();
+          StateHasChanged();
+        });
+      }
+    }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+  }
+
+  private async Task LoadSystemStatus()
+  {
+    try
+    {
+      Status = await HttpClient.GetFromJsonAsync<RadioConsole.Core.Models.SystemStatus>("/api/systemstatus");
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading system status");
+      Snackbar.Add("Failed to load system status", Severity.Error);
+    }
+  }
+
+  private string GetUptimeString()
+  {
+    if (Status == null) return "N/A";
+    
+    var uptime = TimeSpan.FromSeconds(Status.UptimeSeconds);
+    return $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m {uptime.Seconds}s";
+  }
+
+  private double GetMemoryPercent()
+  {
+    if (Status == null || Status.TotalMemoryBytes == 0) return 0;
+    return (Status.UsedMemoryBytes / (double)Status.TotalMemoryBytes) * 100;
+  }
+
+  private double GetDiskPercent()
+  {
+    if (Status == null || Status.TotalDiskBytes == 0) return 0;
+    return (Status.UsedDiskBytes / (double)Status.TotalDiskBytes) * 100;
+  }
+
+  private Color GetCpuColor()
+  {
+    if (Status == null) return Color.Default;
+    return Status.CpuUsagePercent switch
+    {
+      ( < 50) => Color.Success,
+      ( < 80) => Color.Warning,
+      _ => Color.Error
+    };
+  }
+
+  private Color GetMemoryColor()
+  {
+    var percent = GetMemoryPercent();
+    return percent switch
+    {
+      ( < 50) => Color.Success,
+      ( < 80) => Color.Warning,
+      _ => Color.Error
+    };
+  }
+
+  private Color GetDiskColor()
+  {
+    var percent = GetDiskPercent();
+    return percent switch
+    {
+      ( < 70) => Color.Success,
+      ( < 90) => Color.Warning,
+      _ => Color.Error
+    };
+  }
+
+  private string FormatBytes(long bytes)
+  {
+    string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+    double len = bytes;
+    int order = 0;
+    while (len >= 1024 && order < sizes.Length - 1)
+    {
+      order++;
+      len = len / 1024;
+    }
+    return $"{len:0.##} {sizes[order]}";
+  }
+
+  public void Dispose()
+  {
+    _refreshTimer?.Dispose();
+  }
+}
