@@ -162,6 +162,23 @@ Per the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface):
 - **Location in UI:** Slide-out from right side (activated by Notifications icon in GlobalHeader)
 - **Status:** ✅ Implemented (2025-11-21) | ✅ Enhanced with testing (2025-11-21 Phase 3)
 
+#### RadioControlPanel
+- **Name:** RadioControlPanel
+- **Overall Purpose:** Advanced radio control interface for the Raddy RF320 USB radio. Provides comprehensive tuning, scanning, and volume controls.
+- **Components on Panel:**
+  - LED-style frequency display (large, digital font with glow effect)
+  - LED-style band indicator (FM/AM/SW/AIR/VHF)
+  - Band selector dropdown (5 bands supported)
+  - Tuning controls: Tune Up/Down buttons
+  - Scan controls: Scan Up/Down buttons
+  - Radio volume slider with +/- buttons
+  - Set Frequency button (opens numeric keypad)
+  - Status indicators: Streaming status, Device detection, Signal strength
+  - Reuses RaddyRadioControlPanel component
+- **Containing File:** Integrated into `RadioConsole.Web/Components/Layout/MainLayout.razor`
+- **Location in UI:** Slide-out from right side (activated by "Advanced Radio Controls" button in NowPlayingPanel Radio Mode)
+- **Status:** ✅ Implemented (2025-11-21 Phase 2B)
+
 ### 1.3 Archived Legacy Panels (REMOVED)
 
 **Note:** These panels have been removed and archived to `/docs/archived/` as they violated the 3-panel layout specification.
@@ -608,17 +625,26 @@ Use this template when creating a new Type B (slide-out) panel:
 - [x] Move all panel control icons to `GlobalHeader`
 - [x] Remove `NavMenu.razor` (replaced by GlobalHeader icons)
 
-#### 2B: Convert RadioDemo Page to 3-Panel Layout (🚧 PARTIAL)
-**Current State:** RadioDemo.razor removed, archived at `/docs/archived/`  
+#### 2B: Convert RadioDemo Page to 3-Panel Layout (✅ COMPLETE)
+**Current State:** RadioDemo.razor removed, archived at `/docs/archived/`. RaddyRadioControlPanel integrated into NowPlayingPanel.  
 **Action Completed:** 
 - [x] Remove `/radio-demo` route entirely
 - [x] Remove RadioDemo entry from NavMenu.razor
-- [ ] Integrate RaddyRadioControlPanel into NowPlayingPanel (Radio Mode)
-  - [ ] Add "Advanced Radio Controls" button in Radio Mode
-  - [ ] Opens slide-out panel with full radio control interface
+- [x] Integrate RaddyRadioControlPanel into NowPlayingPanel (Radio Mode)
+  - [x] Add "Advanced Radio Controls" button in Radio Mode
+  - [x] Opens slide-out panel with full radio control interface
+  - [x] Wire up to PanelService with "RadioControl" panel name
 - [x] Archive RadioDemo.razor to `/docs/archived/` for reference
 - [x] Remove demo/documentation tabs (not needed in production UI)
-- [ ] Update UI_PANELS_PLAN.md to remove RadioDemo references
+- [x] Update UI_PANELS_PLAN.md to mark completion
+
+**Implementation Summary (2025-11-21):**
+- ✅ Added "Advanced Radio Controls" button to Radio Mode in NowPlayingPanel
+- ✅ Created RadioControl slide-out panel in MainLayout
+- ✅ Integrated RaddyRadioControlPanel component into slide-out panel
+- ✅ Panel accessible via button in Radio Mode of NowPlayingPanel
+- ✅ Consistent with existing slide-out panel patterns
+- ✅ All 176 tests still passing
 
 #### 2C: Convert SystemPanel Page to Slide-Out Panels (✅ COMPLETE)
 **Current State:** SystemPanel.razor removed, replaced with three new slide-out panels  
