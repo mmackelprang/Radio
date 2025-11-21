@@ -2,6 +2,7 @@
 let visualizerCanvas = null;
 let visualizerContext = null;
 let currentFFTData = [];
+let currentVisualizationCommands = []; // Store commands from custom visualizers
 let animationFrameId = null;
 let visualizationType = 'spectrum'; // default: spectrum, levelMeter, waveform
 
@@ -46,10 +47,16 @@ function resizeCanvas() {
   visualizerCanvas.height = container.clientHeight;
 }
 
-// Update FFT data from SignalR
+// Update FFT data from SignalR (for spectrum visualization)
 window.updateVisualizerData = function (fftData) {
   if (!fftData || fftData.length === 0) return;
   currentFFTData = fftData;
+};
+
+// Update visualization commands from SignalR (for custom visualizers)
+window.updateVisualizationCommands = function (commands) {
+  if (!commands) return;
+  currentVisualizationCommands = commands;
 };
 
 // Animation loop
@@ -61,7 +68,7 @@ function startAnimation() {
   animate();
 }
 
-// Draw the visualization bars
+// Draw the visualization based on current type and data
 function drawVisualization() {
   if (!visualizerContext || !visualizerCanvas) return;
 
@@ -76,6 +83,23 @@ function drawVisualization() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
+  // Choose rendering method based on visualization type
+  if (visualizationType === 'spectrum') {
+    drawSpectrumVisualization(ctx, width, height);
+  } else if (visualizationType === 'waveform' || visualizationType === 'levelMeter') {
+    // Use custom visualization commands from C# visualizers
+    if (currentVisualizationCommands && currentVisualizationCommands.length > 0) {
+      renderCustomVisualization(ctx, width, height, currentVisualizationCommands);
+    } else {
+      drawPlaceholder(ctx, width, height);
+    }
+  } else {
+    drawPlaceholder(ctx, width, height);
+  }
+}
+
+// Draw spectrum visualization using FFT data
+function drawSpectrumVisualization(ctx, width, height) {
   // If no FFT data, draw placeholder
   if (!currentFFTData || currentFFTData.length === 0) {
     drawPlaceholder(ctx, width, height);
@@ -136,6 +160,24 @@ function drawVisualization() {
   ctx.stroke();
 }
 
+// Render custom visualization commands from C# visualizers
+function renderCustomVisualization(ctx, width, height, commands) {
+  // Execute drawing commands
+  for (const cmd of commands) {
+    if (cmd.type === 'line') {
+      ctx.strokeStyle = cmd.color || '#ffffff';
+      ctx.lineWidth = cmd.thickness || 1;
+      ctx.beginPath();
+      ctx.moveTo(cmd.x1, cmd.y1);
+      ctx.lineTo(cmd.x2, cmd.y2);
+      ctx.stroke();
+    } else if (cmd.type === 'rectangle') {
+      ctx.fillStyle = cmd.color || '#ffffff';
+      ctx.fillRect(cmd.x, cmd.y, cmd.width, cmd.height);
+    }
+  }
+}
+
 // Draw placeholder when no data
 function drawPlaceholder(ctx, width, height) {
   ctx.fillStyle = '#424242';
@@ -159,37 +201,12 @@ function drawPlaceholder(ctx, width, height) {
   }
 }
 
-// Render visualization commands from C# (for custom visualizers)
+// Render visualization commands from C# (legacy function for backward compatibility)
 window.renderVisualizationCommands = function (commands) {
-  if (!visualizerContext || !visualizerCanvas || !commands) return;
-
-  const ctx = visualizerContext;
-  const width = visualizerCanvas.width;
-  const height = visualizerCanvas.height;
-
-  // Clear canvas
-  ctx.clearRect(0, 0, width, height);
-  
-  // Draw gradient background
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, '#0a0a0a');
-  gradient.addColorStop(1, '#1a1a1a');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-
-  // Execute drawing commands
-  for (const cmd of commands) {
-    if (cmd.type === 'line') {
-      ctx.strokeStyle = cmd.color;
-      ctx.lineWidth = cmd.thickness || 1;
-      ctx.beginPath();
-      ctx.moveTo(cmd.x1, cmd.y1);
-      ctx.lineTo(cmd.x2, cmd.y2);
-      ctx.stroke();
-    } else if (cmd.type === 'rectangle') {
-      ctx.fillStyle = cmd.color;
-      ctx.fillRect(cmd.x, cmd.y, cmd.width, cmd.height);
-    }
+  // This function is now integrated into the main animation loop
+  // Just update the commands buffer
+  if (commands) {
+    currentVisualizationCommands = commands;
   }
 };
 
@@ -204,6 +221,7 @@ window.disposeVisualizer = function () {
     visualizerCanvas = null;
     visualizerContext = null;
     currentFFTData = [];
+    currentVisualizationCommands = [];
     console.log('Visualizer disposed');
   } catch (error) {
     console.error('Error disposing visualizer:', error);
