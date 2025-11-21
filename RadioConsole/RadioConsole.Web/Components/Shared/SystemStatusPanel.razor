@@ -214,8 +214,7 @@
   {
     try
     {
-      var client = HttpClientFactory.CreateClient();
-      client.BaseAddress = new Uri("http://localhost:5000/");
+      var client = HttpClientFactory.CreateClient("API");
       
       currentStatus = await client.GetFromJsonAsync<RadioConsole.Core.Models.SystemStatus>("api/systemstatus");
       
