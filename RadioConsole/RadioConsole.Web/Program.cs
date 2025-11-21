@@ -231,7 +231,7 @@ try
     return; // This line won't be reached but helps with code analysis
   }
   
-  Log.Information("API health check passed. Continuing with Web UI startup...");;
+  Log.Information("API health check passed. Continuing with Web UI startup...");
 
   // Configure the HTTP request pipeline.
   if (!app.Environment.IsDevelopment())

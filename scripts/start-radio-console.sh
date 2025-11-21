@@ -67,8 +67,24 @@ echo ""
 cleanup() {
   echo ""
   echo -e "${YELLOW}Stopping services...${NC}"
-  kill ${API_PID} 2>/dev/null
-  kill ${WEB_PID} 2>/dev/null
+  
+  # Try graceful shutdown first
+  kill -TERM ${API_PID} 2>/dev/null
+  kill -TERM ${WEB_PID} 2>/dev/null
+  
+  # Wait up to 5 seconds for graceful shutdown
+  for i in {1..5}; do
+    sleep 1
+    # Check if processes are still running
+    if ! kill -0 ${API_PID} 2>/dev/null && ! kill -0 ${WEB_PID} 2>/dev/null; then
+      break
+    fi
+  done
+  
+  # Force kill if still running
+  kill -KILL ${API_PID} 2>/dev/null
+  kill -KILL ${WEB_PID} 2>/dev/null
+  
   echo -e "${GREEN}Services stopped${NC}"
   exit 0
 }

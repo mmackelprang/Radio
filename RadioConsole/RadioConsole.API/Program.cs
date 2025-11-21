@@ -153,7 +153,7 @@ try
   Log.Information("╠═══════════════════════════════════════════════════════════╣");
   Log.Information("║  Required External Ports:                                 ║");
   Log.Information("║    - None (API is standalone)                             ║");
-  Log.Information("╚═══════════════════════════════════════════════════════════╝");;
+  Log.Information("╚═══════════════════════════════════════════════════════════╝");
 
   // Configure the HTTP request pipeline.
   if (app.Environment.IsDevelopment())
