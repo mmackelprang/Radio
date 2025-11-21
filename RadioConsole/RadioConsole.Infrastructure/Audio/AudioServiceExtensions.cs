@@ -1,5 +1,7 @@
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Interfaces.Audio;
 using RadioConsole.Infrastructure.Audio;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -14,9 +16,21 @@ public static class AudioServiceExtensions
   /// Adds audio services (SoundFlow implementations) to the service collection.
   /// </summary>
   /// <param name="services">The service collection.</param>
+  /// <param name="configuration">The configuration instance.</param>
   /// <returns>The service collection for chaining.</returns>
-  public static IServiceCollection AddAudioServices(this IServiceCollection services)
+  public static IServiceCollection AddAudioServices(
+    this IServiceCollection services,
+    IConfiguration? configuration = null)
   {
+    // Register audio visualization options if configuration is provided
+    if (configuration != null)
+    {
+      services.Configure<AudioVisualizationOptions>(
+        configuration.GetSection("AudioVisualization"));
+      services.Configure<TextToSpeechOptions>(
+        configuration.GetSection("TextToSpeech"));
+    }
+
     // Register audio player as singleton to maintain state across requests
     services.AddSingleton<IAudioPlayer, SoundFlowAudioPlayer>();
 

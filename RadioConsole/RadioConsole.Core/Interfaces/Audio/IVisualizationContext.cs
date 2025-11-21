@@ -48,12 +48,12 @@ public interface IVisualizationContext
 /// Color representation for visualizations.
 /// Values are normalized between 0 and 1.
 /// </summary>
-public struct VisualizationColor
+public readonly struct VisualizationColor
 {
-  public float R { get; set; }
-  public float G { get; set; }
-  public float B { get; set; }
-  public float A { get; set; }
+  public float R { get; init; }
+  public float G { get; init; }
+  public float B { get; init; }
+  public float A { get; init; }
 
   public VisualizationColor(float r, float g, float b, float a = 1f)
   {
@@ -73,13 +73,39 @@ public struct VisualizationColor
 
   /// <summary>
   /// Convert to hex color string for web rendering.
+  /// Values are clamped to [0, 1] range before conversion.
   /// </summary>
   public string ToHex()
   {
-    int r = (int)(R * 255);
-    int g = (int)(G * 255);
-    int b = (int)(B * 255);
-    int a = (int)(A * 255);
+    int r = (int)(Math.Clamp(R, 0f, 1f) * 255);
+    int g = (int)(Math.Clamp(G, 0f, 1f) * 255);
+    int b = (int)(Math.Clamp(B, 0f, 1f) * 255);
+    int a = (int)(Math.Clamp(A, 0f, 1f) * 255);
     return $"#{r:X2}{g:X2}{b:X2}{a:X2}";
+  }
+
+  /// <summary>
+  /// Parse a hex color string to create a VisualizationColor.
+  /// Supports formats: #RGB, #RGBA, #RRGGBB, #RRGGBBAA
+  /// </summary>
+  /// <param name="hex">Hex color string (e.g., "#FF0000" or "#FF0000FF")</param>
+  /// <returns>Parsed color</returns>
+  /// <exception cref="ArgumentException">Thrown if hex format is invalid</exception>
+  public static VisualizationColor FromHex(string hex)
+  {
+    if (string.IsNullOrEmpty(hex) || hex[0] != '#')
+      throw new ArgumentException("Invalid hex color format. Must start with #", nameof(hex));
+
+    hex = hex.TrimStart('#');
+
+    if (hex.Length != 6 && hex.Length != 8)
+      throw new ArgumentException("Hex color must be 6 or 8 characters (RGB or RGBA)", nameof(hex));
+
+    int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+    int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+    int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+    int a = hex.Length == 8 ? Convert.ToInt32(hex.Substring(6, 2), 16) : 255;
+
+    return new VisualizationColor(r / 255f, g / 255f, b / 255f, a / 255f);
   }
 }

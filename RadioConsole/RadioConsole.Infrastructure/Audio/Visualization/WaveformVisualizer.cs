@@ -1,5 +1,7 @@
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Interfaces.Audio;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace RadioConsole.Infrastructure.Audio.Visualization;
 
@@ -16,10 +18,12 @@ public class WaveformVisualizer : IVisualizer
   public event EventHandler? VisualizationUpdated;
   public VisualizationType Type => VisualizationType.Waveform;
 
-  public WaveformVisualizer(ILogger<WaveformVisualizer>? logger = null, int bufferSize = 1024)
+  public WaveformVisualizer(
+    ILogger<WaveformVisualizer>? logger = null, 
+    IOptions<AudioVisualizationOptions>? options = null)
   {
     _logger = logger;
-    _bufferSize = bufferSize;
+    _bufferSize = options?.Value.WaveformBufferSize ?? 1024;
     _waveformBuffer = new List<float>(_bufferSize);
   }
 
@@ -27,6 +31,7 @@ public class WaveformVisualizer : IVisualizer
   {
     if (audioData.IsEmpty)
     {
+      _logger?.LogDebug("ProcessAudioData called with empty data");
       return;
     }
 
@@ -45,10 +50,19 @@ public class WaveformVisualizer : IVisualizer
 
   public void Render(IVisualizationContext context)
   {
-    if (context == null || _waveformBuffer.Count == 0)
+    if (context == null)
     {
+      _logger?.LogWarning("Render called with null context");
       return;
     }
+
+    if (_waveformBuffer.Count == 0)
+    {
+      _logger?.LogDebug("Render called with empty waveform buffer");
+      return;
+    }
+
+    _logger?.LogDebug("Rendering waveform with {Count} samples", _waveformBuffer.Count);
 
     context.Clear();
 

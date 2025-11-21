@@ -29,6 +29,7 @@ public class LevelMeterVisualizer : IVisualizer
   {
     if (audioData.IsEmpty)
     {
+      _logger?.LogDebug("ProcessAudioData called with empty data");
       return;
     }
 
@@ -64,8 +65,11 @@ public class LevelMeterVisualizer : IVisualizer
   {
     if (context == null)
     {
+      _logger?.LogWarning("Render called with null context");
       return;
     }
+
+    _logger?.LogDebug("Rendering level meter: RMS={Rms}, Peak={Peak}", _rms, _peak);
 
     context.Clear();
 

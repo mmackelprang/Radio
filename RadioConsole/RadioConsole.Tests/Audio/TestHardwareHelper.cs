@@ -33,13 +33,14 @@ public static class TestHardwareHelper
       return true;
     }
 
-    // Try SoundFlow enumeration first
+    // Try SoundFlow initialization test - not just enumeration
     try
     {
-      using var manager = new SoundFlowAudioDeviceManager(new NullLogger<SoundFlowAudioDeviceManager>());
-      var outputs = manager.GetOutputDevicesAsync().GetAwaiter().GetResult();
-      if (outputs != null && outputs.Any())
+      using var player = new SoundFlowAudioPlayer(new NullLogger<SoundFlowAudioPlayer>());
+      player.InitializeAsync("default").GetAwaiter().GetResult();
+      if (player.IsInitialized)
       {
+        player.Dispose();
         _isAudioHardwareAvailable = true;
         return true;
       }

@@ -1,3 +1,4 @@
+using RadioConsole.Core;
 using RadioConsole.Core.Interfaces.Audio;
 using Microsoft.Extensions.Logging;
 
@@ -20,8 +21,8 @@ public class LocalAudioOutput : IAudioOutput
   /// Initializes a new instance of the LocalAudioOutput class.
   /// </summary>
   /// <param name="logger">The logger instance.</param>
-  /// <param name="audioSinkId">The audio sink device ID to use (default = "default").</param>
-  public LocalAudioOutput(ILogger<LocalAudioOutput> logger, string audioSinkId = "default")
+  /// <param name="audioSinkId">The audio sink device ID to use.</param>
+  public LocalAudioOutput(ILogger<LocalAudioOutput> logger, string audioSinkId = AudioConstants.DefaultDeviceId)
   {
     _logger = logger;
     _audioSinkId = audioSinkId;

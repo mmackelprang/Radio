@@ -1,5 +1,7 @@
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Interfaces.Audio;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace RadioConsole.Infrastructure.Audio.Visualization;
 
@@ -18,10 +20,12 @@ public class SpectrumVisualizer : IVisualizer
   public event EventHandler? VisualizationUpdated;
   public VisualizationType Type => VisualizationType.Spectrum;
 
-  public SpectrumVisualizer(ILogger<SpectrumVisualizer>? logger = null, int binCount = 64)
+  public SpectrumVisualizer(
+    ILogger<SpectrumVisualizer>? logger = null, 
+    IOptions<AudioVisualizationOptions>? options = null)
   {
     _logger = logger;
-    _binCount = binCount;
+    _binCount = options?.Value.SpectrumBands ?? 64;
     _spectrumData = new float[_binCount];
   }
 
@@ -29,6 +33,7 @@ public class SpectrumVisualizer : IVisualizer
   {
     if (audioData.IsEmpty)
     {
+      _logger?.LogDebug("ProcessAudioData called with empty data");
       return;
     }
 
@@ -69,8 +74,11 @@ public class SpectrumVisualizer : IVisualizer
   {
     if (context == null)
     {
+      _logger?.LogWarning("Render called with null context");
       return;
     }
+
+    _logger?.LogDebug("Rendering spectrum with {BinCount} bins", _binCount);
 
     context.Clear();
 
