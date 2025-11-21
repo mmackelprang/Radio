@@ -1,3 +1,4 @@
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Interfaces.Audio;
 using RadioConsole.Infrastructure.Audio;
 using Microsoft.Extensions.Logging;
@@ -69,8 +70,11 @@ public class CastAudioOutputTests
   public async Task StartAsync_WithNoDevices_ShouldThrowException()
   {
     // Arrange
-    var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3");
-    castOutput.DiscoveryTimeoutSeconds = 0.1; // Speed up test
+    var options = Microsoft.Extensions.Options.Options.Create(new CastAudioOptions 
+    { 
+      DiscoveryTimeoutSeconds = 0.1 // Speed up test
+    });
+    var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3", options);
     _mockAudioPlayer.Setup(x => x.IsInitialized).Returns(true);
 
     // Act & Assert
@@ -141,8 +145,11 @@ public class CastAudioOutputTests
   public async Task StartAsync_ShouldAttemptToDiscoverDevices_WithMockedPlayer()
   {
     // Arrange
-    var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3");
-    castOutput.DiscoveryTimeoutSeconds = 0.1; // Speed up test
+    var options = Microsoft.Extensions.Options.Options.Create(new CastAudioOptions 
+    { 
+      DiscoveryTimeoutSeconds = 0.1 // Speed up test
+    });
+    var castOutput = new CastAudioOutput(_mockLogger.Object, "http://localhost:5000/stream.mp3", options);
     _mockAudioPlayer.Setup(x => x.IsInitialized).Returns(true);
     _mockAudioPlayer.Setup(x => x.GetMixedOutputStream()).Returns(new MemoryStream());
 

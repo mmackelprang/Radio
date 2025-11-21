@@ -84,6 +84,42 @@ public class VisualizationController : ControllerBase
     var types = new[] { "LevelMeter", "Waveform", "Spectrum" };
     return Ok(types);
   }
+
+  /// <summary>
+  /// Set the active visualization type.
+  /// </summary>
+  /// <param name="request">Visualization type selection request.</param>
+  /// <returns>200 OK if successful.</returns>
+  [HttpPost("type")]
+  [ProducesResponseType(StatusCodes.Status200OK)]
+  [ProducesResponseType(StatusCodes.Status400BadRequest)]
+  public IActionResult SetVisualizationType([FromBody] VisualizationTypeRequest request)
+  {
+    try
+    {
+      _logger.LogInformation("Setting visualization type to {Type}", request.Type);
+      
+      // Validate the type
+      var validTypes = new[] { "LevelMeter", "Waveform", "Spectrum" };
+      if (!validTypes.Contains(request.Type, StringComparer.OrdinalIgnoreCase))
+      {
+        return BadRequest(new { error = $"Invalid visualization type: {request.Type}", validTypes });
+      }
+
+      // Note: This is a placeholder. In a full implementation, this would:
+      // 1. Create the appropriate visualizer instance
+      // 2. Connect it to the audio pipeline
+      // 3. Start sending visualization data via SignalR
+      // For now, we just log the request and return success
+
+      return Ok(new { message = $"Visualization type set to {request.Type}", type = request.Type });
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error setting visualization type");
+      return StatusCode(500, new { error = "Failed to set visualization type", details = ex.Message });
+    }
+  }
 }
 
 /// <summary>
@@ -116,4 +152,15 @@ public record VisualizationEnableRequest
   /// Whether to enable visualization.
   /// </summary>
   public bool Enabled { get; init; }
+}
+
+/// <summary>
+/// Request model for setting visualization type.
+/// </summary>
+public record VisualizationTypeRequest
+{
+  /// <summary>
+  /// The visualization type to set (LevelMeter, Waveform, or Spectrum).
+  /// </summary>
+  public string Type { get; init; } = "Spectrum";
 }
