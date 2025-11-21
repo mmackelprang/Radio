@@ -9,20 +9,20 @@
 
 <div class="console-container">
   <div class="console-header">
-    <GlobalHeader />
+    <GlobalHeader @rendermode="InteractiveServer" />
   </div>
   
   <div class="console-main">
     <div class="console-panel audio-setup-panel">
-      <AudioSetupPanel @bind-SelectedInput="CurrentInput" />
+      <AudioSetupPanel @bind-SelectedInput="CurrentInput" @rendermode="InteractiveServer" />
     </div>
     
     <div class="console-panel now-playing-panel">
-      <NowPlayingPanel CurrentInput="@CurrentInput" />
+      <NowPlayingPanel CurrentInput="@CurrentInput" @rendermode="InteractiveServer" />
     </div>
     
     <div class="console-panel visualization-panel">
-      <VisualizationPanel />
+      <VisualizationPanel @rendermode="InteractiveServer" />
     </div>
   </div>
 
@@ -39,23 +39,23 @@
                        OnClick="@(() => PanelService.ClosePanel("SystemTest"))" />
       </MudStack>
       <MudDivider />
-      <SystemTestPanel />
+      <SystemTestPanel @rendermode="InteractiveServer" />
     </MudStack>
   </div>
 
   @* Configuration Panel - Slide-out *@
   <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("Configuration") ? "open" : "")">
-    <ConfigurationPanel />
+    <ConfigurationPanel @rendermode="InteractiveServer" />
   </div>
 
   @* System Status Panel - Slide-out *@
   <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("SystemStatus") ? "open" : "")">
-    <SystemStatusPanel />
+    <SystemStatusPanel @rendermode="InteractiveServer" />
   </div>
 
   @* Alert Management Panel - Slide-out *@
   <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("AlertManagement") ? "open" : "")">
-    <AlertManagementPanel />
+    <AlertManagementPanel @rendermode="InteractiveServer" />
   </div>
 
   @* Radio Control Panel - Slide-out *@
@@ -71,7 +71,7 @@
                        OnClick="@(() => PanelService.ClosePanel("RadioControl"))" />
       </MudStack>
       <MudDivider />
-      <RaddyRadioControlPanel />
+      <RaddyRadioControlPanel @rendermode="InteractiveServer" />
     </MudStack>
   </div>
 
