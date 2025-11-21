@@ -1,0 +1,80 @@
+@using MudBlazor
+@using RadioConsole.Core.Interfaces.Audio
+
+<MudDialog>
+  <DialogContent>
+    <MudText Typo="Typo.body1" Class="mb-4">
+      Select the visualization type for the audio visualizer:
+    </MudText>
+    
+    <MudStack Spacing="2">
+      <MudButton Variant="@(SelectedType == VisualizationType.Spectrum ? Variant.Filled : Variant.Outlined)"
+                 Color="@(SelectedType == VisualizationType.Spectrum ? Color.Primary : Color.Default)"
+                 FullWidth="true"
+                 OnClick="@(() => SelectType(VisualizationType.Spectrum))"
+                 Style="text-align: left; justify-content: flex-start;">
+        <MudStack Spacing="0">
+          <MudText Typo="Typo.body1">Spectrum Analyzer</MudText>
+          <MudText Typo="Typo.caption">Displays frequency spectrum with bars</MudText>
+        </MudStack>
+      </MudButton>
+      
+      <MudButton Variant="@(SelectedType == VisualizationType.Waveform ? Variant.Filled : Variant.Outlined)"
+                 Color="@(SelectedType == VisualizationType.Waveform ? Color.Primary : Color.Default)"
+                 FullWidth="true"
+                 OnClick="@(() => SelectType(VisualizationType.Waveform))"
+                 Style="text-align: left; justify-content: flex-start;">
+        <MudStack Spacing="0">
+          <MudText Typo="Typo.body1">Waveform</MudText>
+          <MudText Typo="Typo.caption">Shows audio waveform oscilloscope</MudText>
+        </MudStack>
+      </MudButton>
+      
+      <MudButton Variant="@(SelectedType == VisualizationType.LevelMeter ? Variant.Filled : Variant.Outlined)"
+                 Color="@(SelectedType == VisualizationType.LevelMeter ? Color.Primary : Color.Default)"
+                 FullWidth="true"
+                 OnClick="@(() => SelectType(VisualizationType.LevelMeter))"
+                 Style="text-align: left; justify-content: flex-start;">
+        <MudStack Spacing="0">
+          <MudText Typo="Typo.body1">Level Meter</MudText>
+          <MudText Typo="Typo.caption">VU meter style visualization</MudText>
+        </MudStack>
+      </MudButton>
+    </MudStack>
+  </DialogContent>
+  
+  <DialogActions>
+    <MudButton OnClick="Cancel">Cancel</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveSelection">Apply</MudButton>
+  </DialogActions>
+</MudDialog>
+
+@code {
+  [CascadingParameter]
+  private MudBlazor.IDialogReference? MudDialog { get; set; }
+
+  [Parameter]
+  public VisualizationType CurrentType { get; set; }
+
+  private VisualizationType SelectedType { get; set; }
+
+  protected override void OnInitialized()
+  {
+    SelectedType = CurrentType;
+  }
+
+  private void SelectType(VisualizationType type)
+  {
+    SelectedType = type;
+  }
+
+  private void Cancel()
+  {
+    MudDialog?.Close();
+  }
+
+  private void SaveSelection()
+  {
+    MudDialog?.Close(DialogResult.Ok(SelectedType));
+  }
+}

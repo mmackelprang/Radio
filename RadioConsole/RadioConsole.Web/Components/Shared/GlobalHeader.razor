@@ -6,11 +6,8 @@
 <div class="global-header">
   <MudGrid Justify="Justify.SpaceBetween">
     <MudItem xs="6">
-      <MudText Typo="Typo.h3" Style="font-weight: 300; letter-spacing: 2px;">
-        @CurrentDateTime.ToString("dddd, MMMM dd, yyyy")
-      </MudText>
-      <MudText Typo="Typo.h2" Style="font-weight: 700; letter-spacing: 1px;">
-        @CurrentDateTime.ToString("hh:mm:ss tt")
+      <MudText Typo="Typo.h3" Style="font-weight: 400; letter-spacing: 2px;">
+        @CurrentDateTime.ToString("yyyy/MMM/dd hh:mm:ss tt")
       </MudText>
     </MudItem>
     <MudItem xs="6" Style="text-align: right;">
@@ -28,35 +25,35 @@
         
         <MudTooltip Text="Configuration">
           <MudIconButton Icon="@Icons.Material.Filled.Settings" 
-                         Color="@(PanelService.IsPanelOpen("Configuration") ? Color.Primary : Color.Default)" 
+                         Color="@(PanelService.IsPanelOpen("Configuration") ? Color.Primary : Color.Info)" 
                          OnClick="@(() => PanelService.TogglePanel("Configuration"))"
                          Size="Size.Large" />
         </MudTooltip>
         
         <MudTooltip Text="System Status">
           <MudIconButton Icon="@Icons.Material.Filled.Dashboard" 
-                         Color="@(PanelService.IsPanelOpen("SystemStatus") ? Color.Primary : Color.Default)" 
+                         Color="@(PanelService.IsPanelOpen("SystemStatus") ? Color.Primary : Color.Info)" 
                          OnClick="@(() => PanelService.TogglePanel("SystemStatus"))"
                          Size="Size.Large" />
         </MudTooltip>
         
         <MudTooltip Text="Alerts & Notifications">
           <MudIconButton Icon="@Icons.Material.Filled.Notifications" 
-                         Color="@(PanelService.IsPanelOpen("AlertManagement") ? Color.Primary : Color.Default)" 
+                         Color="@(PanelService.IsPanelOpen("AlertManagement") ? Color.Primary : Color.Info)" 
                          OnClick="@(() => PanelService.TogglePanel("AlertManagement"))"
                          Size="Size.Large" />
         </MudTooltip>
         
         <MudTooltip Text="System Test Panel">
           <MudIconButton Icon="@Icons.Material.Filled.Science" 
-                         Color="@(PanelService.IsPanelOpen("SystemTest") ? Color.Primary : Color.Default)" 
+                         Color="@(PanelService.IsPanelOpen("SystemTest") ? Color.Primary : Color.Info)" 
                          OnClick="@(() => PanelService.TogglePanel("SystemTest"))"
                          Size="Size.Large" />
         </MudTooltip>
         
         <MudTooltip Text="Radio Controls">
           <MudIconButton Icon="@Icons.Material.Filled.Tune" 
-                         Color="@(PanelService.IsPanelOpen("RadioControl") ? Color.Primary : Color.Default)" 
+                         Color="@(PanelService.IsPanelOpen("RadioControl") ? Color.Primary : Color.Info)" 
                          OnClick="@(() => PanelService.TogglePanel("RadioControl"))"
                          Size="Size.Large" />
         </MudTooltip>

@@ -3,19 +3,18 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject ILogger<VisualizationPanel> Logger
+@inject IDialogService DialogService
 @implements IAsyncDisposable
 @inject IAudioPlayer AudioPlayer
 
 <MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
     <MudText Typo="Typo.h5">Audio Visualizer</MudText>
-    <MudSelect T="VisualizationType" Label="Visualization Type" Value="@selectedVisualizationType" 
-               ValueChanged="@OnVisualizationTypeChanged"
-               Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 200px;">
-      <MudSelectItem Value="@VisualizationType.Spectrum">Spectrum</MudSelectItem>
-      <MudSelectItem Value="@VisualizationType.Waveform">Waveform</MudSelectItem>
-      <MudSelectItem Value="@VisualizationType.LevelMeter">Level Meter</MudSelectItem>
-    </MudSelect>
+    <MudIconButton Icon="@Icons.Material.Filled.Settings" 
+                   Color="Color.Info" 
+                   Size="Size.Medium" 
+                   OnClick="OpenVisualizerConfig" 
+                   title="Visualization Settings" />
   </div>
   <canvas id="visualizer-canvas" 
           class="visualizer-canvas" 
@@ -36,6 +35,22 @@
       AudioPlayer.EnableFftDataGeneration(true);
       await InitializeSignalR();
       await InitializeCanvas();
+    }
+  }
+
+  private async Task OpenVisualizerConfig()
+  {
+    var parameters = new DialogParameters
+    {
+      ["CurrentType"] = selectedVisualizationType
+    };
+
+    var dialog = await DialogService.ShowAsync<VisualizerConfigDialog>("Visualization Settings", parameters);
+    var result = await dialog.Result;
+
+    if (result != null && !result.Canceled && result.Data is VisualizationType newType)
+    {
+      await OnVisualizationTypeChanged(newType);
     }
   }
 
