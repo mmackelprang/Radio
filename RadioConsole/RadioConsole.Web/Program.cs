@@ -241,10 +241,13 @@ try
   {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    // Note: HSTS and HTTPS redirection are disabled because this app is configured for HTTP-only operation
+    // app.UseHsts();
   }
 
-  app.UseHttpsRedirection();
+  // HTTPS redirection disabled - app is configured for HTTP-only on specified port
+  // Enabling this causes redirect loops since Kestrel is only configured to listen on HTTP
+  // app.UseHttpsRedirection();
 
   app.UseStaticFiles();
   app.UseAntiforgery();
