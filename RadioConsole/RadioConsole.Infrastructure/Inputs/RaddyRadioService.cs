@@ -151,7 +151,7 @@ public class RaddyRadioService : IRaddyRadioService
   public Task<double?> GetFrequencyAsync()
   {
     // Placeholder for future BLE control implementation
-    _logger.LogWarning("GetFrequencyAsync not yet implemented. BLE control will be added in a future phase.");
+    // _logger.LogWarning("GetFrequencyAsync not yet implemented. BLE control will be added in a future phase.");
     return Task.FromResult<double?>(null);
   }
 
