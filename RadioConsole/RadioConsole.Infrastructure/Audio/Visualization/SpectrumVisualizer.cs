@@ -29,6 +29,7 @@ public class SpectrumVisualizer : IVisualizer
   {
     if (audioData.IsEmpty)
     {
+      _logger?.LogDebug("ProcessAudioData called with empty data");
       return;
     }
 
@@ -69,8 +70,11 @@ public class SpectrumVisualizer : IVisualizer
   {
     if (context == null)
     {
+      _logger?.LogWarning("Render called with null context");
       return;
     }
+
+    _logger?.LogDebug("Rendering spectrum with {BinCount} bins", _binCount);
 
     context.Clear();
 

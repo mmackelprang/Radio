@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Enums;
 using RadioConsole.Core.Interfaces;
@@ -21,6 +22,13 @@ public static class ConfigurationServiceExtensions
     this IServiceCollection services, 
     IConfiguration configuration)
   {
+    // Create a logger factory for configuration-time logging
+    using var loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+    {
+      builder.AddConsole();
+    });
+    var logger = loggerFactory.CreateLogger("ConfigurationService");
+
     // Bind configuration options
     var storageOptions = new ConfigurationStorageOptions();
     configuration.GetSection("ConfigurationStorage").Bind(storageOptions);
@@ -42,7 +50,7 @@ public static class ConfigurationServiceExtensions
     if (!Directory.Exists(resolvedStoragePath))
     {
       Directory.CreateDirectory(resolvedStoragePath);
-      Console.WriteLine($"Created storage directory: {resolvedStoragePath}");
+      logger.LogInformation("Created storage directory: {Path}", resolvedStoragePath);
     }
 
     // Determine storage type
@@ -56,8 +64,8 @@ public static class ConfigurationServiceExtensions
       : storageOptions.SqliteFileName;
     var storagePath = Path.Combine(resolvedStoragePath, fileName);
 
-    Console.WriteLine($"Configuration storage path: {storagePath}");
-    Console.WriteLine($"Configuration storage type: {storageType}");
+    logger.LogInformation("Configuration storage path: {Path}", storagePath);
+    logger.LogInformation("Configuration storage type: {Type}", storageType);
 
     // Register the configuration service as singleton
     services.AddSingleton<IConfigurationService>(sp => 

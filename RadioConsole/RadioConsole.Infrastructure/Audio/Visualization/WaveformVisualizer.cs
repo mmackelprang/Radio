@@ -27,6 +27,7 @@ public class WaveformVisualizer : IVisualizer
   {
     if (audioData.IsEmpty)
     {
+      _logger?.LogDebug("ProcessAudioData called with empty data");
       return;
     }
 
@@ -45,10 +46,19 @@ public class WaveformVisualizer : IVisualizer
 
   public void Render(IVisualizationContext context)
   {
-    if (context == null || _waveformBuffer.Count == 0)
+    if (context == null)
     {
+      _logger?.LogWarning("Render called with null context");
       return;
     }
+
+    if (_waveformBuffer.Count == 0)
+    {
+      _logger?.LogDebug("Render called with empty waveform buffer");
+      return;
+    }
+
+    _logger?.LogDebug("Rendering waveform with {Count} samples", _waveformBuffer.Count);
 
     context.Clear();
 
