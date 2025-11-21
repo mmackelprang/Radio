@@ -1,32 +1,293 @@
 @inject ILogger<AlertManagementPanel> Logger
 @inject ISnackbar Snackbar
 @inject PanelService PanelService
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+@using RadioConsole.Core.Models
 @implements IDisposable
 
-<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
+<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c; overflow-y: auto;">
   @* Panel Header *@
   <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
     <MudText Typo="Typo.h5">
       <MudIcon Icon="@Icons.Material.Filled.Notifications" Class="mr-2" />
       Alerts & Notifications
     </MudText>
-    <MudIconButton Icon="@Icons.Material.Filled.Close" 
-                   Color="Color.Default" 
-                   OnClick="ClosePanel" />
+    <MudStack Row="true" Spacing="2">
+      @* View Alert History *@
+      <MudTooltip Text="Alert History">
+        <MudIconButton Icon="@Icons.Material.Filled.History" 
+                       Color="Color.Info" 
+                       OnClick="ShowAlertHistory" />
+      </MudTooltip>
+      <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                     Color="Color.Default" 
+                     OnClick="ClosePanel" />
+    </MudStack>
   </MudStack>
 
   <MudDivider Class="mb-4" />
 
-  @* Panel Content - Reuse existing AlertNotificationManagement component *@
-  <AlertNotificationManagement />
+  @* Enhanced Alert Testing Interface *@
+  <MudGrid>
+    <MudItem xs="12" md="6">
+      <MudPaper Class="pa-3" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">
+          <MudIcon Icon="@Icons.Material.Filled.VolumeUp" Class="mr-2" />
+          Alert Types & Testing
+        </MudText>
+        
+        <MudStack Spacing="3">
+          @foreach (var alertType in alertTypes)
+          {
+            <MudPaper Class="pa-3" Elevation="1" Style="background: rgba(0,0,0,0.2);">
+              <MudStack Spacing="2">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                  <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@GetAlertIcon(alertType.Name)" Color="@GetAlertColor(alertType.Name)" />
+                    <MudText Typo="Typo.subtitle1"><strong>@alertType.Name</strong></MudText>
+                  </MudStack>
+                  <MudStack Row="true" Spacing="1">
+                    @* Preview/Test Button *@
+                    <MudTooltip Text="Test Alert">
+                      <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" 
+                                     Color="Color.Primary" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => TestAlert(alertType.Name))" />
+                    </MudTooltip>
+                    @* Stop Button *@
+                    <MudTooltip Text="Stop">
+                      <MudIconButton Icon="@Icons.Material.Filled.Stop" 
+                                     Color="Color.Error" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => StopAlert(alertType.Name))" />
+                    </MudTooltip>
+                  </MudStack>
+                </MudStack>
+                
+                @* Volume Control *@
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                  <MudIcon Icon="@Icons.Material.Filled.VolumeDown" Size="Size.Small" />
+                  <MudSlider T="int" @bind-Value="alertType.Volume" 
+                             Min="0" Max="100" 
+                             Color="Color.Primary" 
+                             Style="flex-grow: 1;" />
+                  <MudText Typo="Typo.body2" Style="min-width: 50px;">@alertType.Volume%</MudText>
+                </MudStack>
+
+                @* Volume Level Indicator *@
+                <div style="height: 30px; width: 100%; position: relative; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                  @if (alertType.IsPlaying)
+                  {
+                    <div style="height: 100%; width: @(alertType.CurrentLevel)%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.1s; border-radius: 4px;">
+                    </div>
+                  }
+                </div>
+
+                @* Audio File & Priority *@
+                <MudStack Row="true" Justify="Justify.SpaceBetween" Spacing="2">
+                  <MudStack Style="flex: 1;">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Audio File:</MudText>
+                    <MudText Typo="Typo.body2" Style="font-size: 0.75rem;">@(alertType.AudioFile ?? "Not assigned")</MudText>
+                  </MudStack>
+                  <MudStack Style="min-width: 100px;">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Priority:</MudText>
+                    <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(alertType.Priority)">@alertType.Priority</MudChip>
+                  </MudStack>
+                </MudStack>
+              </MudStack>
+            </MudPaper>
+          }
+        </MudStack>
+      </MudPaper>
+    </MudItem>
+
+    @* Original AlertNotificationManagement Component *@
+    <MudItem xs="12" md="6">
+      <MudPaper Class="pa-3" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">
+          <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
+          Alert Configuration
+        </MudText>
+        <AlertNotificationManagement />
+      </MudPaper>
+    </MudItem>
+  </MudGrid>
+
+  @* Alert History Dialog *@
+  <MudDialog @bind-IsVisible="showHistoryDialog" Options="dialogOptions">
+    <TitleContent>
+      <MudText Typo="Typo.h6">
+        <MudIcon Icon="@Icons.Material.Filled.History" Class="mr-2" />
+        Alert History
+      </MudText>
+    </TitleContent>
+    <DialogContent>
+      @if (alertHistory.Any())
+      {
+        <MudTable Items="@alertHistory" Dense="true" Hover="true">
+          <HeaderContent>
+            <MudTh>Time</MudTh>
+            <MudTh>Type</MudTh>
+            <MudTh>Status</MudTh>
+          </HeaderContent>
+          <RowTemplate>
+            <MudTd>@context.Timestamp.ToString("HH:mm:ss")</MudTd>
+            <MudTd>@context.AlertType</MudTd>
+            <MudTd>
+              <MudChip T="string" Size="Size.Small" Color="@(context.Success ? Color.Success : Color.Error)">
+                @(context.Success ? "Success" : "Failed")
+              </MudChip>
+            </MudTd>
+          </RowTemplate>
+        </MudTable>
+      }
+      else
+      {
+        <MudText Color="Color.Secondary">No alert history available</MudText>
+      }
+    </DialogContent>
+    <DialogActions>
+      <MudButton OnClick="@(() => showHistoryDialog = false)">Close</MudButton>
+    </DialogActions>
+  </MudDialog>
 </MudPaper>
 
 @code {
-  protected override void OnInitialized()
+  private List<AlertTypeModel> alertTypes = new();
+  private List<AlertHistoryItem> alertHistory = new();
+  private bool showHistoryDialog = false;
+  private DialogOptions dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+  private System.Threading.Timer? levelUpdateTimer;
+
+  protected override async Task OnInitializedAsync()
   {
     Logger.LogInformation("AlertManagementPanel initialized");
     PanelService.OnPanelStateChanged += StateHasChanged;
+    await LoadAlertTypesAsync();
+    StartLevelUpdateTimer();
   }
+
+  private void StartLevelUpdateTimer()
+  {
+    levelUpdateTimer = new System.Threading.Timer(_ =>
+    {
+      InvokeAsync(() =>
+      {
+        // Simulate volume level changes for playing alerts
+        foreach (var alert in alertTypes.Where(a => a.IsPlaying))
+        {
+          alert.CurrentLevel = Random.Shared.Next(50, 100);
+        }
+        StateHasChanged();
+      });
+    }, null, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100));
+  }
+
+  private async Task LoadAlertTypesAsync()
+  {
+    try
+    {
+      // Initialize alert types with default values
+      alertTypes = new List<AlertTypeModel>
+      {
+        new() { Name = "Ring", Volume = 80, Priority = "High", AudioFile = "doorbell.wav" },
+        new() { Name = "Notify", Volume = 60, Priority = "Medium", AudioFile = "notification.wav" },
+        new() { Name = "Alert", Volume = 90, Priority = "High", AudioFile = "alert.wav" },
+        new() { Name = "Alarm", Volume = 100, Priority = "Critical", AudioFile = "alarm.wav" }
+      };
+
+      await Task.CompletedTask;
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error loading alert types");
+      Snackbar.Add("Failed to load alert types", Severity.Error);
+    }
+  }
+
+  private async Task TestAlert(string alertType)
+  {
+    try
+    {
+      Logger.LogInformation("Testing alert: {AlertType}", alertType);
+      
+      var alert = alertTypes.FirstOrDefault(a => a.Name == alertType);
+      if (alert != null)
+      {
+        alert.IsPlaying = true;
+        
+        // Log to history
+        alertHistory.Insert(0, new AlertHistoryItem 
+        { 
+          Timestamp = DateTime.Now, 
+          AlertType = alertType, 
+          Success = true 
+        });
+        if (alertHistory.Count > 50) alertHistory.RemoveAt(alertHistory.Count - 1);
+        
+        Snackbar.Add($"Testing {alertType} alert", Severity.Info);
+        
+        // Simulate alert duration
+        await Task.Delay(3000);
+        alert.IsPlaying = false;
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error testing alert");
+      Snackbar.Add("Failed to test alert", Severity.Error);
+      
+      alertHistory.Insert(0, new AlertHistoryItem 
+      { 
+        Timestamp = DateTime.Now, 
+        AlertType = alertType, 
+        Success = false 
+      });
+    }
+  }
+
+  private void StopAlert(string alertType)
+  {
+    var alert = alertTypes.FirstOrDefault(a => a.Name == alertType);
+    if (alert != null)
+    {
+      alert.IsPlaying = false;
+      Snackbar.Add($"Stopped {alertType} alert", Severity.Info);
+    }
+  }
+
+  private void ShowAlertHistory()
+  {
+    showHistoryDialog = true;
+  }
+
+  private string GetAlertIcon(string alertType) => alertType switch
+  {
+    "Ring" => Icons.Material.Filled.Doorbell,
+    "Notify" => Icons.Material.Filled.NotificationImportant,
+    "Alert" => Icons.Material.Filled.Warning,
+    "Alarm" => Icons.Material.Filled.Alarm,
+    _ => Icons.Material.Filled.Notifications
+  };
+
+  private Color GetAlertColor(string alertType) => alertType switch
+  {
+    "Ring" => Color.Info,
+    "Notify" => Color.Primary,
+    "Alert" => Color.Warning,
+    "Alarm" => Color.Error,
+    _ => Color.Default
+  };
+
+  private Color GetPriorityColor(string priority) => priority switch
+  {
+    "Critical" => Color.Error,
+    "High" => Color.Warning,
+    "Medium" => Color.Info,
+    "Low" => Color.Default,
+    _ => Color.Default
+  };
 
   private void ClosePanel()
   {
@@ -36,5 +297,23 @@
   public void Dispose()
   {
     PanelService.OnPanelStateChanged -= StateHasChanged;
+    levelUpdateTimer?.Dispose();
+  }
+
+  private class AlertTypeModel
+  {
+    public string Name { get; set; } = "";
+    public int Volume { get; set; }
+    public string Priority { get; set; } = "";
+    public string? AudioFile { get; set; }
+    public bool IsPlaying { get; set; }
+    public int CurrentLevel { get; set; }
+  }
+
+  private class AlertHistoryItem
+  {
+    public DateTime Timestamp { get; set; }
+    public string AlertType { get; set; } = "";
+    public bool Success { get; set; }
   }
 }

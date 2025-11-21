@@ -1,31 +1,290 @@
 @inject ILogger<SystemStatusPanel> Logger
 @inject ISnackbar Snackbar
 @inject PanelService PanelService
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+@using RadioConsole.Core.Models
 @implements IDisposable
 
-<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c;">
+<MudPaper Class="pa-4" Style="height: 100%; background-color: #2c2c2c; overflow-y: auto;">
   @* Panel Header *@
   <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
     <MudText Typo="Typo.h5">
       <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="mr-2" />
       System Status
     </MudText>
-    <MudIconButton Icon="@Icons.Material.Filled.Close" 
-                   Color="Color.Default" 
-                   OnClick="ClosePanel" />
+    <MudStack Row="true" Spacing="2">
+      @* Refresh Button *@
+      <MudTooltip Text="Refresh">
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                       Color="Color.Info" 
+                       OnClick="RefreshStatus" />
+      </MudTooltip>
+      @* Update Interval Control *@
+      <MudTooltip Text="Update Interval">
+        <MudSelect T="int" @bind-Value="updateIntervalSeconds" 
+                   Dense="true" Margin="Margin.Dense" 
+                   Style="min-width: 100px;">
+          <MudSelectItem Value="1">1 sec</MudSelectItem>
+          <MudSelectItem Value="5">5 sec</MudSelectItem>
+          <MudSelectItem Value="10">10 sec</MudSelectItem>
+          <MudSelectItem Value="30">30 sec</MudSelectItem>
+        </MudSelect>
+      </MudTooltip>
+      <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                     Color="Color.Default" 
+                     OnClick="ClosePanel" />
+    </MudStack>
   </MudStack>
 
   <MudDivider Class="mb-4" />
 
-  @* Panel Content - Reuse existing SystemStatus component *@
-  <SystemStatus />
+  @* Enhanced Content with Charts *@
+  <MudGrid>
+    @* System Resources with Historical Data *@
+    <MudItem xs="12" md="6">
+      <MudPaper Class="pa-3" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">
+          <MudIcon Icon="@Icons.Material.Filled.Memory" Class="mr-2" />
+          Resource Usage
+        </MudText>
+        @if (currentStatus != null)
+        {
+          <MudStack Spacing="3">
+            @* CPU Usage *@
+            <MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">CPU Usage</MudText>
+                <MudText Typo="Typo.body2">@currentStatus.CpuUsagePercent.ToString("F1")%</MudText>
+              </MudStack>
+              <MudProgressLinear Color="@GetCpuColor(currentStatus.CpuUsagePercent)" 
+                                 Value="@currentStatus.CpuUsagePercent" 
+                                 Size="Size.Medium" />
+              @* Mini Chart *@
+              <div style="height: 60px; width: 100%; position: relative;">
+                <svg width="100%" height="60" style="background: rgba(0,0,0,0.2);">
+                  @for (int i = 0; i < cpuHistory.Count - 1; i++)
+                  {
+                    <line x1="@((i * 100.0 / (cpuHistory.Count - 1)))" 
+                          y1="@(60 - (cpuHistory[i] * 0.6))" 
+                          x2="@(((i + 1) * 100.0 / (cpuHistory.Count - 1)))" 
+                          y2="@(60 - (cpuHistory[i + 1] * 0.6))" 
+                          stroke="@GetChartColor(cpuHistory[i + 1])" 
+                          stroke-width="2" />
+                  }
+                </svg>
+              </div>
+            </MudStack>
+
+            @* Memory Usage *@
+            <MudStack>
+              <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">Memory Usage</MudText>
+                <MudText Typo="Typo.body2">
+                  @FormatBytes(currentStatus.UsedMemoryBytes) / @FormatBytes(currentStatus.TotalMemoryBytes)
+                </MudText>
+              </MudStack>
+              <MudProgressLinear Color="@GetMemoryColor(GetMemoryPercent(currentStatus))" 
+                                 Value="@GetMemoryPercent(currentStatus)" 
+                                 Size="Size.Medium" />
+              @* Mini Chart *@
+              <div style="height: 60px; width: 100%; position: relative;">
+                <svg width="100%" height="60" style="background: rgba(0,0,0,0.2);">
+                  @for (int i = 0; i < memoryHistory.Count - 1; i++)
+                  {
+                    <line x1="@((i * 100.0 / (memoryHistory.Count - 1)))" 
+                          y1="@(60 - (memoryHistory[i] * 0.6))" 
+                          x2="@(((i + 1) * 100.0 / (memoryHistory.Count - 1)))" 
+                          y2="@(60 - (memoryHistory[i + 1] * 0.6))" 
+                          stroke="@GetChartColor(memoryHistory[i + 1])" 
+                          stroke-width="2" />
+                  }
+                </svg>
+              </div>
+            </MudStack>
+          </MudStack>
+        }
+        else
+        {
+          <MudProgressCircular Indeterminate="true" />
+        }
+      </MudPaper>
+    </MudItem>
+
+    @* Network & Audio Device Status *@
+    <MudItem xs="12" md="6">
+      <MudPaper Class="pa-3" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">
+          <MudIcon Icon="@Icons.Material.Filled.Devices" Class="mr-2" />
+          Device Status
+        </MudText>
+        @if (deviceStatus != null)
+        {
+          <MudStack Spacing="2">
+            <MudPaper Class="pa-2" Elevation="0" Style="background: rgba(0,0,0,0.2);">
+              <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                  <MudIcon Icon="@Icons.Material.Filled.Wifi" Color="@(deviceStatus.NetworkConnected ? Color.Success : Color.Error)" />
+                  <MudText Typo="Typo.body2">Network</MudText>
+                </MudStack>
+                <MudText Typo="Typo.body2">@(deviceStatus.NetworkConnected ? "Connected" : "Disconnected")</MudText>
+              </MudStack>
+            </MudPaper>
+
+            <MudPaper Class="pa-2" Elevation="0" Style="background: rgba(0,0,0,0.2);">
+              <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                  <MudIcon Icon="@Icons.Material.Filled.VolumeUp" Color="@(deviceStatus.AudioDevicesAvailable > 0 ? Color.Success : Color.Warning)" />
+                  <MudText Typo="Typo.body2">Audio Devices</MudText>
+                </MudStack>
+                <MudText Typo="Typo.body2">@deviceStatus.AudioDevicesAvailable available</MudText>
+              </MudStack>
+            </MudPaper>
+
+            <MudPaper Class="pa-2" Elevation="0" Style="background: rgba(0,0,0,0.2);">
+              <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                  <MudIcon Icon="@Icons.Material.Filled.Usb" Color="@(deviceStatus.UsbDevicesConnected > 0 ? Color.Success : Color.Warning)" />
+                  <MudText Typo="Typo.body2">USB Devices</MudText>
+                </MudStack>
+                <MudText Typo="Typo.body2">@deviceStatus.UsbDevicesConnected connected</MudText>
+              </MudStack>
+            </MudPaper>
+          </MudStack>
+
+          <MudDivider Class="my-3" />
+
+          <MudText Typo="Typo.subtitle1" Class="mb-2">Network Bandwidth</MudText>
+          <MudStack Spacing="2">
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+              <MudText Typo="Typo.body2" Color="Color.Success">↓ Download:</MudText>
+              <MudText Typo="Typo.body2">@deviceStatus.NetworkDownloadSpeed KB/s</MudText>
+            </MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+              <MudText Typo="Typo.body2" Color="Color.Info">↑ Upload:</MudText>
+              <MudText Typo="Typo.body2">@deviceStatus.NetworkUploadSpeed KB/s</MudText>
+            </MudStack>
+          </MudStack>
+        }
+        else
+        {
+          <MudProgressCircular Indeterminate="true" />
+        }
+      </MudPaper>
+    </MudItem>
+
+    @* Full-width System Status component *@
+    <MudItem xs="12">
+      <SystemStatus />
+    </MudItem>
+  </MudGrid>
 </MudPaper>
 
 @code {
-  protected override void OnInitialized()
+  private RadioConsole.Core.Models.SystemStatus? currentStatus;
+  private DeviceStatusModel? deviceStatus;
+  private System.Threading.Timer? updateTimer;
+  private int updateIntervalSeconds = 1;
+  private List<double> cpuHistory = new();
+  private List<double> memoryHistory = new();
+  private const int MaxHistoryPoints = 30;
+
+  protected override async Task OnInitializedAsync()
   {
     Logger.LogInformation("SystemStatusPanel initialized");
     PanelService.OnPanelStateChanged += StateHasChanged;
+    await RefreshStatus();
+    StartAutoUpdate();
+  }
+
+  private void StartAutoUpdate()
+  {
+    updateTimer?.Dispose();
+    updateTimer = new System.Threading.Timer(async _ =>
+    {
+      await InvokeAsync(async () =>
+      {
+        await RefreshStatus();
+        StateHasChanged();
+      });
+    }, null, TimeSpan.FromSeconds(updateIntervalSeconds), TimeSpan.FromSeconds(updateIntervalSeconds));
+  }
+
+  private async Task RefreshStatus()
+  {
+    try
+    {
+      var client = HttpClientFactory.CreateClient();
+      client.BaseAddress = new Uri("http://localhost:5000/");
+      
+      currentStatus = await client.GetFromJsonAsync<RadioConsole.Core.Models.SystemStatus>("api/systemstatus");
+      
+      if (currentStatus != null)
+      {
+        // Update history
+        cpuHistory.Add(currentStatus.CpuUsagePercent);
+        if (cpuHistory.Count > MaxHistoryPoints) cpuHistory.RemoveAt(0);
+        
+        var memPercent = GetMemoryPercent(currentStatus);
+        memoryHistory.Add(memPercent);
+        if (memoryHistory.Count > MaxHistoryPoints) memoryHistory.RemoveAt(0);
+      }
+
+      // Simulated device status (will be replaced with actual API call)
+      deviceStatus = new DeviceStatusModel
+      {
+        NetworkConnected = true,
+        AudioDevicesAvailable = 4,
+        UsbDevicesConnected = 2,
+        NetworkDownloadSpeed = 1024,
+        NetworkUploadSpeed = 256
+      };
+    }
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Error refreshing system status");
+      Snackbar.Add("Failed to refresh system status", Severity.Error);
+    }
+  }
+
+  private Color GetCpuColor(double percent) => percent switch
+  {
+    > 80 => Color.Error,
+    > 60 => Color.Warning,
+    _ => Color.Success
+  };
+
+  private Color GetMemoryColor(double percent) => percent switch
+  {
+    > 85 => Color.Error,
+    > 70 => Color.Warning,
+    _ => Color.Success
+  };
+
+  private string GetChartColor(double percent) => percent switch
+  {
+    > 80 => "#f44336",
+    > 60 => "#ff9800",
+    _ => "#4caf50"
+  };
+
+  private double GetMemoryPercent(RadioConsole.Core.Models.SystemStatus status)
+  {
+    if (status.TotalMemoryBytes == 0) return 0;
+    return (status.UsedMemoryBytes / (double)status.TotalMemoryBytes) * 100;
+  }
+
+  private string FormatBytes(long bytes)
+  {
+    string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+    double len = bytes;
+    int order = 0;
+    while (len >= 1024 && order < sizes.Length - 1)
+    {
+      order++;
+      len = len / 1024;
+    }
+    return $"{len:0.##} {sizes[order]}";
   }
 
   private void ClosePanel()
@@ -36,5 +295,15 @@
   public void Dispose()
   {
     PanelService.OnPanelStateChanged -= StateHasChanged;
+    updateTimer?.Dispose();
+  }
+
+  private class DeviceStatusModel
+  {
+    public bool NetworkConnected { get; set; }
+    public int AudioDevicesAvailable { get; set; }
+    public int UsbDevicesConnected { get; set; }
+    public int NetworkDownloadSpeed { get; set; }
+    public int NetworkUploadSpeed { get; set; }
   }
 }
