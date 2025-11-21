@@ -276,7 +276,7 @@ h1:focus {
 }
 
 .vinyl-spinning {
-  animation: spin 3s linear infinite;
+  animation: spin 1.8s linear infinite;
   transform-origin: center;
 }
 
