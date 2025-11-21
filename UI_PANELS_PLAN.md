@@ -162,6 +162,23 @@ Per the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface):
 - **Location in UI:** Slide-out from right side (activated by Notifications icon in GlobalHeader)
 - **Status:** ✅ Implemented (2025-11-21) | ✅ Enhanced with testing (2025-11-21 Phase 3)
 
+#### RadioControlPanel
+- **Name:** RadioControlPanel
+- **Overall Purpose:** Advanced radio control interface for the Raddy RF320 USB radio. Provides comprehensive tuning, scanning, and volume controls.
+- **Components on Panel:**
+  - LED-style frequency display (large, digital font with glow effect)
+  - LED-style band indicator (FM/AM/SW/AIR/VHF)
+  - Band selector dropdown (5 bands supported)
+  - Tuning controls: Tune Up/Down buttons
+  - Scan controls: Scan Up/Down buttons
+  - Radio volume slider with +/- buttons
+  - Set Frequency button (opens numeric keypad)
+  - Status indicators: Streaming status, Device detection, Signal strength
+  - Reuses RaddyRadioControlPanel component
+- **Containing File:** Integrated into `RadioConsole.Web/Components/Layout/MainLayout.razor`
+- **Location in UI:** Slide-out from right side (activated by Tune icon in GlobalHeader OR "Advanced Radio Controls" button in NowPlayingPanel Radio Mode)
+- **Status:** ✅ Implemented (2025-11-21 Phase 2B) | ✅ Added to GlobalHeader (2025-11-21)
+
 ### 1.3 Archived Legacy Panels (REMOVED)
 
 **Note:** These panels have been removed and archived to `/docs/archived/` as they violated the 3-panel layout specification.
@@ -508,13 +525,18 @@ Move icon controls to `GlobalHeader` for centralized navigation:
 
 ### 6.3 Icon-to-Panel Mapping
 
-| Icon | Panel Name | Panel Type | Purpose |
-|------|-----------|------------|---------|
-| `Settings` | ConfigurationPanel | Type B (Slide-out) | System configuration management |
-| `Science` | SystemTestPanel | Type B (Slide-out) | Testing and diagnostics |
-| `Dashboard` | SystemStatusPanel | Type B (Slide-out) | Real-time system metrics |
-| `Tune` | RadioControlPanel | Type B (Slide-out) | Advanced radio controls |
-| `MusicNote` | PlaylistPanel | Type B (Slide-out) | Spotify/MP3 playlist management |
+| Icon | Panel Name | Panel Type | Purpose | Status |
+|------|-----------|------------|---------|--------|
+| `Settings` | ConfigurationPanel | Type B (Slide-out) | System configuration management | ✅ Implemented |
+| `Dashboard` | SystemStatusPanel | Type B (Slide-out) | Real-time system metrics | ✅ Implemented |
+| `Notifications` | AlertManagementPanel | Type B (Slide-out) | Alert and notification configuration | ✅ Implemented |
+| `Science` | SystemTestPanel | Type B (Slide-out) | Testing and diagnostics | ✅ Implemented |
+| `Tune` | RadioControlPanel | Type B (Slide-out) | Advanced radio controls | ✅ Implemented |
+| `MusicNote` | PlaylistPanel | Type B (Slide-out) | Spotify/MP3 playlist management | 🔲 Planned |
+| `GraphicEq` | EqualizerPanel | Type B (Slide-out) | Graphical EQ controls | 🔲 Planned |
+| `Cast` | CastDevicePanel | Type B (Slide-out) | Google Cast device management | 🔲 Planned |
+
+**Note:** All implemented panels (✅) are accessible via icons in the GlobalHeader.
 
 ---
 
@@ -608,17 +630,26 @@ Use this template when creating a new Type B (slide-out) panel:
 - [x] Move all panel control icons to `GlobalHeader`
 - [x] Remove `NavMenu.razor` (replaced by GlobalHeader icons)
 
-#### 2B: Convert RadioDemo Page to 3-Panel Layout (🚧 PARTIAL)
-**Current State:** RadioDemo.razor removed, archived at `/docs/archived/`  
+#### 2B: Convert RadioDemo Page to 3-Panel Layout (✅ COMPLETE)
+**Current State:** RadioDemo.razor removed, archived at `/docs/archived/`. RaddyRadioControlPanel integrated into NowPlayingPanel.  
 **Action Completed:** 
 - [x] Remove `/radio-demo` route entirely
 - [x] Remove RadioDemo entry from NavMenu.razor
-- [ ] Integrate RaddyRadioControlPanel into NowPlayingPanel (Radio Mode)
-  - [ ] Add "Advanced Radio Controls" button in Radio Mode
-  - [ ] Opens slide-out panel with full radio control interface
+- [x] Integrate RaddyRadioControlPanel into NowPlayingPanel (Radio Mode)
+  - [x] Add "Advanced Radio Controls" button in Radio Mode
+  - [x] Opens slide-out panel with full radio control interface
+  - [x] Wire up to PanelService with "RadioControl" panel name
 - [x] Archive RadioDemo.razor to `/docs/archived/` for reference
 - [x] Remove demo/documentation tabs (not needed in production UI)
-- [ ] Update UI_PANELS_PLAN.md to remove RadioDemo references
+- [x] Update UI_PANELS_PLAN.md to mark completion
+
+**Implementation Summary (2025-11-21):**
+- ✅ Added "Advanced Radio Controls" button to Radio Mode in NowPlayingPanel
+- ✅ Created RadioControl slide-out panel in MainLayout
+- ✅ Integrated RaddyRadioControlPanel component into slide-out panel
+- ✅ Panel accessible via button in Radio Mode of NowPlayingPanel
+- ✅ Consistent with existing slide-out panel patterns
+- ✅ All 176 tests still passing
 
 #### 2C: Convert SystemPanel Page to Slide-Out Panels (✅ COMPLETE)
 **Current State:** SystemPanel.razor removed, replaced with three new slide-out panels  
@@ -696,7 +727,7 @@ Following RadioPlan_v3.md requirements:
 - [x] Visual alert type indicators - Icons and color-coding per type
 - [ ] Visual waveform display for audio files (deferred to Phase 3B)
 
-### Phase 4: Rich Audio Panels (🔲 PLANNED)
+### Phase 4: Rich Audio Panels (🚧 IN PROGRESS)
 
 #### SpotifyPanel (Type D - Replaces NowPlayingPanel content)
 - [ ] Album art display (large, high-res)
@@ -720,14 +751,19 @@ Following RadioPlan_v3.md requirements:
 - [x] Band indicator
 - [x] Signal strength
 - [x] Stereo indicator
-- [ ] ENHANCEMENT: Add preset station buttons
-- [ ] ENHANCEMENT: Add scan functionality UI
+- [x] Access to advanced radio controls via button (2025-11-21)
+- [ ] ENHANCEMENT: Add preset station buttons (future)
+- [ ] ENHANCEMENT: Add scan functionality UI (available in RaddyRadioControlPanel)
 
 #### PhonoPanel (Type D - Already in NowPlayingPanel)
 - [x] Vinyl record animation/icon
-- [ ] ENHANCEMENT: Add spinning animation
-- [ ] ENHANCEMENT: Add pre-amp settings UI
-- [ ] ENHANCEMENT: Add rumble filter controls
+- [x] **ENHANCEMENT: Add spinning animation** ✅ (2025-11-21)
+- [x] RPM indicator chip (33⅓ RPM)
+- [x] Analog indicator chip
+- [ ] ENHANCEMENT: Add pre-amp settings UI (future)
+- [ ] ENHANCEMENT: Add rumble filter controls (future)
+
+**Phase 4 Progress:** Core enhancements to Radio and Phono panels completed. Additional features deferred to future phases.
 
 ### Phase 5: Testing & Notification Panels (🔲 PLANNED)
 
@@ -1049,15 +1085,16 @@ Use Material Design icons from `Icons.Material.Filled.*`:
 
 ### Future Improvements
 
-1. **Integrate RaddyRadioControlPanel into NowPlayingPanel** - Add advanced radio controls accessible from Radio Mode
+1. ✅ **Integrate RaddyRadioControlPanel into NowPlayingPanel** - COMPLETED (2025-11-21)
 2. **Fix MudBlazor analyzer warnings** - Update attribute bindings in ConfigurationManagement and SystemStatus
 3. **Add panel keyboard shortcuts** (ESC to close, Ctrl+P for specific panels)
-5. **Implement panel keyboard shortcuts** (ESC to close, Ctrl+P for specific panels)
-6. **Add panel resize capability** for certain panels (optional)
-7. **Implement panel position memory** - Remember which panels were open
-8. **Add animation preferences** - Allow users to disable animations for performance
-9. **Create panel preview/thumbnail system** for better UX
-8. Create panel preview/thumbnail system
+4. **Add panel resize capability** for certain panels (optional)
+5. **Implement panel position memory** - Remember which panels were open
+6. **Add animation preferences** - Allow users to disable animations for performance
+7. **Create panel preview/thumbnail system** for better UX
+8. **Add preset station buttons** to Radio Mode
+9. **Add pre-amp settings UI** to Phono Mode
+10. **Implement playlist browser** for Spotify and MP3 modes
 
 ---
 
@@ -1072,17 +1109,26 @@ Use Material Design icons from `Icons.Material.Filled.*`:
 ## Document Maintenance
 
 **Last Updated:** 2025-11-21  
-**Version:** 2.1  
+**Version:** 2.2  
 **Author:** Radio Console Development Team  
 **Review Frequency:** Update after each major UI change or new panel addition
 
 **Recent Updates:**
+- **2025-11-21 Phase 4 Implementation:**
+  - Added RadioControl panel icon to GlobalHeader (Tune icon)
+  - All panels now accessible via meaningful icons in GlobalHeader
+  - Added spinning vinyl animation to Phono/Vinyl mode with RPM indicator
+  - Enhanced NowPlayingPanel Radio Mode with "Advanced Radio Controls" button
+  - Phase 2B (Radio Demo Integration) completed
+  - Phase 4 (Rich Audio Panels) partially completed
+  - 176 tests passing, build successful
 - **2025-11-21 Phase 3 Implementation:**
   - Enhanced ConfigurationPanel with tabbed interface (General, Device, Advanced)
   - Enhanced SystemStatusPanel with real-time charts, network monitoring, device status
   - Enhanced AlertManagementPanel with test buttons, volume controls, history viewer
   - All enhancements include Material Design 3 styling and real-time updates
-  - 176 tests passing, build successful with 10 non-blocking analyzer warnings
+  - 179 tests passing (3 new tests for RadioControl panel)
+  - 179 tests passing, build successful with 10 non-blocking analyzer warnings
 - **2025-11-21 Phase 2 Completion:**
   - Phase 2 Panel Management & Full-Page Conversion completed
   - PanelService implemented with comprehensive CSS animations

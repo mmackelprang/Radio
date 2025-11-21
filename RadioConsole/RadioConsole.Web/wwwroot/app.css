@@ -269,6 +269,26 @@ h1:focus {
   }
 }
 
+/* Vinyl spinning animation */
+.vinyl-record-container {
+  display: inline-block;
+  position: relative;
+}
+
+.vinyl-spinning {
+  animation: spin 1.8s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .slide-panel-right,

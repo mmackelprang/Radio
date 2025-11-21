@@ -58,6 +58,23 @@
     <AlertManagementPanel />
   </div>
 
+  @* Radio Control Panel - Slide-out *@
+  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("RadioControl") ? "open" : "")">
+    <MudStack>
+      <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-4">
+        <MudText Typo="Typo.h5">
+          <MudIcon Icon="@Icons.Material.Filled.Tune" Class="mr-2" />
+          Advanced Radio Controls
+        </MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                       Color="Color.Default" 
+                       OnClick="@(() => PanelService.ClosePanel("RadioControl"))" />
+      </MudStack>
+      <MudDivider />
+      <RaddyRadioControlPanel />
+    </MudStack>
+  </div>
+
   @* Backdrop overlay - shown when any panel is open *@
   @if (PanelService.GetOpenPanelCount() > 0)
   {

@@ -53,6 +53,13 @@
                          OnClick="@(() => PanelService.TogglePanel("SystemTest"))"
                          Size="Size.Large" />
         </MudTooltip>
+        
+        <MudTooltip Text="Radio Controls">
+          <MudIconButton Icon="@Icons.Material.Filled.Tune" 
+                         Color="@(PanelService.IsPanelOpen("RadioControl") ? Color.Primary : Color.Default)" 
+                         OnClick="@(() => PanelService.TogglePanel("RadioControl"))"
+                         Size="Size.Large" />
+        </MudTooltip>
       </MudStack>
     </MudItem>
   </MudGrid>
