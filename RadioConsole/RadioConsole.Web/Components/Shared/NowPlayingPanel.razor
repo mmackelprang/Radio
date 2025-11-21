@@ -56,12 +56,22 @@
   else if (CurrentInput == "Vinyl")
   {
     <div style="text-align: center;">
-      <MudIcon Icon="@Icons.Material.Filled.Album" Style="font-size: 200px;" Color="Color.Primary" />
+      <div class="vinyl-record-container">
+        <MudIcon Icon="@Icons.Material.Filled.Album" 
+                 Class="vinyl-spinning" 
+                 Style="font-size: 200px;" 
+                 Color="Color.Primary" />
+      </div>
       <MudText Typo="Typo.h4" Class="mt-4">Vinyl Turntable</MudText>
       <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-2">Analog Playback</MudText>
-      <div class="vinyl-animation mt-4">
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-      </div>
+      <MudStack Row="true" Justify="Justify.Center" Class="mt-3" Spacing="2">
+        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Icon="@Icons.Material.Filled.FiberManualRecord">
+          33⅓ RPM
+        </MudChip>
+        <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Hearing">
+          Analog
+        </MudChip>
+      </MudStack>
     </div>
   }
   else if (CurrentInput == "Local")

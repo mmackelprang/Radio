@@ -176,8 +176,8 @@ Per the requirements in `RadioPlan_v3.md` section 4 (Blazor User Interface):
   - Status indicators: Streaming status, Device detection, Signal strength
   - Reuses RaddyRadioControlPanel component
 - **Containing File:** Integrated into `RadioConsole.Web/Components/Layout/MainLayout.razor`
-- **Location in UI:** Slide-out from right side (activated by "Advanced Radio Controls" button in NowPlayingPanel Radio Mode)
-- **Status:** ✅ Implemented (2025-11-21 Phase 2B)
+- **Location in UI:** Slide-out from right side (activated by Tune icon in GlobalHeader OR "Advanced Radio Controls" button in NowPlayingPanel Radio Mode)
+- **Status:** ✅ Implemented (2025-11-21 Phase 2B) | ✅ Added to GlobalHeader (2025-11-21)
 
 ### 1.3 Archived Legacy Panels (REMOVED)
 
@@ -525,13 +525,18 @@ Move icon controls to `GlobalHeader` for centralized navigation:
 
 ### 6.3 Icon-to-Panel Mapping
 
-| Icon | Panel Name | Panel Type | Purpose |
-|------|-----------|------------|---------|
-| `Settings` | ConfigurationPanel | Type B (Slide-out) | System configuration management |
-| `Science` | SystemTestPanel | Type B (Slide-out) | Testing and diagnostics |
-| `Dashboard` | SystemStatusPanel | Type B (Slide-out) | Real-time system metrics |
-| `Tune` | RadioControlPanel | Type B (Slide-out) | Advanced radio controls |
-| `MusicNote` | PlaylistPanel | Type B (Slide-out) | Spotify/MP3 playlist management |
+| Icon | Panel Name | Panel Type | Purpose | Status |
+|------|-----------|------------|---------|--------|
+| `Settings` | ConfigurationPanel | Type B (Slide-out) | System configuration management | ✅ Implemented |
+| `Dashboard` | SystemStatusPanel | Type B (Slide-out) | Real-time system metrics | ✅ Implemented |
+| `Notifications` | AlertManagementPanel | Type B (Slide-out) | Alert and notification configuration | ✅ Implemented |
+| `Science` | SystemTestPanel | Type B (Slide-out) | Testing and diagnostics | ✅ Implemented |
+| `Tune` | RadioControlPanel | Type B (Slide-out) | Advanced radio controls | ✅ Implemented |
+| `MusicNote` | PlaylistPanel | Type B (Slide-out) | Spotify/MP3 playlist management | 🔲 Planned |
+| `GraphicEq` | EqualizerPanel | Type B (Slide-out) | Graphical EQ controls | 🔲 Planned |
+| `Cast` | CastDevicePanel | Type B (Slide-out) | Google Cast device management | 🔲 Planned |
+
+**Note:** All implemented panels (✅) are accessible via icons in the GlobalHeader.
 
 ---
 
@@ -722,7 +727,7 @@ Following RadioPlan_v3.md requirements:
 - [x] Visual alert type indicators - Icons and color-coding per type
 - [ ] Visual waveform display for audio files (deferred to Phase 3B)
 
-### Phase 4: Rich Audio Panels (🔲 PLANNED)
+### Phase 4: Rich Audio Panels (🚧 IN PROGRESS)
 
 #### SpotifyPanel (Type D - Replaces NowPlayingPanel content)
 - [ ] Album art display (large, high-res)
@@ -746,14 +751,19 @@ Following RadioPlan_v3.md requirements:
 - [x] Band indicator
 - [x] Signal strength
 - [x] Stereo indicator
-- [ ] ENHANCEMENT: Add preset station buttons
-- [ ] ENHANCEMENT: Add scan functionality UI
+- [x] Access to advanced radio controls via button (2025-11-21)
+- [ ] ENHANCEMENT: Add preset station buttons (future)
+- [ ] ENHANCEMENT: Add scan functionality UI (available in RaddyRadioControlPanel)
 
 #### PhonoPanel (Type D - Already in NowPlayingPanel)
 - [x] Vinyl record animation/icon
-- [ ] ENHANCEMENT: Add spinning animation
-- [ ] ENHANCEMENT: Add pre-amp settings UI
-- [ ] ENHANCEMENT: Add rumble filter controls
+- [x] **ENHANCEMENT: Add spinning animation** ✅ (2025-11-21)
+- [x] RPM indicator chip (33⅓ RPM)
+- [x] Analog indicator chip
+- [ ] ENHANCEMENT: Add pre-amp settings UI (future)
+- [ ] ENHANCEMENT: Add rumble filter controls (future)
+
+**Phase 4 Progress:** Core enhancements to Radio and Phono panels completed. Additional features deferred to future phases.
 
 ### Phase 5: Testing & Notification Panels (🔲 PLANNED)
 
@@ -1075,15 +1085,16 @@ Use Material Design icons from `Icons.Material.Filled.*`:
 
 ### Future Improvements
 
-1. **Integrate RaddyRadioControlPanel into NowPlayingPanel** - Add advanced radio controls accessible from Radio Mode
+1. ✅ **Integrate RaddyRadioControlPanel into NowPlayingPanel** - COMPLETED (2025-11-21)
 2. **Fix MudBlazor analyzer warnings** - Update attribute bindings in ConfigurationManagement and SystemStatus
 3. **Add panel keyboard shortcuts** (ESC to close, Ctrl+P for specific panels)
-5. **Implement panel keyboard shortcuts** (ESC to close, Ctrl+P for specific panels)
-6. **Add panel resize capability** for certain panels (optional)
-7. **Implement panel position memory** - Remember which panels were open
-8. **Add animation preferences** - Allow users to disable animations for performance
-9. **Create panel preview/thumbnail system** for better UX
-8. Create panel preview/thumbnail system
+4. **Add panel resize capability** for certain panels (optional)
+5. **Implement panel position memory** - Remember which panels were open
+6. **Add animation preferences** - Allow users to disable animations for performance
+7. **Create panel preview/thumbnail system** for better UX
+8. **Add preset station buttons** to Radio Mode
+9. **Add pre-amp settings UI** to Phono Mode
+10. **Implement playlist browser** for Spotify and MP3 modes
 
 ---
 
@@ -1098,11 +1109,19 @@ Use Material Design icons from `Icons.Material.Filled.*`:
 ## Document Maintenance
 
 **Last Updated:** 2025-11-21  
-**Version:** 2.1  
+**Version:** 2.2  
 **Author:** Radio Console Development Team  
 **Review Frequency:** Update after each major UI change or new panel addition
 
 **Recent Updates:**
+- **2025-11-21 Phase 4 Implementation:**
+  - Added RadioControl panel icon to GlobalHeader (Tune icon)
+  - All panels now accessible via meaningful icons in GlobalHeader
+  - Added spinning vinyl animation to Phono/Vinyl mode with RPM indicator
+  - Enhanced NowPlayingPanel Radio Mode with "Advanced Radio Controls" button
+  - Phase 2B (Radio Demo Integration) completed
+  - Phase 4 (Rich Audio Panels) partially completed
+  - 176 tests passing, build successful
 - **2025-11-21 Phase 3 Implementation:**
   - Enhanced ConfigurationPanel with tabbed interface (General, Device, Advanced)
   - Enhanced SystemStatusPanel with real-time charts, network monitoring, device status
