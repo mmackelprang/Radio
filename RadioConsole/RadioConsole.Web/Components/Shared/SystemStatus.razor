@@ -160,11 +160,18 @@
     {
       if (AutoRefresh)
       {
-        await InvokeAsync(async () =>
+        try
         {
-          await LoadSystemStatus();
-          StateHasChanged();
-        });
+          await InvokeAsync(async () =>
+          {
+            await LoadSystemStatus();
+            StateHasChanged();
+          });
+        }
+        catch (Exception ex)
+        {
+          Logger.LogError(ex, "Error during auto-refresh");
+        }
       }
     }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
   }

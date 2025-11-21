@@ -28,7 +28,7 @@ public class SystemStatusController : ControllerBase
   /// <returns>System status details.</returns>
   [HttpGet]
   [ProducesResponseType(StatusCodes.Status200OK)]
-  public ActionResult<SystemStatus> GetStatus()
+  public async Task<ActionResult<SystemStatus>> GetStatus()
   {
     try
     {
@@ -39,7 +39,7 @@ public class SystemStatusController : ControllerBase
         WebUrl = "http://0.0.0.0:5200", // This is a placeholder; in production, this might come from config
         WebPort = 5200,
         UptimeSeconds = (long)(DateTime.UtcNow - _startTime).TotalSeconds,
-        CpuUsagePercent = GetCpuUsage(),
+        CpuUsagePercent = await GetCpuUsageAsync(),
         TotalMemoryBytes = GetTotalMemory(),
         UsedMemoryBytes = GetUsedMemory(),
         AvailableMemoryBytes = GetAvailableMemory(),
@@ -89,7 +89,7 @@ public class SystemStatusController : ControllerBase
     }
   }
 
-  private double GetCpuUsage()
+  private async Task<double> GetCpuUsageAsync()
   {
     try
     {
@@ -98,7 +98,7 @@ public class SystemStatusController : ControllerBase
       var startCpuUsage = process.TotalProcessorTime;
 
       // Sample CPU over a short period
-      Thread.Sleep(100);
+      await Task.Delay(100);
 
       var endTime = DateTime.UtcNow;
       var endCpuUsage = process.TotalProcessorTime;

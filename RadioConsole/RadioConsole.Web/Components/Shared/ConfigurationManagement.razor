@@ -97,7 +97,7 @@
               }
               else
               {
-                <MudText>@(context.Value == SecretToken ? SecretToken : context.Value)</MudText>
+                <MudText>@context.Value</MudText>
               }
             </MudTd>
             <MudTd DataLabel="Category">@context.Category</MudTd>
@@ -418,7 +418,7 @@
       Id = item.Id,
       Component = item.Component,
       Key = item.Key,
-      Value = IsSecretsComponent() ? string.Empty : item.Value, // Don't show secret values
+      Value = IsSecretsComponent() ? "[EDIT TO UPDATE]" : item.Value, // Placeholder for secrets
       Category = item.Category,
       LastUpdated = item.LastUpdated
     };
@@ -436,6 +436,13 @@
     if (string.IsNullOrWhiteSpace(EditingItem.Value))
     {
       Snackbar.Add("Value is required", Severity.Warning);
+      return;
+    }
+
+    // Don't save if editing a secret and the placeholder hasn't been changed
+    if (IsEditMode && IsSecretsComponent() && EditingItem.Value == "[EDIT TO UPDATE]")
+    {
+      Snackbar.Add("Please enter a new secret value or cancel to keep the existing value", Severity.Warning);
       return;
     }
 
