@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The ConsoleTSWeb application is a modern, touch-optimized React/TypeScript web interface designed for an ultra-wide embedded audio controller display (12.5" x 3.75"). It provides a comprehensive UI for controlling various audio sources (Spotify, USB Radio, Vinyl, File Player, Bluetooth, AUX, Google Cast), managing system configuration, and displaying now-playing information.
+The ConsoleTSWeb application is a modern, touch-optimized React/TypeScript web interface designed for an ultra-wide embedded audio controller display (12.5" x 3.75"). It provides a comprehensive UI for controlling various audio sources (Spotify, USB Radio, Vinyl, File Player, Bluetooth, AUX), managing system configuration, and displaying now-playing information.
 
 ## Technology Stack
 
@@ -74,7 +74,7 @@ The primary interface with two sections:
   - Balance slider with icons
   - Input device selector (dropdown)
   - Output device selector (dropdown)
-  - Cast device button (for Google Cast)
+  - Cast device button (for Google Cast output selection)
 
 - **NowPlaying Component**: Bottom section (flex-1) displaying:
   - Input-specific player interface based on `currentInput`:
@@ -126,7 +126,6 @@ The application supports the following input devices (defined in `AudioSetup.tsx
 4. **File Player** - Local MP3/FLAC file playback
 5. **Bluetooth** - Bluetooth audio input
 6. **AUX Input** - Auxiliary line input
-7. **Google Cast** - Chromecast/Cast-enabled devices
 
 ## Supported Output Devices
 
@@ -136,6 +135,7 @@ Output destinations (defined in `AudioSetup.tsx`):
 2. **Headphones** - Headphone jack output
 3. **Bluetooth Output** - Bluetooth speakers/headphones
 4. **Line Out** - Line-level output
+5. **Google Cast** - Chromecast/Cast-enabled devices
 
 ## UI Design Characteristics
 

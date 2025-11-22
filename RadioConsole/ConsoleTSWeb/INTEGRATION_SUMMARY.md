@@ -31,7 +31,7 @@ This analysis consists of four comprehensive documents:
 **Contents:**
 - Technology stack and dependencies
 - Component architecture and structure
-- Supported input devices (7) and output devices (4)
+- Supported input devices (6) and output devices (5)
 - UI design characteristics (ultra-wide, touch-optimized, dark theme)
 - Current limitations requiring API integration
 - Recommended migration approach
@@ -228,8 +228,8 @@ Two deployment options:
 The integration will be considered successful when:
 
 ### Functional Requirements
-- ✅ All 7 input devices can be selected and used
-- ✅ All 4 output devices can be selected
+- ✅ All 6 input devices can be selected and used
+- ✅ All 5 output devices can be selected
 - ✅ Volume and balance controls work with actual audio
 - ✅ Radio tuning, scanning, and presets work
 - ✅ File browsing and playback works

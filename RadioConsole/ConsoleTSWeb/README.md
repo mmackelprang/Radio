@@ -63,13 +63,13 @@ npm run build
 - Local file player
 - Bluetooth input
 - AUX input
-- Google Cast
 
 ### Audio Outputs
 - Built-in speakers
 - Headphones
 - Bluetooth output
 - Line out
+- Google Cast
 
 ### Key Functions
 - Volume and balance control

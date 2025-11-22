@@ -23,15 +23,15 @@ const INPUT_OPTIONS = [
   { value: 'vinyl', label: 'Vinyl Phonograph' },
   { value: 'file-player', label: 'File Player' },
   { value: 'bluetooth', label: 'Bluetooth' },
-  { value: 'aux', label: 'AUX Input' },
-  { value: 'googlecast', label: 'Google Cast' }
+  { value: 'aux', label: 'AUX Input' }
 ];
 
 const OUTPUT_OPTIONS = [
   { value: 'speakers', label: 'Built-in Speakers' },
   { value: 'headphones', label: 'Headphones' },
   { value: 'bluetooth', label: 'Bluetooth Output' },
-  { value: 'line-out', label: 'Line Out' }
+  { value: 'line-out', label: 'Line Out' },
+  { value: 'googlecast', label: 'Google Cast' }
 ];
 
 export function AudioSetup({
@@ -167,8 +167,8 @@ export function AudioSetup({
               </button>
             </div>
 
-            {/* Cast Device Selection for GoogleCast */}
-            {currentInput === 'googlecast' && (
+            {/* Cast Device Selection for GoogleCast Output */}
+            {output === 'googlecast' && (
               <button
                 onClick={() => setShowCastDialog(true)}
                 className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors touch-manipulation"
