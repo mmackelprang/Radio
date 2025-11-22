@@ -6,7 +6,7 @@ import { Playlist } from './components/Playlist';
 import { SystemConfig } from './components/SystemConfig';
 
 type ViewType = 'main' | 'system-config';
-type InputDevice = 'spotify' | 'usb-radio' | 'vinyl' | 'file-player' | 'bluetooth' | 'aux' | 'googlecast';
+type InputDevice = 'spotify' | 'usb-radio' | 'vinyl' | 'file-player' | 'bluetooth' | 'aux';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('main');
