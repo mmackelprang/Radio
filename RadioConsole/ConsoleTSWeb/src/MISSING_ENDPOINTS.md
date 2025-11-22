@@ -1,12 +1,25 @@
-# Missing API Endpoints
+# API Endpoints for Embedded Audio Controller UI
 
-This document outlines the REST API endpoints required for full functionality of the Embedded Audio Controller UI. These endpoints should be implemented in your .NET Core API.
+This document outlines the REST API endpoints required for full functionality of the Embedded Audio Controller UI. 
+
+**Status Update:** This document has been reconciled with the existing `RadioConsole.API` project. See the detailed analysis in `API_ENDPOINT_RECONCILIATION.md` in the parent directory.
+
+**Legend:**
+- ✅ **AVAILABLE** - Endpoint exists in RadioConsole.API
+- 🟡 **PARTIAL** - Similar endpoint exists but needs adaptation
+- ⚠️ **MODIFY** - Exists but requires changes
+- ❌ **MISSING** - Must be implemented
+
+---
 
 ## System Status Endpoints
 
 ### GET /api/system/stats
+**Status:** ⚠️ **MODIFY** - Available as `GET /api/SystemStatus` but needs simplified format
 
 Get current system statistics (CPU, RAM, Threads)
+
+**RadioConsole.API Equivalent:** `GET /api/SystemStatus` returns comprehensive system info including CPU, memory, uptime, etc. Response format differs slightly.
 
 **Response:**
 
@@ -19,8 +32,11 @@ Get current system statistics (CPU, RAM, Threads)
 ```
 
 ### GET /api/system/info
+**Status:** ⚠️ **MODIFY** - Included in `GET /api/SystemStatus` but needs version/buildDate fields
 
 Get software information
+
+**RadioConsole.API Note:** Currently returns runtime info but not application version/buildDate.
 
 **Response:**
 
@@ -33,8 +49,11 @@ Get software information
 ```
 
 ### POST /api/system/shutdown
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Shutdown the system
+
+**Implementation Note:** Requires OS-level permissions and security considerations.
 
 **Request:**
 
@@ -49,8 +68,11 @@ Shutdown the system
 ## Audio Control Endpoints
 
 ### GET /api/audio/status
+**Status:** 🟡 **PARTIAL** - Available via multiple endpoints: `GET /api/AudioDeviceManager/inputs/current`, `/outputs/current`, and `GET /api/NowPlaying`
 
 Get current audio status
+
+**RadioConsole.API Note:** Need unified endpoint combining device info, volume, balance, and playback status.
 
 **Response:**
 
@@ -66,8 +88,11 @@ Get current audio status
 ```
 
 ### POST /api/audio/volume
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Set volume level
+
+**Implementation Note:** Needs integration with IAudioPlayer or IAudioDeviceManager for master volume control.
 
 **Request:**
 
@@ -78,8 +103,11 @@ Set volume level
 ```
 
 ### POST /api/audio/balance
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Set audio balance
+
+**Implementation Note:** Stereo pan control, typically -100 to +100 or -1.0 to +1.0.
 
 **Request:**
 
@@ -90,8 +118,11 @@ Set audio balance
 ```
 
 ### POST /api/audio/playback
+**Status:** ❌ **MISSING** - Unified interface needed (source-specific controls exist)
 
 Control playback (play, pause, next, previous)
+
+**RadioConsole.API Note:** Source-specific controls exist (e.g., `POST /api/RaddyRadio/start`, `/stop`). Need unified controller routing to active source.
 
 **Request:**
 
@@ -102,8 +133,11 @@ Control playback (play, pause, next, previous)
 ```
 
 ### POST /api/audio/shuffle
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Toggle shuffle mode
+
+**Implementation Note:** Applicable to Spotify/File Player, may not apply to Radio/Vinyl.
 
 **Request:**
 
@@ -114,8 +148,11 @@ Toggle shuffle mode
 ```
 
 ### GET /api/audio/inputs
+**Status:** ✅ **AVAILABLE** - `GET /api/AudioDeviceManager/inputs`
 
 Get available input devices
+
+**RadioConsole.API:** Returns collection of AudioDeviceInfo with id, name, and availability.
 
 **Response:**
 
@@ -130,8 +167,11 @@ Get available input devices
 ```
 
 ### GET /api/audio/outputs
+**Status:** ✅ **AVAILABLE** - `GET /api/AudioDeviceManager/outputs`
 
 Get available output devices
+
+**RadioConsole.API:** Returns collection of AudioDeviceInfo with id, name, and availability.
 
 **Response:**
 
@@ -145,8 +185,11 @@ Get available output devices
 ```
 
 ### POST /api/audio/input
+**Status:** ✅ **AVAILABLE** - `POST /api/AudioDeviceManager/inputs/current`
 
 Set active input device
+
+**RadioConsole.API:** Request uses `DeviceId` instead of `inputId` (minor naming difference).
 
 **Request:**
 
@@ -157,8 +200,11 @@ Set active input device
 ```
 
 ### POST /api/audio/output
+**Status:** ✅ **AVAILABLE** - `POST /api/AudioDeviceManager/outputs/current`
 
 Set active output device
+
+**RadioConsole.API:** Request uses `DeviceId` instead of `outputId` (minor naming difference).
 
 **Request:**
 
@@ -169,8 +215,11 @@ Set active output device
 ```
 
 ### GET /api/audio/input/{inputId}/config
+**Status:** ⚠️ **MODIFY** - Can use `GET /api/Configuration/component/{component}`
 
 Get configuration for specific input
+
+**RadioConsole.API:** Use generic configuration endpoint with component name like `Input_{inputId}`, or create convenience wrapper.
 
 **Response:**
 
@@ -186,8 +235,11 @@ Get configuration for specific input
 ```
 
 ### POST /api/audio/input/{inputId}/config
+**Status:** ⚠️ **MODIFY** - Can use `POST /api/Configuration`
 
 Save configuration for specific input
+
+**RadioConsole.API:** Use generic configuration endpoint, or create convenience wrapper.
 
 **Request:**
 
@@ -201,8 +253,11 @@ Save configuration for specific input
 ```
 
 ### GET /api/audio/output/{outputId}/config
+**Status:** ⚠️ **MODIFY** - Can use `GET /api/Configuration/component/{component}`
 
 Get configuration for specific output
+
+**RadioConsole.API:** Use generic configuration endpoint with component name like `Output_{outputId}`, or create convenience wrapper.
 
 **Response:**
 
@@ -217,16 +272,22 @@ Get configuration for specific output
 ```
 
 ### POST /api/audio/output/{outputId}/config
+**Status:** ⚠️ **MODIFY** - Can use `POST /api/Configuration`
 
 Save configuration for specific output
+
+**RadioConsole.API:** Use generic configuration endpoint, or create convenience wrapper.
 
 ---
 
 ## Spotify Endpoints
 
 ### GET /api/spotify/current-track
+**Status:** 🟡 **PARTIAL** - Available as `GET /api/NowPlaying/spotify`
 
 Get currently playing track
+
+**RadioConsole.API Note:** Returns trackName, artist, album, albumArtUrl, isPlaying. Missing: duration, currentTime, liked.
 
 **Response:**
 
@@ -243,8 +304,11 @@ Get currently playing track
 ```
 
 ### POST /api/spotify/like
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Toggle like status for current track
+
+**Implementation Note:** Requires Spotify API integration, may need to extend ISpotifyService.
 
 **Request:**
 
@@ -259,8 +323,11 @@ Toggle like status for current track
 ## Radio Endpoints
 
 ### GET /api/radio/status
+**Status:** ✅ **AVAILABLE** - `GET /api/RaddyRadio/status`
 
 Get current radio status
+
+**RadioConsole.API:** Returns isStreaming, isDeviceDetected, signalStrength (0-6), frequency, deviceId. Missing: band (can derive), volume, equalization.
 
 **Response:**
 
@@ -275,8 +342,11 @@ Get current radio status
 ```
 
 ### POST /api/radio/frequency
+**Status:** ✅ **AVAILABLE** - `POST /api/RaddyRadio/frequency`
 
 Set radio frequency
+
+**RadioConsole.API:** Request uses `FrequencyMHz` instead of `frequency` (minor naming difference).
 
 **Request:**
 
@@ -287,8 +357,11 @@ Set radio frequency
 ```
 
 ### POST /api/radio/band
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Change radio band
+
+**Implementation Note:** Need to determine if RF320 supports direct band switching or if band is inferred from frequency range.
 
 **Request:**
 
@@ -299,8 +372,11 @@ Change radio band
 ```
 
 ### POST /api/radio/tune
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Tune up or down
+
+**Implementation Note:** Can be implemented as wrapper: get current frequency, add/subtract step, set new frequency.
 
 **Request:**
 
@@ -312,8 +388,11 @@ Tune up or down
 ```
 
 ### POST /api/radio/scan
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Scan for stations
+
+**Implementation Note:** Requires RF320 signal monitoring. Scan until signal threshold met. May need async/long-running operation.
 
 **Request:**
 
@@ -324,8 +403,11 @@ Scan for stations
 ```
 
 ### POST /api/radio/equalization
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Set equalization preset
+
+**Implementation Note:** Requires audio DSP integration with SoundFlow library. Presets: flat, bass-boost, treble-boost, voice, classical, rock.
 
 **Request:**
 
@@ -336,8 +418,11 @@ Set equalization preset
 ```
 
 ### POST /api/radio/save-station
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Save current station
+
+**Implementation Note:** Store station presets in configuration service with name, frequency, and band.
 
 **Request:**
 
@@ -350,8 +435,11 @@ Save current station
 ```
 
 ### GET /api/radio/stations
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Get saved stations
+
+**Implementation Note:** Retrieve from configuration service, return as collection.
 
 **Response:**
 
@@ -368,8 +456,11 @@ Get saved stations
 ## Vinyl Endpoints
 
 ### GET /api/vinyl/status
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Get vinyl player status
+
+**Implementation Note:** Track preamp enable/disable state and playback status.
 
 **Response:**
 
@@ -381,8 +472,11 @@ Get vinyl player status
 ```
 
 ### POST /api/vinyl/preamp
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Toggle preamp
+
+**Implementation Note:** May require hardware control via GPIO or USB. Store preference in configuration.
 
 **Request:**
 
@@ -397,8 +491,11 @@ Toggle preamp
 ## File Player Endpoints
 
 ### GET /api/file-player/current
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Get currently playing file
+
+**Implementation Note:** Track current file, return metadata (artist, title, duration, position), album art extraction.
 
 **Response:**
 
@@ -414,12 +511,15 @@ Get currently playing file
 ```
 
 ### GET /api/file-player/browse
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Browse file system
 
 **Query Parameters:**
 
 - `path` (string): Directory path to browse
+
+**Implementation Note:** List directories and audio files. Filter by formats (mp3, flac, wav). Security: Restrict to configured music directories.
 
 **Response:**
 
@@ -434,8 +534,11 @@ Browse file system
 ```
 
 ### POST /api/file-player/select
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Select file or folder to play
+
+**Implementation Note:** Load file into audio player. Generate playlist if folder selected.
 
 **Request:**
 
@@ -450,8 +553,11 @@ Select file or folder to play
 ## Playlist Endpoints
 
 ### GET /api/playlist
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Get current playlist
+
+**Implementation Note:** Return current queue/playlist with track metadata.
 
 **Response:**
 
@@ -469,6 +575,7 @@ Get current playlist
 ```
 
 ### POST /api/playlist/add
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Add track to playlist
 
@@ -481,10 +588,12 @@ Add track to playlist
 ```
 
 ### DELETE /api/playlist/{itemId}
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Remove track from playlist
 
 ### POST /api/playlist/reorder
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Reorder playlist items
 
@@ -502,8 +611,11 @@ Reorder playlist items
 ## Configuration Management Endpoints
 
 ### GET /api/config/components
+**Status:** ✅ **AVAILABLE** - `GET /api/Configuration/components`
 
 Get list of configurable components
+
+**RadioConsole.API:** Returns collection of component names.
 
 **Response:**
 
@@ -514,8 +626,11 @@ Get list of configurable components
 ```
 
 ### GET /api/config/{component}
+**Status:** ✅ **AVAILABLE** - `GET /api/Configuration/component/{component}`
 
 Get configuration for specific component
+
+**RadioConsole.API:** Returns configuration items for the specified component.
 
 **Response:**
 
@@ -529,8 +644,11 @@ Get configuration for specific component
 ```
 
 ### POST /api/config/{component}
+**Status:** ⚠️ **MODIFY** - Batch save needed, currently saves one item at a time
 
 Save configuration for specific component
+
+**RadioConsole.API:** Use `POST /api/Configuration` for single item or `PUT /api/Configuration/{component}/{key}` for updates. Consider adding batch save endpoint.
 
 **Request:**
 
@@ -543,24 +661,33 @@ Save configuration for specific component
 ```
 
 ### POST /api/config/backup
+**Status:** ✅ **AVAILABLE** - `POST /api/Configuration/backup`
 
 Backup all configuration
 
 **Response:** Configuration file download
 
+**RadioConsole.API:** Creates backup file and returns path.
+
 ### POST /api/config/restore
+**Status:** ✅ **AVAILABLE** - `POST /api/Configuration/restore`
 
 Restore configuration from backup
 
 **Request:** multipart/form-data with configuration file
+
+**RadioConsole.API Note:** Current API expects JSON with `BackupPath`. May need to adapt to accept file upload or document path-based approach.
 
 ---
 
 ## Prompt Management Endpoints
 
 ### GET /api/prompts
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Get all prompts
+
+**Implementation Note:** TTS and audio file prompts for priority audio (doorbell, phone, TTS). May leverage AudioPriorityController.
 
 **Response:**
 
@@ -584,6 +711,7 @@ Get all prompts
 ```
 
 ### POST /api/prompts
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Create new prompt
 
@@ -609,6 +737,7 @@ Create new prompt
 ```
 
 ### PUT /api/prompts/{id}
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Update existing prompt
 
@@ -623,12 +752,48 @@ Update existing prompt
 ```
 
 ### DELETE /api/prompts/{id}
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Delete prompt
 
 ### POST /api/prompts/{id}/play
+**Status:** ❌ **MISSING** - Not yet implemented
 
 Play a specific prompt
+
+---
+
+## Additional Available Endpoints in RadioConsole.API
+
+The RadioConsole.API provides several additional endpoints not listed above that may be useful for the UI:
+
+### Audio Priority Management
+- `POST /api/AudioPriority/sources/register` - Register audio source with priority
+- `POST /api/AudioPriority/events/high-priority-start` - Trigger audio ducking
+- `POST /api/AudioPriority/events/high-priority-end` - Release audio ducking
+- `GET /api/AudioPriority/status` - Get priority system status
+- `POST /api/AudioPriority/config/duck-percentage` - Configure ducking level
+
+### User Preferences
+- `GET /api/Preferences/audio` - Get audio preferences
+- `POST /api/Preferences/audio` - Save audio preferences
+- `GET /api/Preferences/device-visibility` - Get device visibility config
+- `POST /api/Preferences/cast-device` - Save ChromeCast device preference
+
+### Metadata
+- `GET /api/Metadata/audio-formats` - Get supported audio formats
+- `GET /api/Metadata/sample-rates` - Get supported sample rates
+
+### Visualization
+- `GET /api/Visualization/audio-levels` - Get current audio levels
+- `GET /api/Visualization/spectrum` - Get frequency spectrum data
+
+### Streaming
+- `GET /api/Streaming/stream.mp3` - Stream audio as MP3
+- `GET /api/Streaming/stream.wav` - Stream audio as WAV
+
+### Health Check
+- `GET /health` - Simple health check endpoint
 
 ---
 
