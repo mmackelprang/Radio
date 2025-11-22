@@ -28,10 +28,9 @@
           @if (!isProtected)
           {
             <MudSwitch T="bool" 
-                       Checked="@(!isHidden)" 
-                       CheckedChanged="@((bool visible) => ToggleDeviceVisibility(device.Id, visible))"
+                       @bind-Checked="@VisibleState[device.Id]"
                        Color="Color.Success" 
-                       Label="@(isHidden ? "Hidden" : "Visible")" />
+                       Label="@(VisibleState[device.Id] ? "Visible" : "Hidden")" />
           }
         </MudStack>
       }
@@ -60,22 +59,13 @@
   [Parameter]
   public List<string> CannotHideDeviceNames { get; set; } = new();
 
-  private HashSet<string> LocalHiddenDevices { get; set; } = new();
+  private Dictionary<string, bool> VisibleState { get; set; } = new();
 
   protected override void OnInitialized()
   {
-    LocalHiddenDevices = new HashSet<string>(HiddenDevices);
-  }
-
-  private void ToggleDeviceVisibility(string deviceId, bool visible)
-  {
-    if (visible)
+    foreach (var device in Devices)
     {
-      LocalHiddenDevices.Remove(deviceId);
-    }
-    else
-    {
-      LocalHiddenDevices.Add(deviceId);
+      VisibleState[device.Id] = !HiddenDevices.Contains(device.Id);
     }
   }
 
@@ -86,6 +76,14 @@
 
   private void SaveChanges()
   {
-    MudDialog?.Close(DialogResult.Ok(LocalHiddenDevices));
+    var updatedHiddenDevices = new HashSet<string>();
+    foreach (var entry in VisibleState)
+    {
+        if (!entry.Value)
+        {
+            updatedHiddenDevices.Add(entry.Key);
+        }
+    }
+    MudDialog?.Close(DialogResult.Ok(updatedHiddenDevices));
   }
 }
