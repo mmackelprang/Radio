@@ -1,38 +1,40 @@
-@inject PanelService PanelService
 @implements IDisposable
+@inject IComponentApplicationState ApplicationState
+@inject PanelService PanelService
 
 <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen(PanelName) ? "open" : "")">
-  @if (_shouldRenderChildContent)
-  {
-    @ChildContent
-  }
+    @if (canRender)
+    {
+        @ChildContent
+    }
 </div>
 
 @code {
-  private bool _shouldRenderChildContent = false;
+    private bool canRender;
 
-  [Parameter, EditorRequired]
-  public string PanelName { get; set; } = string.Empty;
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
 
-  [Parameter]
-  public RenderFragment? ChildContent { get; set; }
+    [Parameter, EditorRequired]
+    public string PanelName { get; set; } = string.Empty;
 
-  protected override void OnInitialized()
-  {
-    PanelService.OnPanelStateChanged += StateHasChanged;
-  }
-
-  protected override void OnAfterRender(bool firstRender)
-  {
-    if (firstRender)
+    protected override void OnInitialized()
     {
-      _shouldRenderChildContent = true;
-      StateHasChanged();
+        canRender = !ApplicationState.IsPrerendering;
+        PanelService.OnPanelStateChanged += StateHasChanged;
     }
-  }
 
-  public void Dispose()
-  {
-    PanelService.OnPanelStateChanged -= StateHasChanged;
-  }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !canRender)
+        {
+            canRender = true;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        PanelService.OnPanelStateChanged -= StateHasChanged;
+    }
 }
