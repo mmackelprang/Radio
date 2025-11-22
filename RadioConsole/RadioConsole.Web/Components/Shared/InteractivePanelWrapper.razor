@@ -1,5 +1,5 @@
 @implements IDisposable
-@inject IComponentApplicationState ApplicationState
+@inject PersistentComponentState ApplicationState
 @inject PanelService PanelService
 
 <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen(PanelName) ? "open" : "")">
@@ -22,15 +22,6 @@
     {
         canRender = !ApplicationState.IsPrerendering;
         PanelService.OnPanelStateChanged += StateHasChanged;
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender && !canRender)
-        {
-            canRender = true;
-            StateHasChanged();
-        }
     }
 
     public void Dispose()
