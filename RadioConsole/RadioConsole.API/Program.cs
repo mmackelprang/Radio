@@ -20,7 +20,6 @@ try
   // Parse command line arguments for port configuration
   // Priority: 1) Command line args, 2) Config file, 3) Hardcoded defaults
   int? apiPortFromArgs = null;
-  int? swaggerPortFromArgs = null;
   
   for (int i = 0; i < args.Length; i++)
   {
@@ -30,15 +29,6 @@ try
       {
         apiPortFromArgs = port;
         Log.Information("API Port set via command line: {Port}", apiPortFromArgs);
-      }
-      i++;
-    }
-    else if (args[i] == "--swagger-port" && i + 1 < args.Length)
-    {
-      if (int.TryParse(args[i + 1], out var port))
-      {
-        swaggerPortFromArgs = port;
-        Log.Information("Swagger Port set via command line: {Port}", swaggerPortFromArgs);
       }
       i++;
     }
@@ -80,17 +70,8 @@ try
     Log.Information("API Port set to default: {Port}", apiPort);
   }
   
-  // Determine swagger port
-  int swaggerPort;
-  if (swaggerPortFromArgs.HasValue)
-  {
-    swaggerPort = swaggerPortFromArgs.Value;
-  }
-  else
-  {
-    // Default to API port + 1 if not specified
-    swaggerPort = apiPort + 1;
-  }
+  // Swagger runs on the same port as the API
+  int swaggerPort = apiPort;
   
   // Override any URL configuration with the determined port
   // Configure Kestrel to listen on the specified port and ignore appsettings.json configuration
@@ -140,7 +121,6 @@ try
   // Determine the actual listening URLs
   var listeningUrl = $"http://0.0.0.0:{apiPort}";
   var displayUrl = $"http://localhost:{apiPort}";
-  var swaggerUrl = $"http://localhost:{swaggerPort}";
   
   // Log server configuration with prominent info block
   Log.Information("╔═══════════════════════════════════════════════════════════╗");
@@ -148,7 +128,7 @@ try
   Log.Information("╠═══════════════════════════════════════════════════════════╣");
   Log.Information("║  Current Listening Port: {Port,-35} ║", apiPort);
   Log.Information("║  API Base URL:           {Url,-35} ║", displayUrl);
-  Log.Information("║  Swagger UI:             {Url,-35} ║", $"{swaggerUrl}/swagger");
+  Log.Information("║  Swagger UI:             {Url,-35} ║", $"{displayUrl}/swagger");
   Log.Information("║  Environment:            {Env,-35} ║", app.Environment.EnvironmentName);
   Log.Information("╠═══════════════════════════════════════════════════════════╣");
   Log.Information("║  Required External Ports:                                 ║");

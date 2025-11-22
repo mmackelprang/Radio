@@ -19,7 +19,7 @@ Before starting migration:
    dotnet run
    ```
    API should be accessible at `http://localhost:5100`
-   Swagger UI at `http://localhost:5101/swagger`
+   Swagger UI at `http://localhost:5100/swagger`
 
 3. **Ensure TypeScript App Dependencies:**
    ```bash
@@ -1011,7 +1011,7 @@ If issues arise during migration:
 
 ## Support & Resources
 
-- **API Documentation**: http://localhost:5101/swagger
+- **API Documentation**: http://localhost:5100/swagger
 - **React Documentation**: https://react.dev
 - **Radix UI**: https://www.radix-ui.com
 - **Tailwind CSS**: https://tailwindcss.com
