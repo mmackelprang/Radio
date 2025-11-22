@@ -1,0 +1,24 @@
+@inject PanelService PanelService
+@implements IDisposable
+
+<div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen(PanelName) ? "open" : "")">
+  @ChildContent
+</div>
+
+@code {
+  [Parameter, EditorRequired]
+  public string PanelName { get; set; } = string.Empty;
+
+  [Parameter]
+  public RenderFragment? ChildContent { get; set; }
+
+  protected override void OnInitialized()
+  {
+    PanelService.OnPanelStateChanged += StateHasChanged;
+  }
+
+  public void Dispose()
+  {
+    PanelService.OnPanelStateChanged -= StateHasChanged;
+  }
+}

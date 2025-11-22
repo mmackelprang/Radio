@@ -1,0 +1,20 @@
+@inject PanelService PanelService
+@implements IDisposable
+
+@* Backdrop overlay - shown when any panel is open *@
+@if (PanelService.GetOpenPanelCount() > 0)
+{
+  <div class="panel-backdrop visible" @onclick="@(() => PanelService.CloseAllPanels())"></div>
+}
+
+@code {
+  protected override void OnInitialized()
+  {
+    PanelService.OnPanelStateChanged += StateHasChanged;
+  }
+
+  public void Dispose()
+  {
+    PanelService.OnPanelStateChanged -= StateHasChanged;
+  }
+}

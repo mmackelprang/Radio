@@ -1,11 +1,5 @@
 ﻿@inherits LayoutComponentBase
 @inject PanelService PanelService
-@implements IDisposable
-
-<MudThemeProvider Theme="@_customTheme" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 <div class="console-container">
   <div class="console-header">
@@ -27,7 +21,7 @@
   </div>
 
   @* System Test Panel - Slide-out (Updated to use PanelService) *@
-  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("SystemTest") ? "open" : "")">
+  <InteractivePanelWrapper PanelName="SystemTest" @rendermode="InteractiveServer">
     <MudStack>
       <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudText Typo="Typo.h5">
@@ -39,27 +33,27 @@
                        OnClick="@(() => PanelService.ClosePanel("SystemTest"))" />
       </MudStack>
       <MudDivider />
-      <SystemTestPanel @rendermode="InteractiveServer" />
+      <SystemTestPanel />
     </MudStack>
-  </div>
+  </InteractivePanelWrapper>
 
   @* Configuration Panel - Slide-out *@
-  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("Configuration") ? "open" : "")">
-    <ConfigurationPanel @rendermode="InteractiveServer" />
-  </div>
+  <InteractivePanelWrapper PanelName="Configuration" @rendermode="InteractiveServer">
+    <ConfigurationPanel />
+  </InteractivePanelWrapper>
 
   @* System Status Panel - Slide-out *@
-  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("SystemStatus") ? "open" : "")">
-    <SystemStatusPanel @rendermode="InteractiveServer" />
-  </div>
+  <InteractivePanelWrapper PanelName="SystemStatus" @rendermode="InteractiveServer">
+    <SystemStatusPanel />
+  </InteractivePanelWrapper>
 
   @* Alert Management Panel - Slide-out *@
-  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("AlertManagement") ? "open" : "")">
-    <AlertManagementPanel @rendermode="InteractiveServer" />
-  </div>
+  <InteractivePanelWrapper PanelName="AlertManagement" @rendermode="InteractiveServer">
+    <AlertManagementPanel />
+  </InteractivePanelWrapper>
 
   @* Radio Control Panel - Slide-out *@
-  <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen("RadioControl") ? "open" : "")">
+  <InteractivePanelWrapper PanelName="RadioControl" @rendermode="InteractiveServer">
     <MudStack>
       <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-4">
         <MudText Typo="Typo.h5">
@@ -71,61 +65,15 @@
                        OnClick="@(() => PanelService.ClosePanel("RadioControl"))" />
       </MudStack>
       <MudDivider />
-      <RaddyRadioControlPanel @rendermode="InteractiveServer" />
+      <RaddyRadioControlPanel />
     </MudStack>
-  </div>
+  </InteractivePanelWrapper>
 
   @* Backdrop overlay - shown when any panel is open *@
-  @if (PanelService.GetOpenPanelCount() > 0)
-  {
-    <div class="panel-backdrop visible" @onclick="@(() => PanelService.CloseAllPanels())"></div>
-  }
+  <InteractiveLayoutWrapper @rendermode="InteractiveServer" />
 </div>
 
 @code {
   private string CurrentInput { get; set; } = "Radio";
-
-  protected override void OnInitialized()
-  {
-    PanelService.OnPanelStateChanged += StateHasChanged;
-  }
-
-  public void Dispose()
-  {
-    PanelService.OnPanelStateChanged -= StateHasChanged;
-  }
-
-  // Custom Material Design 3 theme for dark mode console
-  private MudTheme _customTheme = new MudTheme()
-  {
-    PaletteLight = new PaletteLight()
-    {
-      Primary = "#1976d2",
-      Secondary = "#424242",
-      AppbarBackground = "#1e1e1e",
-    },
-    PaletteDark = new PaletteDark()
-    {
-      Primary = "#90caf9",
-      Secondary = "#ce93d8",
-      AppbarBackground = "#1e1e1e",
-      Background = "#121212",
-      Surface = "#2c2c2c",
-      DrawerBackground = "#1e1e1e",
-      DrawerText = "rgba(255,255,255, 0.87)",
-      DrawerIcon = "rgba(255,255,255, 0.87)",
-      TextPrimary = "rgba(255,255,255, 0.87)",
-      TextSecondary = "rgba(255,255,255, 0.60)",
-      ActionDefault = "#adadad",
-      ActionDisabled = "rgba(255,255,255, 0.26)",
-      ActionDisabledBackground = "rgba(255,255,255, 0.12)",
-      Divider = "rgba(255,255,255, 0.12)",
-      DividerLight = "rgba(255,255,255, 0.06)",
-      TableLines = "rgba(255,255,255, 0.12)",
-      LinesDefault = "rgba(255,255,255, 0.12)",
-      LinesInputs = "rgba(255,255,255, 0.3)",
-      TextDisabled = "rgba(255,255,255, 0.38)",
-    }
-  };
 }
 
