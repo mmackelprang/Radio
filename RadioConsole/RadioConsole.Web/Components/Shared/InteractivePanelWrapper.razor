@@ -2,10 +2,15 @@
 @implements IDisposable
 
 <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen(PanelName) ? "open" : "")">
-  @ChildContent
+  @if (_shouldRenderChildContent)
+  {
+    @ChildContent
+  }
 </div>
 
 @code {
+  private bool _shouldRenderChildContent = false;
+
   [Parameter, EditorRequired]
   public string PanelName { get; set; } = string.Empty;
 
@@ -15,6 +20,15 @@
   protected override void OnInitialized()
   {
     PanelService.OnPanelStateChanged += StateHasChanged;
+  }
+
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (firstRender)
+    {
+      _shouldRenderChildContent = true;
+      StateHasChanged();
+    }
   }
 
   public void Dispose()
