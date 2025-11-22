@@ -1,5 +1,5 @@
 @implements IDisposable
-@inject IComponentApplicationState ApplicationState
+@inject PersistentComponentState ApplicationState
 @inject PanelService PanelService
 
 <div class="slide-panel slide-panel-right @(PanelService.IsPanelOpen(PanelName) ? "open" : "")">
@@ -11,6 +11,7 @@
 
 @code {
     private bool canRender;
+    private PersistingComponentStateSubscription persistingSubscription;
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -20,21 +21,20 @@
 
     protected override void OnInitialized()
     {
-        canRender = !ApplicationState.IsPrerendering;
+        persistingSubscription = ApplicationState.RegisterOnPersisting(PersistContentRendered);
+        canRender = ApplicationState.TryTakeFromJson<bool>(nameof(canRender), out _);
         PanelService.OnPanelStateChanged += StateHasChanged;
     }
 
-    protected override void OnAfterRender(bool firstRender)
+    private Task PersistContentRendered()
     {
-        if (firstRender && !canRender)
-        {
-            canRender = true;
-            StateHasChanged();
-        }
+        ApplicationState.PersistAsJson(nameof(canRender), true);
+        return Task.CompletedTask;
     }
 
     public void Dispose()
     {
+        persistingSubscription.Dispose();
         PanelService.OnPanelStateChanged -= StateHasChanged;
     }
 }
