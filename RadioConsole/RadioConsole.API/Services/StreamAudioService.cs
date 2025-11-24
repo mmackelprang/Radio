@@ -279,64 +279,6 @@ public class StreamAudioService
     return _processorFactory.GetSupportedFormats();
   }
 
-  #region Legacy format-specific methods (maintained for backward compatibility)
-
-  /// <summary>
-  /// Streams audio as WAV format (uncompressed).
-  /// </summary>
-  [Obsolete("Use StreamAudioAsync(context, AudioFormat.Wav) instead")]
-  public async Task StreamWavAsync(HttpContext context)
-  {
-    await StreamAudioAsync(context, "wav");
-  }
-
-  /// <summary>
-  /// Streams audio as MP3 format (compressed).
-  /// </summary>
-  [Obsolete("Use StreamAudioAsync(context, AudioFormat.Mp3) instead")]
-  public async Task StreamMp3Async(HttpContext context)
-  {
-    await StreamAudioAsync(context, "mp3");
-  }
-
-  /// <summary>
-  /// Streams audio as FLAC format (lossless compressed).
-  /// </summary>
-  [Obsolete("Use StreamAudioAsync(context, AudioFormat.Flac) instead")]
-  public async Task StreamFlacAsync(HttpContext context)
-  {
-    await StreamAudioAsync(context, "flac");
-  }
-
-  /// <summary>
-  /// Streams audio as AAC format.
-  /// </summary>
-  [Obsolete("Use StreamAudioAsync(context, AudioFormat.Aac) instead")]
-  public async Task StreamAacAsync(HttpContext context)
-  {
-    await StreamAudioAsync(context, "aac");
-  }
-
-  /// <summary>
-  /// Streams audio as OGG format.
-  /// </summary>
-  [Obsolete("Use StreamAudioAsync(context, AudioFormat.Ogg) instead")]
-  public async Task StreamOggAsync(HttpContext context)
-  {
-    await StreamAudioAsync(context, "ogg");
-  }
-
-  /// <summary>
-  /// Streams audio as OPUS format.
-  /// </summary>
-  [Obsolete("Use StreamAudioAsync(context, AudioFormat.Opus) instead")]
-  public async Task StreamOpusAsync(HttpContext context)
-  {
-    await StreamAudioAsync(context, "opus");
-  }
-
-  #endregion
-
   #region Private Helper Methods
 
   private static void SetStreamingHeaders(HttpContext context, string contentType)

@@ -200,7 +200,6 @@ public class StreamAudioControllerUnifiedTests
     Assert.Equal(6, status.ProcessorCount);
     Assert.True(status.Capabilities.SupportsAutoDetection);
     Assert.True(status.Capabilities.SupportsUnifiedEndpoint);
-    Assert.True(status.Capabilities.SupportsFormatSpecificEndpoints);
   }
 
   [Fact]

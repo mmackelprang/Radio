@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using RadioConsole.API.Services;
-using RadioConsole.Core.Enums;
 using RadioConsole.Core.Interfaces.Audio;
 
 namespace RadioConsole.API.Controllers;
@@ -11,18 +10,14 @@ namespace RadioConsole.API.Controllers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This controller supports both format-specific endpoints (for backward compatibility)
-/// and a unified endpoint that accepts format as a parameter or detects it automatically.
-/// </para>
-/// <para>
 /// Supported formats: WAV, MP3, FLAC, AAC, OGG, OPUS.
 /// </para>
 /// <para>
 /// Format detection methods (in priority order):
 /// <list type="number">
+/// <item><description>Query parameter ?format=xxx (e.g., ?format=mp3)</description></item>
 /// <item><description>Magic bytes/file signatures from stream header</description></item>
 /// <item><description>Content-Type headers from HTTP requests</description></item>
-/// <item><description>File extension analysis</description></item>
 /// <item><description>Default to MP3 format</description></item>
 /// </list>
 /// </para>
@@ -64,7 +59,7 @@ public class StreamingController : ControllerBase
   [HttpGet("stream")]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  public async Task StreamAudio([FromQuery] string format = "mp3")
+  public async Task StreamAsync([FromQuery] string format = "mp3")
   {
     if (!StreamAudioService.IsFormatSupported(format))
     {
@@ -79,7 +74,7 @@ public class StreamingController : ControllerBase
       return;
     }
 
-    _logger.LogInformation("Unified stream requested with format: {Format}", format);
+    _logger.LogInformation("Audio stream requested with format: {Format}", format);
     await _streamService.StreamAudioAsync(HttpContext, format);
   }
 
@@ -91,87 +86,11 @@ public class StreamingController : ControllerBase
   /// <response code="200">Returns the audio stream.</response>
   [HttpGet("stream/auto")]
   [ProducesResponseType(StatusCodes.Status200OK)]
-  public async Task StreamAudioAuto([FromQuery] string? contentType = null)
+  public async Task StreamAutoAsync([FromQuery] string? contentType = null)
   {
     _logger.LogInformation("Auto-detect stream requested");
     await _streamService.StreamWithAutoDetectAsync(HttpContext, contentTypeHint: contentType);
   }
-
-  #region Format-specific endpoints (maintained for backward compatibility)
-
-  /// <summary>
-  /// Stream audio as MP3 format.
-  /// </summary>
-  /// <returns>Audio stream in MP3 format.</returns>
-  [HttpGet("stream.mp3")]
-  [Produces("audio/mpeg")]
-  public async Task StreamMp3()
-  {
-    _logger.LogInformation("MP3 stream requested");
-    await _streamService.StreamAudioAsync(HttpContext, AudioFormat.Mp3);
-  }
-
-  /// <summary>
-  /// Stream audio as WAV format.
-  /// </summary>
-  /// <returns>Audio stream in WAV format.</returns>
-  [HttpGet("stream.wav")]
-  [Produces("audio/wav")]
-  public async Task StreamWav()
-  {
-    _logger.LogInformation("WAV stream requested");
-    await _streamService.StreamAudioAsync(HttpContext, AudioFormat.Wav);
-  }
-
-  /// <summary>
-  /// Stream audio as FLAC format.
-  /// </summary>
-  /// <returns>Audio stream in FLAC format.</returns>
-  [HttpGet("stream.flac")]
-  [Produces("audio/flac")]
-  public async Task StreamFlac()
-  {
-    _logger.LogInformation("FLAC stream requested");
-    await _streamService.StreamAudioAsync(HttpContext, AudioFormat.Flac);
-  }
-
-  /// <summary>
-  /// Stream audio as AAC format.
-  /// </summary>
-  /// <returns>Audio stream in AAC format.</returns>
-  [HttpGet("stream.aac")]
-  [Produces("audio/aac")]
-  public async Task StreamAac()
-  {
-    _logger.LogInformation("AAC stream requested");
-    await _streamService.StreamAudioAsync(HttpContext, AudioFormat.Aac);
-  }
-
-  /// <summary>
-  /// Stream audio as OGG format.
-  /// </summary>
-  /// <returns>Audio stream in OGG format.</returns>
-  [HttpGet("stream.ogg")]
-  [Produces("audio/ogg")]
-  public async Task StreamOgg()
-  {
-    _logger.LogInformation("OGG stream requested");
-    await _streamService.StreamAudioAsync(HttpContext, AudioFormat.Ogg);
-  }
-
-  /// <summary>
-  /// Stream audio as OPUS format.
-  /// </summary>
-  /// <returns>Audio stream in OPUS format.</returns>
-  [HttpGet("stream.opus")]
-  [Produces("audio/opus")]
-  public async Task StreamOpus()
-  {
-    _logger.LogInformation("OPUS stream requested");
-    await _streamService.StreamAudioAsync(HttpContext, AudioFormat.Opus);
-  }
-
-  #endregion
 
   /// <summary>
   /// Gets information about the format detector's supported formats and capabilities.

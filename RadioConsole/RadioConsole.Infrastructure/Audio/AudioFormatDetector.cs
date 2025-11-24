@@ -56,6 +56,28 @@ public class AudioFormatDetector : IAudioFormatDetector
   /// </summary>
   private const int ExtendedHeaderSize = 36;
 
+  /// <summary>
+  /// Frame sync byte (first byte of MP3/AAC frames).
+  /// </summary>
+  private const byte FrameSyncByte = 0xFF;
+
+  /// <summary>
+  /// Bit mask for MPEG audio frame sync (11 bits set pattern: 1111 1111 111x xxxx).
+  /// </summary>
+  private const byte MpegFrameSyncMask = 0xE0;
+
+  /// <summary>
+  /// Bit mask for AAC ADTS sync detection.
+  /// AAC ADTS uses patterns like FFF1 (MPEG-4) or FFF9 (MPEG-2).
+  /// Mask: 1111 0110 to match x1 and x9 patterns.
+  /// </summary>
+  private const byte AacAdtsSyncMask = 0xF6;
+
+  /// <summary>
+  /// Expected value after applying AAC ADTS mask (0xF0).
+  /// </summary>
+  private const byte AacAdtsSyncValue = 0xF0;
+
   // Magic bytes for format detection
   private static readonly byte[] Id3Magic = { 0x49, 0x44, 0x33 }; // "ID3"
   private static readonly byte[] RiffMagic = { 0x52, 0x49, 0x46, 0x46 }; // "RIFF"
@@ -326,6 +348,23 @@ public class AudioFormatDetector : IAudioFormatDetector
     return false;
   }
 
+  /// <summary>
+  /// Checks if the second byte matches AAC ADTS sync pattern.
+  /// AAC ADTS uses FFF1 (MPEG-4) or FFF9 (MPEG-2).
+  /// </summary>
+  private static bool IsAacAdtsSync(byte secondByte)
+  {
+    return (secondByte & AacAdtsSyncMask) == AacAdtsSyncValue;
+  }
+
+  /// <summary>
+  /// Checks if the second byte matches MPEG audio frame sync pattern.
+  /// </summary>
+  private static bool IsMpegFrameSync(byte secondByte)
+  {
+    return (secondByte & MpegFrameSyncMask) == MpegFrameSyncMask;
+  }
+
   private static bool IsMp3FrameSync(byte[] headerBytes)
   {
     if (headerBytes.Length < 2)
@@ -339,18 +378,18 @@ public class AudioFormatDetector : IAudioFormatDetector
     // - 0xFF F2: MPEG2.5 Layer 3
     // - 0xFF E3: MPEG2 Layer 3
     // We need to exclude AAC ADTS patterns: 0xFF F1, 0xFF F9
-    if (headerBytes[0] == 0xFF)
+    if (headerBytes[0] == FrameSyncByte)
     {
       var secondByte = headerBytes[1];
 
       // First, exclude AAC ADTS patterns (they start with 0xF1 or 0xF9)
-      if ((secondByte & 0xF6) == 0xF0)
+      if (IsAacAdtsSync(secondByte))
       {
         return false; // This is AAC ADTS, not MP3
       }
 
       // Check for MPEG audio frame sync (11 bits set, 1111 1111 111x xxxx)
-      if ((secondByte & 0xE0) == 0xE0)
+      if (IsMpegFrameSync(secondByte))
       {
         return true;
       }
@@ -365,14 +404,9 @@ public class AudioFormatDetector : IAudioFormatDetector
       return false;
 
     // AAC ADTS frame sync: FFF1 (MPEG-4) or FFF9 (MPEG-2)
-    if (headerBytes[0] == 0xFF)
+    if (headerBytes[0] == FrameSyncByte)
     {
-      var secondByte = headerBytes[1];
-      // Check for ADTS sync (0xF1 or 0xF9)
-      if ((secondByte & 0xF6) == 0xF0)
-      {
-        return true;
-      }
+      return IsAacAdtsSync(headerBytes[1]);
     }
 
     return false;

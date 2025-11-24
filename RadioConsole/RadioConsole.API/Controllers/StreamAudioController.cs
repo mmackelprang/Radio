@@ -115,7 +115,6 @@ public class StreamAudioController : ControllerBase
         {
           SupportsAutoDetection = true,
           SupportsUnifiedEndpoint = true,
-          SupportsFormatSpecificEndpoints = true,
           SupportedDetectionMethods = new[]
           {
             "Magic bytes/file signatures",
@@ -287,11 +286,6 @@ public record StreamingCapabilities
   /// Whether unified endpoint is supported.
   /// </summary>
   public bool SupportsUnifiedEndpoint { get; init; }
-
-  /// <summary>
-  /// Whether format-specific endpoints are supported.
-  /// </summary>
-  public bool SupportsFormatSpecificEndpoints { get; init; }
 
   /// <summary>
   /// Supported detection methods.
