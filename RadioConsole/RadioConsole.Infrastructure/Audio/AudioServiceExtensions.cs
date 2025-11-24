@@ -40,6 +40,9 @@ public static class AudioServiceExtensions
     // Register audio priority service as singleton
     services.AddSingleton<IAudioPriorityService, AudioPriorityService>();
 
+    // Register audio source manager as singleton
+    services.AddSingleton<IAudioSourceManager, AudioSourceManager>();
+
     // Register TTS factory as singleton
     services.AddSingleton<TextToSpeechFactory>();
 

@@ -9,6 +9,7 @@ namespace RadioConsole.Infrastructure.Audio;
 /// <summary>
 /// Implementation of IAudioDeviceManager using the SoundFlow library.
 /// Manages enumeration and selection of audio devices on the system.
+/// Provides global audio controls for volume, balance, equalization, and playback.
 /// </summary>
 public class SoundFlowAudioDeviceManager : IAudioDeviceManager, IDisposable
 {
@@ -16,6 +17,12 @@ public class SoundFlowAudioDeviceManager : IAudioDeviceManager, IDisposable
   private AudioEngine? _engine;
   private string? _currentInputDeviceId;
   private string? _currentOutputDeviceId;
+  
+  // Global audio control state
+  private float _globalVolume = 1.0f;
+  private float _globalBalance = 0.0f;
+  private EqualizationSettings _equalization = new() { Bass = 0, Midrange = 0, Treble = 0, Enabled = false };
+  private PlaybackState _playbackState = PlaybackState.Stopped;
 
   public SoundFlowAudioDeviceManager(ILogger<SoundFlowAudioDeviceManager> logger)
   {
@@ -148,6 +155,124 @@ public class SoundFlowAudioDeviceManager : IAudioDeviceManager, IDisposable
     _logger.LogInformation("Setting output device to: {DeviceId}", deviceId);
     _currentOutputDeviceId = deviceId;
     await Task.CompletedTask;
+  }
+
+  // Global Audio Control Methods
+
+  /// <inheritdoc/>
+  public async Task<float> GetGlobalVolumeAsync()
+  {
+    _logger.LogDebug("Getting global volume: {Volume}", _globalVolume);
+    return await Task.FromResult(_globalVolume);
+  }
+
+  /// <inheritdoc/>
+  public async Task SetGlobalVolumeAsync(float volume)
+  {
+    var clampedVolume = Math.Clamp(volume, 0.0f, 1.0f);
+    _globalVolume = clampedVolume;
+    
+    _logger.LogInformation("Global volume set to: {Volume}", clampedVolume);
+    
+    // In a full implementation, this would apply the volume to the MiniAudioEngine's master mixer
+    // AudioEngine.MasterMixer.Volume = clampedVolume;
+    
+    await Task.CompletedTask;
+  }
+
+  /// <inheritdoc/>
+  public async Task<float> GetGlobalBalanceAsync()
+  {
+    _logger.LogDebug("Getting global balance: {Balance}", _globalBalance);
+    return await Task.FromResult(_globalBalance);
+  }
+
+  /// <inheritdoc/>
+  public async Task SetGlobalBalanceAsync(float balance)
+  {
+    var clampedBalance = Math.Clamp(balance, -1.0f, 1.0f);
+    _globalBalance = clampedBalance;
+    
+    _logger.LogInformation("Global balance (pan) set to: {Balance}", clampedBalance);
+    
+    // In a full implementation, this would apply the pan to the MiniAudioEngine's master mixer
+    // AudioEngine.MasterMixer.Pan = clampedBalance;
+    
+    await Task.CompletedTask;
+  }
+
+  /// <inheritdoc/>
+  public async Task<EqualizationSettings> GetEqualizationAsync()
+  {
+    _logger.LogDebug("Getting equalization settings");
+    return await Task.FromResult(_equalization);
+  }
+
+  /// <inheritdoc/>
+  public async Task SetEqualizationAsync(EqualizationSettings settings)
+  {
+    if (settings == null)
+    {
+      throw new ArgumentNullException(nameof(settings));
+    }
+
+    // Clamp values to valid range
+    _equalization = new EqualizationSettings
+    {
+      Bass = Math.Clamp(settings.Bass, -12.0f, 12.0f),
+      Midrange = Math.Clamp(settings.Midrange, -12.0f, 12.0f),
+      Treble = Math.Clamp(settings.Treble, -12.0f, 12.0f),
+      Enabled = settings.Enabled
+    };
+
+    _logger.LogInformation(
+      "Equalization set - Bass: {Bass}dB, Midrange: {Midrange}dB, Treble: {Treble}dB, Enabled: {Enabled}",
+      _equalization.Bass, _equalization.Midrange, _equalization.Treble, _equalization.Enabled);
+
+    // In a full implementation, this would apply EQ to the MiniAudioEngine's master mixer
+    // using a multi-band equalizer component
+    
+    await Task.CompletedTask;
+  }
+
+  /// <inheritdoc/>
+  public async Task PauseAsync()
+  {
+    _playbackState = PlaybackState.Paused;
+    _logger.LogInformation("Global audio playback paused");
+    
+    // In a full implementation: AudioEngine.Pause();
+    
+    await Task.CompletedTask;
+  }
+
+  /// <inheritdoc/>
+  public async Task PlayAsync()
+  {
+    _playbackState = PlaybackState.Playing;
+    _logger.LogInformation("Global audio playback resumed/started");
+    
+    // In a full implementation: AudioEngine.Play();
+    
+    await Task.CompletedTask;
+  }
+
+  /// <inheritdoc/>
+  public async Task StopAsync()
+  {
+    _playbackState = PlaybackState.Stopped;
+    _logger.LogInformation("Global audio playback stopped");
+    
+    // In a full implementation: AudioEngine.Stop();
+    
+    await Task.CompletedTask;
+  }
+
+  /// <inheritdoc/>
+  public async Task<PlaybackState> GetPlaybackStateAsync()
+  {
+    _logger.LogDebug("Getting playback state: {State}", _playbackState);
+    return await Task.FromResult(_playbackState);
   }
 
   private string GetDeviceType(string deviceName)
