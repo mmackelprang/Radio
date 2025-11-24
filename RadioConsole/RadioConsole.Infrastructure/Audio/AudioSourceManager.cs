@@ -520,6 +520,9 @@ public class AudioSourceManager : IAudioSourceManager
 
   private string GenerateSourceId(string prefix)
   {
-    return $"{prefix}-{++_sourceCounter:D4}-{Guid.NewGuid():N}".Substring(0, 24);
+    // Generate a unique ID with format: prefix-counter-timestamp-guid
+    // Using timestamp + counter + partial GUID for uniqueness and readability
+    var timestamp = DateTime.UtcNow.Ticks.ToString("X");
+    return $"{prefix}-{++_sourceCounter:D4}-{timestamp.Substring(Math.Max(0, timestamp.Length - 8))}";
   }
 }
