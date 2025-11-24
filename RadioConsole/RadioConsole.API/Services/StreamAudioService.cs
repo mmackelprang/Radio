@@ -25,7 +25,7 @@ public class StreamAudioService
   private readonly ILogger<StreamAudioService> _logger;
   private readonly IAudioPlayer _audioPlayer;
   private readonly IAudioFormatDetector _formatDetector;
-  private readonly IAudioProcessorFactory _processorFactory;
+  private readonly IAudioProcessor _audioProcessor;
 
   /// <summary>
   /// Supported audio formats based on SoundFlow library capabilities.
@@ -38,17 +38,17 @@ public class StreamAudioService
   /// <param name="logger">Logger instance.</param>
   /// <param name="audioPlayer">Audio player for getting mixed output stream.</param>
   /// <param name="formatDetector">Audio format detector for auto-detection.</param>
-  /// <param name="processorFactory">Factory for creating format-specific processors.</param>
+  /// <param name="audioProcessor">Unified audio processor for all formats.</param>
   public StreamAudioService(
     ILogger<StreamAudioService> logger,
     IAudioPlayer audioPlayer,
     IAudioFormatDetector formatDetector,
-    IAudioProcessorFactory processorFactory)
+    IAudioProcessor audioProcessor)
   {
     _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     _audioPlayer = audioPlayer ?? throw new ArgumentNullException(nameof(audioPlayer));
     _formatDetector = formatDetector ?? throw new ArgumentNullException(nameof(formatDetector));
-    _processorFactory = processorFactory ?? throw new ArgumentNullException(nameof(processorFactory));
+    _audioProcessor = audioProcessor ?? throw new ArgumentNullException(nameof(audioProcessor));
   }
 
   /// <summary>
@@ -164,24 +164,24 @@ public class StreamAudioService
 
       _logger.LogInformation("Starting auto-detected audio stream in {Format} format", format);
 
-      // Get the appropriate processor
-      var processor = _processorFactory.GetProcessor(format);
-      if (processor == null)
-      {
-        _logger.LogWarning("No processor available for format {Format}, using pass-through", format);
-        await StreamAudioAsync(context, format.ToString().ToLower());
-        return;
-      }
-
       // Set up response headers
       SetStreamingHeaders(context, contentType);
 
-      // Process and stream the audio
-      await processor.ProcessAsync(
-        stream,
-        context.Response.Body,
-        new AudioProcessingOptions(),
-        context.RequestAborted);
+      // Process and stream the audio using the unified processor
+      if (_audioProcessor.CanProcess(format))
+      {
+        await _audioProcessor.ProcessAsync(
+          stream,
+          context.Response.Body,
+          format,
+          new AudioProcessingOptions(),
+          context.RequestAborted);
+      }
+      else
+      {
+        _logger.LogWarning("Format {Format} not supported by processor, using pass-through", format);
+        await StreamPassThroughAsync(stream, context);
+      }
 
       _logger.LogInformation("Audio streaming ended (client disconnected)");
     }
@@ -225,22 +225,22 @@ public class StreamAudioService
       // Get the mixed audio output stream from the audio player
       var audioStream = _audioPlayer.GetMixedOutputStream();
 
-      // Get the appropriate processor
+      // Parse and process the audio
       var audioFormat = ParseFormat(format);
-      var processor = _processorFactory.GetProcessor(audioFormat);
 
-      if (processor != null)
+      if (_audioProcessor.CanProcess(audioFormat))
       {
-        // Use the processor for format-specific handling
-        await processor.ProcessAsync(
+        await _audioProcessor.ProcessAsync(
           audioStream,
           context.Response.Body,
+          audioFormat,
           new AudioProcessingOptions(),
           context.RequestAborted);
       }
       else
       {
         // Fallback to simple pass-through
+        _logger.LogWarning("Format {Format} not supported by processor, using pass-through", format);
         await StreamPassThroughAsync(audioStream, context);
       }
 
@@ -276,7 +276,7 @@ public class StreamAudioService
   /// <returns>Collection of supported audio format enum values.</returns>
   public IEnumerable<AudioFormat> GetSupportedAudioFormats()
   {
-    return _processorFactory.GetSupportedFormats();
+    return _audioProcessor.GetSupportedFormats();
   }
 
   #region Private Helper Methods

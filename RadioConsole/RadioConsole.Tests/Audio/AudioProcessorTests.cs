@@ -8,156 +8,98 @@ using Xunit;
 namespace RadioConsole.Tests.Audio;
 
 /// <summary>
-/// Unit tests for audio processors and the AudioProcessorFactory.
+/// Unit tests for the unified AudioProcessor.
 /// </summary>
 public class AudioProcessorTests
 {
-  #region Mp3AudioProcessor Tests
+  private readonly Mock<ILogger<AudioProcessor>> _loggerMock;
+  private readonly Mock<IAudioFormatDetector> _formatDetectorMock;
+  private readonly AudioProcessor _processor;
+
+  public AudioProcessorTests()
+  {
+    _loggerMock = new Mock<ILogger<AudioProcessor>>();
+    _formatDetectorMock = new Mock<IAudioFormatDetector>();
+
+    // Setup format detector to return content types
+    _formatDetectorMock.Setup(x => x.GetContentType(AudioFormat.Mp3)).Returns("audio/mpeg");
+    _formatDetectorMock.Setup(x => x.GetContentType(AudioFormat.Wav)).Returns("audio/wav");
+    _formatDetectorMock.Setup(x => x.GetContentType(AudioFormat.Flac)).Returns("audio/flac");
+    _formatDetectorMock.Setup(x => x.GetContentType(AudioFormat.Aac)).Returns("audio/aac");
+    _formatDetectorMock.Setup(x => x.GetContentType(AudioFormat.Ogg)).Returns("audio/ogg");
+    _formatDetectorMock.Setup(x => x.GetContentType(AudioFormat.Opus)).Returns("audio/opus");
+
+    _processor = new AudioProcessor(_loggerMock.Object, _formatDetectorMock.Object);
+  }
 
   [Fact]
-  public void Mp3AudioProcessor_SupportedFormat_ReturnsMp3()
+  public void GetSupportedFormats_ReturnsAllFormats()
   {
-    // Arrange
-    var logger = new Mock<ILogger<Mp3AudioProcessor>>();
-    var processor = new Mp3AudioProcessor(logger.Object);
+    // Act
+    var formats = _processor.GetSupportedFormats().ToList();
 
     // Assert
-    Assert.Equal(AudioFormat.Mp3, processor.SupportedFormat);
-    Assert.Equal("audio/mpeg", processor.ContentType);
+    Assert.Equal(6, formats.Count);
+    Assert.Contains(AudioFormat.Mp3, formats);
+    Assert.Contains(AudioFormat.Wav, formats);
+    Assert.Contains(AudioFormat.Flac, formats);
+    Assert.Contains(AudioFormat.Aac, formats);
+    Assert.Contains(AudioFormat.Ogg, formats);
+    Assert.Contains(AudioFormat.Opus, formats);
   }
 
-  [Fact]
-  public void Mp3AudioProcessor_CanProcess_ReturnsTrueForMp3()
+  [Theory]
+  [InlineData(AudioFormat.Mp3, "audio/mpeg")]
+  [InlineData(AudioFormat.Wav, "audio/wav")]
+  [InlineData(AudioFormat.Flac, "audio/flac")]
+  [InlineData(AudioFormat.Aac, "audio/aac")]
+  [InlineData(AudioFormat.Ogg, "audio/ogg")]
+  [InlineData(AudioFormat.Opus, "audio/opus")]
+  public void GetContentType_ReturnsCorrectContentType(AudioFormat format, string expectedContentType)
   {
-    // Arrange
-    var logger = new Mock<ILogger<Mp3AudioProcessor>>();
-    var processor = new Mp3AudioProcessor(logger.Object);
-
-    // Act & Assert
-    Assert.True(processor.CanProcess(AudioFormat.Mp3));
-    Assert.False(processor.CanProcess(AudioFormat.Wav));
-  }
-
-  #endregion
-
-  #region WavAudioProcessor Tests
-
-  [Fact]
-  public void WavAudioProcessor_SupportedFormat_ReturnsWav()
-  {
-    // Arrange
-    var logger = new Mock<ILogger<WavAudioProcessor>>();
-    var processor = new WavAudioProcessor(logger.Object);
+    // Act
+    var contentType = _processor.GetContentType(format);
 
     // Assert
-    Assert.Equal(AudioFormat.Wav, processor.SupportedFormat);
-    Assert.Equal("audio/wav", processor.ContentType);
+    Assert.Equal(expectedContentType, contentType);
   }
 
-  [Fact]
-  public void WavAudioProcessor_CanProcess_ReturnsTrueForWav()
+  [Theory]
+  [InlineData(AudioFormat.Mp3)]
+  [InlineData(AudioFormat.Wav)]
+  [InlineData(AudioFormat.Flac)]
+  [InlineData(AudioFormat.Aac)]
+  [InlineData(AudioFormat.Ogg)]
+  [InlineData(AudioFormat.Opus)]
+  public void CanProcess_WithSupportedFormat_ReturnsTrue(AudioFormat format)
   {
-    // Arrange
-    var logger = new Mock<ILogger<WavAudioProcessor>>();
-    var processor = new WavAudioProcessor(logger.Object);
-
-    // Act & Assert
-    Assert.True(processor.CanProcess(AudioFormat.Wav));
-    Assert.False(processor.CanProcess(AudioFormat.Mp3));
-  }
-
-  #endregion
-
-  #region FlacAudioProcessor Tests
-
-  [Fact]
-  public void FlacAudioProcessor_SupportedFormat_ReturnsFlac()
-  {
-    // Arrange
-    var logger = new Mock<ILogger<FlacAudioProcessor>>();
-    var processor = new FlacAudioProcessor(logger.Object);
+    // Act
+    var canProcess = _processor.CanProcess(format);
 
     // Assert
-    Assert.Equal(AudioFormat.Flac, processor.SupportedFormat);
-    Assert.Equal("audio/flac", processor.ContentType);
+    Assert.True(canProcess);
   }
-
-  #endregion
-
-  #region AacAudioProcessor Tests
-
-  [Fact]
-  public void AacAudioProcessor_SupportedFormat_ReturnsAac()
-  {
-    // Arrange
-    var logger = new Mock<ILogger<AacAudioProcessor>>();
-    var processor = new AacAudioProcessor(logger.Object);
-
-    // Assert
-    Assert.Equal(AudioFormat.Aac, processor.SupportedFormat);
-    Assert.Equal("audio/aac", processor.ContentType);
-  }
-
-  #endregion
-
-  #region OggAudioProcessor Tests
-
-  [Fact]
-  public void OggAudioProcessor_SupportedFormat_ReturnsOgg()
-  {
-    // Arrange
-    var logger = new Mock<ILogger<OggAudioProcessor>>();
-    var processor = new OggAudioProcessor(logger.Object);
-
-    // Assert
-    Assert.Equal(AudioFormat.Ogg, processor.SupportedFormat);
-    Assert.Equal("audio/ogg", processor.ContentType);
-  }
-
-  #endregion
-
-  #region OpusAudioProcessor Tests
-
-  [Fact]
-  public void OpusAudioProcessor_SupportedFormat_ReturnsOpus()
-  {
-    // Arrange
-    var logger = new Mock<ILogger<OpusAudioProcessor>>();
-    var processor = new OpusAudioProcessor(logger.Object);
-
-    // Assert
-    Assert.Equal(AudioFormat.Opus, processor.SupportedFormat);
-    Assert.Equal("audio/opus", processor.ContentType);
-  }
-
-  #endregion
-
-  #region ProcessAsync Tests
 
   [Fact]
   public async Task ProcessAsync_WithCancellationToken_StopsProcessing()
   {
     // Arrange
-    var logger = new Mock<ILogger<Mp3AudioProcessor>>();
-    var processor = new Mp3AudioProcessor(logger.Object);
     var inputData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
     using var inputStream = new MemoryStream(inputData);
     using var outputStream = new MemoryStream();
     using var cts = new CancellationTokenSource();
-    
+
     // Cancel immediately
     cts.Cancel();
 
     // Act & Assert - should not throw, just stop
-    await processor.ProcessAsync(inputStream, outputStream, cancellationToken: cts.Token);
+    await _processor.ProcessAsync(inputStream, outputStream, AudioFormat.Mp3, cancellationToken: cts.Token);
   }
 
   [Fact]
   public async Task ProcessAsync_WithOptions_UsesProvidedBufferSize()
   {
     // Arrange
-    var logger = new Mock<ILogger<Mp3AudioProcessor>>();
-    var processor = new Mp3AudioProcessor(logger.Object);
     var inputData = new byte[1024];
     Array.Fill<byte>(inputData, 0xAB);
     using var inputStream = new MemoryStream(inputData);
@@ -172,7 +114,7 @@ public class AudioProcessorTests
     // Act
     try
     {
-      await processor.ProcessAsync(inputStream, outputStream, options, cts.Token);
+      await _processor.ProcessAsync(inputStream, outputStream, AudioFormat.Mp3, options, cts.Token);
     }
     catch (OperationCanceledException)
     {
@@ -183,123 +125,17 @@ public class AudioProcessorTests
     Assert.True(outputStream.Length > 0);
   }
 
-  #endregion
-}
-
-/// <summary>
-/// Unit tests for the AudioProcessorFactory.
-/// </summary>
-public class AudioProcessorFactoryTests
-{
-  private readonly Mock<ILogger<AudioProcessorFactory>> _factoryLoggerMock;
-  private readonly List<IAudioProcessor> _processors;
-  private readonly AudioProcessorFactory _factory;
-
-  public AudioProcessorFactoryTests()
-  {
-    _factoryLoggerMock = new Mock<ILogger<AudioProcessorFactory>>();
-
-    _processors = new List<IAudioProcessor>
-    {
-      new Mp3AudioProcessor(new Mock<ILogger<Mp3AudioProcessor>>().Object),
-      new WavAudioProcessor(new Mock<ILogger<WavAudioProcessor>>().Object),
-      new FlacAudioProcessor(new Mock<ILogger<FlacAudioProcessor>>().Object),
-      new AacAudioProcessor(new Mock<ILogger<AacAudioProcessor>>().Object),
-      new OggAudioProcessor(new Mock<ILogger<OggAudioProcessor>>().Object),
-      new OpusAudioProcessor(new Mock<ILogger<OpusAudioProcessor>>().Object)
-    };
-
-    _factory = new AudioProcessorFactory(_processors, _factoryLoggerMock.Object);
-  }
-
-  [Fact]
-  public void Constructor_RegistersAllProcessors()
-  {
-    // Assert
-    var supportedFormats = _factory.GetSupportedFormats().ToList();
-    Assert.Equal(6, supportedFormats.Count);
-    Assert.Contains(AudioFormat.Mp3, supportedFormats);
-    Assert.Contains(AudioFormat.Wav, supportedFormats);
-    Assert.Contains(AudioFormat.Flac, supportedFormats);
-    Assert.Contains(AudioFormat.Aac, supportedFormats);
-    Assert.Contains(AudioFormat.Ogg, supportedFormats);
-    Assert.Contains(AudioFormat.Opus, supportedFormats);
-  }
-
-  [Theory]
-  [InlineData(AudioFormat.Mp3)]
-  [InlineData(AudioFormat.Wav)]
-  [InlineData(AudioFormat.Flac)]
-  [InlineData(AudioFormat.Aac)]
-  [InlineData(AudioFormat.Ogg)]
-  [InlineData(AudioFormat.Opus)]
-  public void GetProcessor_WithSupportedFormat_ReturnsProcessor(AudioFormat format)
-  {
-    // Act
-    var processor = _factory.GetProcessor(format);
-
-    // Assert
-    Assert.NotNull(processor);
-    Assert.Equal(format, processor.SupportedFormat);
-  }
-
-  [Fact]
-  public void GetAllProcessors_ReturnsAllRegisteredProcessors()
-  {
-    // Act
-    var allProcessors = _factory.GetAllProcessors().ToList();
-
-    // Assert
-    Assert.Equal(6, allProcessors.Count);
-  }
-
-  [Fact]
-  public void GetSupportedFormats_ReturnsAllSupportedFormats()
-  {
-    // Act
-    var formats = _factory.GetSupportedFormats().ToList();
-
-    // Assert
-    Assert.Equal(6, formats.Count);
-  }
-
-  [Fact]
-  public void Constructor_WithDuplicateProcessors_KeepsFirst()
-  {
-    // Arrange
-    var duplicateProcessors = new List<IAudioProcessor>
-    {
-      new Mp3AudioProcessor(new Mock<ILogger<Mp3AudioProcessor>>().Object),
-      new Mp3AudioProcessor(new Mock<ILogger<Mp3AudioProcessor>>().Object) // Duplicate
-    };
-
-    // Act
-    var factory = new AudioProcessorFactory(duplicateProcessors, _factoryLoggerMock.Object);
-    var formats = factory.GetSupportedFormats().ToList();
-
-    // Assert - should only have one Mp3 processor
-    Assert.Single(formats);
-    Assert.Contains(AudioFormat.Mp3, formats);
-  }
-
-  [Fact]
-  public void Constructor_WithEmptyProcessors_CreatesEmptyFactory()
-  {
-    // Arrange
-    var emptyProcessors = new List<IAudioProcessor>();
-
-    // Act
-    var factory = new AudioProcessorFactory(emptyProcessors, _factoryLoggerMock.Object);
-    var formats = factory.GetSupportedFormats().ToList();
-
-    // Assert
-    Assert.Empty(formats);
-  }
-
   [Fact]
   public void Constructor_WithNullLogger_ThrowsArgumentNullException()
   {
     // Act & Assert
-    Assert.Throws<ArgumentNullException>(() => new AudioProcessorFactory(_processors, null!));
+    Assert.Throws<ArgumentNullException>(() => new AudioProcessor(null!, _formatDetectorMock.Object));
+  }
+
+  [Fact]
+  public void Constructor_WithNullFormatDetector_ThrowsArgumentNullException()
+  {
+    // Act & Assert
+    Assert.Throws<ArgumentNullException>(() => new AudioProcessor(_loggerMock.Object, null!));
   }
 }

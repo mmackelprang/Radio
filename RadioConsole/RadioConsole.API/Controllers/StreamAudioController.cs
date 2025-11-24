@@ -25,7 +25,7 @@ public class StreamAudioController : ControllerBase
 {
   private readonly StreamAudioService _streamService;
   private readonly IAudioFormatDetector _formatDetector;
-  private readonly IAudioProcessorFactory _processorFactory;
+  private readonly IAudioProcessor _audioProcessor;
   private readonly ILogger<StreamAudioController> _logger;
 
   /// <summary>
@@ -33,17 +33,17 @@ public class StreamAudioController : ControllerBase
   /// </summary>
   /// <param name="streamService">Audio streaming service.</param>
   /// <param name="formatDetector">Audio format detector.</param>
-  /// <param name="processorFactory">Audio processor factory.</param>
+  /// <param name="audioProcessor">Unified audio processor.</param>
   /// <param name="logger">Logger instance.</param>
   public StreamAudioController(
     StreamAudioService streamService,
     IAudioFormatDetector formatDetector,
-    IAudioProcessorFactory processorFactory,
+    IAudioProcessor audioProcessor,
     ILogger<StreamAudioController> logger)
   {
     _streamService = streamService ?? throw new ArgumentNullException(nameof(streamService));
     _formatDetector = formatDetector ?? throw new ArgumentNullException(nameof(formatDetector));
-    _processorFactory = processorFactory ?? throw new ArgumentNullException(nameof(processorFactory));
+    _audioProcessor = audioProcessor ?? throw new ArgumentNullException(nameof(audioProcessor));
     _logger = logger ?? throw new ArgumentNullException(nameof(logger));
   }
 
@@ -58,26 +58,25 @@ public class StreamAudioController : ControllerBase
     try
     {
       var baseUrl = $"{Request.Scheme}://{Request.Host}";
-      var supportedFormats = _processorFactory.GetSupportedFormats().ToArray();
+      var supportedFormats = _audioProcessor.GetSupportedFormats().ToArray();
 
       var info = new StreamingInfo
       {
         StreamUrl = $"{baseUrl}/api/streaming/stream",
         AutoDetectUrl = $"{baseUrl}/api/streaming/stream/auto",
         Description = "Real-time audio streaming endpoints with unified format handling. " +
-                      "Use the unified endpoint with ?format=xxx parameter, or use format-specific " +
-                      "endpoints (e.g., stream.mp3, stream.wav). Auto-detection is also available.",
+                      "Use the unified endpoint with ?format=xxx parameter. Auto-detection is also available.",
         SupportedFormats = supportedFormats.Select(f => f.ToString().ToUpper()).ToArray(),
         FormatUrls = supportedFormats.ToDictionary(
           f => f.ToString().ToUpper(),
-          f => $"{baseUrl}/api/streaming/stream.{f.ToString().ToLower()}"
+          f => $"{baseUrl}/api/streaming/stream?format={f.ToString().ToLower()}"
         ),
         FormatDetails = supportedFormats.Select(f => new FormatDetail
         {
           Format = f.ToString().ToUpper(),
           ContentType = _formatDetector.GetContentType(f),
           FileExtension = _formatDetector.GetFileExtension(f),
-          StreamUrl = $"{baseUrl}/api/streaming/stream.{f.ToString().ToLower()}"
+          StreamUrl = $"{baseUrl}/api/streaming/stream?format={f.ToString().ToLower()}"
         }).ToArray(),
         UnifiedEndpointExample = $"{baseUrl}/api/streaming/stream?format=mp3"
       };
@@ -101,8 +100,7 @@ public class StreamAudioController : ControllerBase
   {
     try
     {
-      var supportedFormats = _processorFactory.GetSupportedFormats().ToArray();
-      var processors = _processorFactory.GetAllProcessors().ToArray();
+      var supportedFormats = _audioProcessor.GetSupportedFormats().ToArray();
 
       var status = new StreamingStatus
       {
@@ -110,7 +108,7 @@ public class StreamAudioController : ControllerBase
         Message = "Audio streaming service is available with unified format handling",
         SupportedFormats = supportedFormats.Select(f => f.ToString().ToUpper()).ToArray(),
         AutoDetectionEnabled = true,
-        ProcessorCount = processors.Length,
+        ProcessorCount = 1, // Single unified processor
         Capabilities = new StreamingCapabilities
         {
           SupportsAutoDetection = true,

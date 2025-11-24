@@ -5,30 +5,78 @@ using RadioConsole.Core.Interfaces.Audio;
 namespace RadioConsole.Infrastructure.Audio;
 
 /// <summary>
-/// Base implementation for audio processors providing common functionality.
+/// Unified audio processor that handles all supported audio formats.
 /// </summary>
-public abstract class BaseAudioProcessor : IAudioProcessor
+/// <remarks>
+/// <para>
+/// This processor uses the IAudioFormatDetector for format-specific operations like
+/// determining MIME content types, while providing a single implementation for stream processing.
+/// </para>
+/// <para>
+/// Supported formats: MP3, WAV, FLAC, AAC, OGG, OPUS
+/// </para>
+/// <para>
+/// To add support for new formats:
+/// <list type="number">
+/// <item><description>Add the format to the AudioFormat enum</description></item>
+/// <item><description>Update the IAudioFormatDetector with magic bytes and content type mappings</description></item>
+/// <item><description>The AudioProcessor will automatically support the new format</description></item>
+/// </list>
+/// </para>
+/// </remarks>
+public class AudioProcessor : IAudioProcessor
 {
-  protected readonly ILogger _logger;
+  private readonly ILogger<AudioProcessor> _logger;
+  private readonly IAudioFormatDetector _formatDetector;
 
-  protected BaseAudioProcessor(ILogger logger)
+  /// <summary>
+  /// All audio formats supported by this processor.
+  /// </summary>
+  private static readonly AudioFormat[] SupportedAudioFormats =
+  {
+    AudioFormat.Mp3,
+    AudioFormat.Wav,
+    AudioFormat.Flac,
+    AudioFormat.Aac,
+    AudioFormat.Ogg,
+    AudioFormat.Opus
+  };
+
+  /// <summary>
+  /// HashSet for O(1) format lookup.
+  /// </summary>
+  private static readonly HashSet<AudioFormat> SupportedFormatsSet = new(SupportedAudioFormats);
+
+  /// <summary>
+  /// Initializes a new instance of the AudioProcessor class.
+  /// </summary>
+  /// <param name="logger">Logger for diagnostic output.</param>
+  /// <param name="formatDetector">Format detector for content type resolution.</param>
+  public AudioProcessor(ILogger<AudioProcessor> logger, IAudioFormatDetector formatDetector)
   {
     _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    _formatDetector = formatDetector ?? throw new ArgumentNullException(nameof(formatDetector));
+
+    _logger.LogInformation(
+      "AudioProcessor initialized with support for {Count} formats: {Formats}",
+      SupportedAudioFormats.Length,
+      string.Join(", ", SupportedAudioFormats));
   }
 
   /// <inheritdoc />
-  public abstract AudioFormat SupportedFormat { get; }
+  public IEnumerable<AudioFormat> GetSupportedFormats() => SupportedAudioFormats;
 
   /// <inheritdoc />
-  public abstract string ContentType { get; }
+  public string GetContentType(AudioFormat format) => _formatDetector.GetContentType(format);
 
   /// <inheritdoc />
-  public virtual bool CanProcess(AudioFormat format) => format == SupportedFormat;
+  public bool CanProcess(AudioFormat format) => SupportedFormatsSet.Contains(format);
 
   /// <inheritdoc />
-  public virtual async Task ProcessAsync(
+  public async Task ProcessAsync(
     Stream inputStream,
     Stream outputStream,
+    AudioFormat format,
     AudioProcessingOptions? options = null,
     CancellationToken cancellationToken = default)
   {
@@ -37,8 +85,10 @@ public abstract class BaseAudioProcessor : IAudioProcessor
     var buffer = new byte[options.BufferSize];
     int bytesRead;
 
-    _logger.LogDebug("Processing {Format} audio stream with buffer size {BufferSize}",
-      SupportedFormat, options.BufferSize);
+    _logger.LogDebug(
+      "Processing {Format} audio stream with buffer size {BufferSize}",
+      format,
+      options.BufferSize);
 
     while (!cancellationToken.IsCancellationRequested)
     {
@@ -55,88 +105,4 @@ public abstract class BaseAudioProcessor : IAudioProcessor
       await outputStream.FlushAsync(cancellationToken);
     }
   }
-}
-
-/// <summary>
-/// Audio processor for MP3 format.
-/// </summary>
-public class Mp3AudioProcessor : BaseAudioProcessor
-{
-  public Mp3AudioProcessor(ILogger<Mp3AudioProcessor> logger) : base(logger) { }
-
-  /// <inheritdoc />
-  public override AudioFormat SupportedFormat => AudioFormat.Mp3;
-
-  /// <inheritdoc />
-  public override string ContentType => "audio/mpeg";
-}
-
-/// <summary>
-/// Audio processor for WAV format.
-/// </summary>
-public class WavAudioProcessor : BaseAudioProcessor
-{
-  public WavAudioProcessor(ILogger<WavAudioProcessor> logger) : base(logger) { }
-
-  /// <inheritdoc />
-  public override AudioFormat SupportedFormat => AudioFormat.Wav;
-
-  /// <inheritdoc />
-  public override string ContentType => "audio/wav";
-}
-
-/// <summary>
-/// Audio processor for FLAC format.
-/// </summary>
-public class FlacAudioProcessor : BaseAudioProcessor
-{
-  public FlacAudioProcessor(ILogger<FlacAudioProcessor> logger) : base(logger) { }
-
-  /// <inheritdoc />
-  public override AudioFormat SupportedFormat => AudioFormat.Flac;
-
-  /// <inheritdoc />
-  public override string ContentType => "audio/flac";
-}
-
-/// <summary>
-/// Audio processor for AAC format.
-/// </summary>
-public class AacAudioProcessor : BaseAudioProcessor
-{
-  public AacAudioProcessor(ILogger<AacAudioProcessor> logger) : base(logger) { }
-
-  /// <inheritdoc />
-  public override AudioFormat SupportedFormat => AudioFormat.Aac;
-
-  /// <inheritdoc />
-  public override string ContentType => "audio/aac";
-}
-
-/// <summary>
-/// Audio processor for OGG Vorbis format.
-/// </summary>
-public class OggAudioProcessor : BaseAudioProcessor
-{
-  public OggAudioProcessor(ILogger<OggAudioProcessor> logger) : base(logger) { }
-
-  /// <inheritdoc />
-  public override AudioFormat SupportedFormat => AudioFormat.Ogg;
-
-  /// <inheritdoc />
-  public override string ContentType => "audio/ogg";
-}
-
-/// <summary>
-/// Audio processor for OPUS format.
-/// </summary>
-public class OpusAudioProcessor : BaseAudioProcessor
-{
-  public OpusAudioProcessor(ILogger<OpusAudioProcessor> logger) : base(logger) { }
-
-  /// <inheritdoc />
-  public override AudioFormat SupportedFormat => AudioFormat.Opus;
-
-  /// <inheritdoc />
-  public override string ContentType => "audio/opus";
 }

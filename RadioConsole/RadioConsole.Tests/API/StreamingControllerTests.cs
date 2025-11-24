@@ -98,7 +98,7 @@ public class StreamingControllerTests
 public class StreamAudioControllerUnifiedTests
 {
   private readonly Mock<IAudioFormatDetector> _formatDetectorMock;
-  private readonly Mock<IAudioProcessorFactory> _processorFactoryMock;
+  private readonly Mock<IAudioProcessor> _processorMock;
   private readonly Mock<ILogger<StreamAudioController>> _loggerMock;
   private readonly StreamAudioController _controller;
 
@@ -109,23 +109,16 @@ public class StreamAudioControllerUnifiedTests
     var detector = new AudioFormatDetector(detectorLogger.Object);
 
     _formatDetectorMock = new Mock<IAudioFormatDetector>();
-    _processorFactoryMock = new Mock<IAudioProcessorFactory>();
+    _processorMock = new Mock<IAudioProcessor>();
     _loggerMock = new Mock<ILogger<StreamAudioController>>();
 
-    // Setup processor factory to return all formats
-    _processorFactoryMock.Setup(x => x.GetSupportedFormats())
+    // Setup processor to return all formats
+    _processorMock.Setup(x => x.GetSupportedFormats())
       .Returns(new[] { AudioFormat.Mp3, AudioFormat.Wav, AudioFormat.Flac, AudioFormat.Aac, AudioFormat.Ogg, AudioFormat.Opus });
 
-    _processorFactoryMock.Setup(x => x.GetAllProcessors())
-      .Returns(new List<IAudioProcessor>
-      {
-        new Mp3AudioProcessor(new Mock<ILogger<Mp3AudioProcessor>>().Object),
-        new WavAudioProcessor(new Mock<ILogger<WavAudioProcessor>>().Object),
-        new FlacAudioProcessor(new Mock<ILogger<FlacAudioProcessor>>().Object),
-        new AacAudioProcessor(new Mock<ILogger<AacAudioProcessor>>().Object),
-        new OggAudioProcessor(new Mock<ILogger<OggAudioProcessor>>().Object),
-        new OpusAudioProcessor(new Mock<ILogger<OpusAudioProcessor>>().Object)
-      });
+    _processorMock.Setup(x => x.CanProcess(It.IsAny<AudioFormat>())).Returns(true);
+    _processorMock.Setup(x => x.GetContentType(It.IsAny<AudioFormat>()))
+      .Returns((AudioFormat f) => detector.GetContentType(f));
 
     _formatDetectorMock.Setup(x => x.GetContentType(It.IsAny<AudioFormat>()))
       .Returns((AudioFormat f) => detector.GetContentType(f));
@@ -133,29 +126,21 @@ public class StreamAudioControllerUnifiedTests
     _formatDetectorMock.Setup(x => x.GetFileExtension(It.IsAny<AudioFormat>()))
       .Returns((AudioFormat f) => detector.GetFileExtension(f));
 
-    // Create a real StreamAudioService for testing (mocking the complex service is error-prone)
-    var processorFactory = new AudioProcessorFactory(
-      new List<IAudioProcessor>
-      {
-        new Mp3AudioProcessor(new Mock<ILogger<Mp3AudioProcessor>>().Object),
-        new WavAudioProcessor(new Mock<ILogger<WavAudioProcessor>>().Object),
-        new FlacAudioProcessor(new Mock<ILogger<FlacAudioProcessor>>().Object),
-        new AacAudioProcessor(new Mock<ILogger<AacAudioProcessor>>().Object),
-        new OggAudioProcessor(new Mock<ILogger<OggAudioProcessor>>().Object),
-        new OpusAudioProcessor(new Mock<ILogger<OpusAudioProcessor>>().Object)
-      },
-      new Mock<ILogger<AudioProcessorFactory>>().Object);
+    // Create a real StreamAudioService for testing
+    var realProcessor = new AudioProcessor(
+      new Mock<ILogger<AudioProcessor>>().Object,
+      detector);
 
     var streamService = new StreamAudioService(
       new Mock<ILogger<StreamAudioService>>().Object,
       audioPlayerMock.Object,
       detector,
-      processorFactory);
+      realProcessor);
 
     _controller = new StreamAudioController(
       streamService,
       _formatDetectorMock.Object,
-      _processorFactoryMock.Object,
+      _processorMock.Object,
       _loggerMock.Object);
 
     // Set up HttpContext
@@ -197,7 +182,7 @@ public class StreamAudioControllerUnifiedTests
 
     Assert.True(status.IsAvailable);
     Assert.True(status.AutoDetectionEnabled);
-    Assert.Equal(6, status.ProcessorCount);
+    Assert.Equal(1, status.ProcessorCount); // Single unified processor
     Assert.True(status.Capabilities.SupportsAutoDetection);
     Assert.True(status.Capabilities.SupportsUnifiedEndpoint);
   }
@@ -281,23 +266,15 @@ public class StreamingControllerUnifiedEndpointTests
     _formatDetectorMock = new Mock<IAudioFormatDetector>();
     _loggerMock = new Mock<ILogger<StreamingController>>();
 
-    var processorFactory = new AudioProcessorFactory(
-      new List<IAudioProcessor>
-      {
-        new Mp3AudioProcessor(new Mock<ILogger<Mp3AudioProcessor>>().Object),
-        new WavAudioProcessor(new Mock<ILogger<WavAudioProcessor>>().Object),
-        new FlacAudioProcessor(new Mock<ILogger<FlacAudioProcessor>>().Object),
-        new AacAudioProcessor(new Mock<ILogger<AacAudioProcessor>>().Object),
-        new OggAudioProcessor(new Mock<ILogger<OggAudioProcessor>>().Object),
-        new OpusAudioProcessor(new Mock<ILogger<OpusAudioProcessor>>().Object)
-      },
-      new Mock<ILogger<AudioProcessorFactory>>().Object);
+    var processor = new AudioProcessor(
+      new Mock<ILogger<AudioProcessor>>().Object,
+      detector);
 
     var streamService = new StreamAudioService(
       new Mock<ILogger<StreamAudioService>>().Object,
       audioPlayerMock.Object,
       detector,
-      processorFactory);
+      processor);
 
     _formatDetectorMock.Setup(x => x.GetContentType(It.IsAny<AudioFormat>()))
       .Returns((AudioFormat f) => detector.GetContentType(f));

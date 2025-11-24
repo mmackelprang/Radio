@@ -29,16 +29,12 @@ public record AudioProcessingOptions
 }
 
 /// <summary>
-/// Interface for format-specific audio processors using the strategy pattern.
+/// Unified interface for audio stream processing.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each implementation handles a specific audio format and provides:
-/// <list type="bullet">
-/// <item><description>Stream reading and processing</description></item>
-/// <item><description>Format-specific decoding if necessary</description></item>
-/// <item><description>Metadata extraction when available</description></item>
-/// </list>
+/// The audio processor handles all audio formats through a single implementation,
+/// using the IAudioFormatDetector to determine content types and format-specific behavior.
 /// </para>
 /// <para>
 /// Implementations should be stateless and thread-safe to allow concurrent usage.
@@ -47,20 +43,23 @@ public record AudioProcessingOptions
 public interface IAudioProcessor
 {
   /// <summary>
-  /// Gets the audio format this processor handles.
+  /// Gets all supported audio formats.
   /// </summary>
-  AudioFormat SupportedFormat { get; }
+  /// <returns>Collection of supported audio formats.</returns>
+  IEnumerable<AudioFormat> GetSupportedFormats();
 
   /// <summary>
-  /// Gets the MIME content type for this format.
+  /// Gets the MIME content type for the specified format.
   /// </summary>
-  string ContentType { get; }
+  /// <param name="format">The audio format.</param>
+  /// <returns>The MIME content type string.</returns>
+  string GetContentType(AudioFormat format);
 
   /// <summary>
-  /// Determines if this processor can handle the specified format.
+  /// Determines if the specified format is supported.
   /// </summary>
   /// <param name="format">The audio format to check.</param>
-  /// <returns>True if this processor can handle the format; otherwise, false.</returns>
+  /// <returns>True if the format is supported; otherwise, false.</returns>
   bool CanProcess(AudioFormat format);
 
   /// <summary>
@@ -68,43 +67,14 @@ public interface IAudioProcessor
   /// </summary>
   /// <param name="inputStream">The input audio stream.</param>
   /// <param name="outputStream">The output stream to write processed audio.</param>
+  /// <param name="format">The audio format being processed.</param>
   /// <param name="options">Processing options.</param>
   /// <param name="cancellationToken">Cancellation token.</param>
   /// <returns>A task representing the processing operation.</returns>
   Task ProcessAsync(
     Stream inputStream,
     Stream outputStream,
+    AudioFormat format,
     AudioProcessingOptions? options = null,
     CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Factory interface for creating audio processors based on detected format.
-/// </summary>
-/// <remarks>
-/// <para>
-/// The factory uses dependency injection to resolve the appropriate processor
-/// based on the detected audio format. This enables easy extension for new formats.
-/// </para>
-/// </remarks>
-public interface IAudioProcessorFactory
-{
-  /// <summary>
-  /// Gets an audio processor for the specified format.
-  /// </summary>
-  /// <param name="format">The audio format to get a processor for.</param>
-  /// <returns>The audio processor for the format, or null if no processor is available.</returns>
-  IAudioProcessor? GetProcessor(AudioFormat format);
-
-  /// <summary>
-  /// Gets all available audio processors.
-  /// </summary>
-  /// <returns>Collection of all registered audio processors.</returns>
-  IEnumerable<IAudioProcessor> GetAllProcessors();
-
-  /// <summary>
-  /// Gets all supported audio formats.
-  /// </summary>
-  /// <returns>Collection of supported audio formats.</returns>
-  IEnumerable<AudioFormat> GetSupportedFormats();
 }
