@@ -124,7 +124,7 @@
 </MudGrid>
 
 @* Add Component Dialog *@
-<MudDialog @bind-IsVisible="ShowAddComponentDialogVisible">
+<MudDialog @bind-Visible="ShowAddComponentDialogVisible">
   <DialogContent>
     <MudText Typo="Typo.h6" Class="mb-4">Add New Component</MudText>
     <MudTextField @bind-Value="NewComponentName" Label="Component Name" Variant="Variant.Outlined" 
@@ -137,7 +137,7 @@
 </MudDialog>
 
 @* Add Category Dialog *@
-<MudDialog @bind-IsVisible="ShowAddCategoryDialogVisible">
+<MudDialog @bind-Visible="ShowAddCategoryDialogVisible">
   <DialogContent>
     <MudText Typo="Typo.h6" Class="mb-4">Add New Category</MudText>
     <MudTextField @bind-Value="NewCategoryName" Label="Category Name" Variant="Variant.Outlined" 
@@ -150,7 +150,7 @@
 </MudDialog>
 
 @* Add/Edit Config Item Dialog *@
-<MudDialog @bind-IsVisible="ShowConfigDialogVisible">
+<MudDialog @bind-Visible="ShowConfigDialogVisible">
   <DialogContent>
     <MudText Typo="Typo.h6" Class="mb-4">@(IsEditMode ? "Edit" : "Add") Configuration Item</MudText>
     <MudStack Spacing="3">

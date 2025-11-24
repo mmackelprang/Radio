@@ -10,7 +10,7 @@
       @foreach (var device in Devices)
       {
         var isProtected = CannotHideDeviceNames.Any(name => device.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
-        var isHidden = LocalHiddenDevices.Contains(device.Id);
+        var isHidden = HiddenDevices.Contains(device.Id);
         
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
           <MudStack Spacing="0">
@@ -28,7 +28,7 @@
           @if (!isProtected)
           {
             <MudSwitch T="bool" 
-                       @bind-Checked="@VisibleState[device.Id]"
+                       @bind-Value="@VisibleState[device.Id]"
                        Color="Color.Success" 
                        Label="@(VisibleState[device.Id] ? "Visible" : "Hidden")" />
           }
