@@ -52,6 +52,16 @@ public static class AudioServiceExtensions
     // Register metadata service as singleton
     services.AddSingleton<IMetadataService, TagLibMetadataService>();
 
+    // Register audio format detection and processing services
+    services.AddSingleton<IAudioFormatDetector, AudioFormatDetector>();
+    services.AddSingleton<IAudioProcessor, Mp3AudioProcessor>();
+    services.AddSingleton<IAudioProcessor, WavAudioProcessor>();
+    services.AddSingleton<IAudioProcessor, FlacAudioProcessor>();
+    services.AddSingleton<IAudioProcessor, AacAudioProcessor>();
+    services.AddSingleton<IAudioProcessor, OggAudioProcessor>();
+    services.AddSingleton<IAudioProcessor, OpusAudioProcessor>();
+    services.AddSingleton<IAudioProcessorFactory, AudioProcessorFactory>();
+
     // Register audio outputs as transient (new instance per request)
     services.AddTransient<LocalAudioOutput>();
     services.AddTransient(sp => 
