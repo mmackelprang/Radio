@@ -34,10 +34,13 @@ public class StreamAudioController : ControllerBase
       var baseUrl = $"{Request.Scheme}://{Request.Host}";
       var info = new StreamingInfo
       {
-        Mp3StreamUrl = $"{baseUrl}/stream.mp3",
-        WavStreamUrl = $"{baseUrl}/stream.wav",
-        Description = "Real-time audio streaming endpoints for casting to external devices",
-        SupportedFormats = new[] { "MP3", "WAV" }
+        StreamUrl = $"{baseUrl}/api/streaming/stream",
+        Description = "Real-time audio streaming endpoints for casting to external devices. Append the format extension (e.g., .mp3, .wav, .flac) to the stream URL.",
+        SupportedFormats = StreamAudioService.SupportedFormats.Select(f => f.ToUpper()).ToArray(),
+        FormatUrls = StreamAudioService.SupportedFormats.ToDictionary(
+          f => f.ToUpper(),
+          f => $"{baseUrl}/api/streaming/stream.{f}"
+        )
       };
 
       return Ok(info);
@@ -62,7 +65,8 @@ public class StreamAudioController : ControllerBase
       var status = new StreamingStatus
       {
         IsAvailable = true,
-        Message = "Audio streaming service is available"
+        Message = "Audio streaming service is available",
+        SupportedFormats = StreamAudioService.SupportedFormats.Select(f => f.ToUpper()).ToArray()
       };
 
       return Ok(status);
@@ -81,14 +85,9 @@ public class StreamAudioController : ControllerBase
 public record StreamingInfo
 {
   /// <summary>
-  /// URL for MP3 audio stream.
+  /// Base URL for audio stream. Append format extension (e.g., .mp3, .wav) to access specific format.
   /// </summary>
-  public string Mp3StreamUrl { get; init; } = string.Empty;
-
-  /// <summary>
-  /// URL for WAV audio stream.
-  /// </summary>
-  public string WavStreamUrl { get; init; } = string.Empty;
+  public string StreamUrl { get; init; } = string.Empty;
 
   /// <summary>
   /// Description of the streaming service.
@@ -99,6 +98,11 @@ public record StreamingInfo
   /// Supported audio formats.
   /// </summary>
   public string[] SupportedFormats { get; init; } = Array.Empty<string>();
+
+  /// <summary>
+  /// Dictionary of format names to their streaming URLs.
+  /// </summary>
+  public Dictionary<string, string> FormatUrls { get; init; } = new();
 }
 
 /// <summary>
@@ -115,4 +119,9 @@ public record StreamingStatus
   /// Status message.
   /// </summary>
   public string Message { get; init; } = string.Empty;
+
+  /// <summary>
+  /// Supported audio formats.
+  /// </summary>
+  public string[] SupportedFormats { get; init; } = Array.Empty<string>();
 }

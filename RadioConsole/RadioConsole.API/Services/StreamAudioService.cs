@@ -1,3 +1,4 @@
+using RadioConsole.Core.Enums;
 using RadioConsole.Core.Interfaces.Audio;
 using Microsoft.Extensions.Logging;
 using System.IO.Pipelines;
@@ -13,6 +14,11 @@ public class StreamAudioService
   private readonly ILogger<StreamAudioService> _logger;
   private readonly IAudioPlayer _audioPlayer;
 
+  /// <summary>
+  /// Supported audio formats based on SoundFlow library capabilities.
+  /// </summary>
+  public static readonly string[] SupportedFormats = { "wav", "mp3", "flac", "aac", "ogg", "opus" };
+
   public StreamAudioService(ILogger<StreamAudioService> logger, IAudioPlayer audioPlayer)
   {
     _logger = logger;
@@ -20,10 +26,39 @@ public class StreamAudioService
   }
 
   /// <summary>
-  /// Streams the mixed audio output as MP3/WAV to the HTTP response.
+  /// Determines if the specified format is supported.
+  /// </summary>
+  /// <param name="format">The audio format to check.</param>
+  /// <returns>True if the format is supported, false otherwise.</returns>
+  public static bool IsFormatSupported(string format)
+  {
+    return SupportedFormats.Contains(format.ToLower());
+  }
+
+  /// <summary>
+  /// Gets the content type for the specified audio format.
+  /// </summary>
+  /// <param name="format">The audio format.</param>
+  /// <returns>The MIME content type for the format.</returns>
+  public static string GetContentType(string format)
+  {
+    return format.ToLower() switch
+    {
+      "wav" => "audio/wav",
+      "mp3" => "audio/mpeg",
+      "flac" => "audio/flac",
+      "aac" => "audio/aac",
+      "ogg" => "audio/ogg",
+      "opus" => "audio/opus",
+      _ => "audio/mpeg"
+    };
+  }
+
+  /// <summary>
+  /// Streams the mixed audio output to the HTTP response.
   /// </summary>
   /// <param name="context">The HTTP context.</param>
-  /// <param name="format">The audio format (mp3 or wav).</param>
+  /// <param name="format">The audio format (wav, mp3, flac, aac, ogg, or opus).</param>
   public async Task StreamAudioAsync(HttpContext context, string format = "mp3")
   {
     _logger.LogInformation("Starting audio stream in {Format} format", format);
@@ -31,12 +66,7 @@ public class StreamAudioService
     try
     {
       // Set appropriate content type
-      context.Response.ContentType = format.ToLower() switch
-      {
-        "wav" => "audio/wav",
-        "mp3" => "audio/mpeg",
-        _ => "audio/mpeg"
-      };
+      context.Response.ContentType = GetContentType(format);
 
       // Disable buffering for streaming
       context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
@@ -95,5 +125,37 @@ public class StreamAudioService
   public async Task StreamMp3Async(HttpContext context)
   {
     await StreamAudioAsync(context, "mp3");
+  }
+
+  /// <summary>
+  /// Streams audio as FLAC format (lossless compressed).
+  /// </summary>
+  public async Task StreamFlacAsync(HttpContext context)
+  {
+    await StreamAudioAsync(context, "flac");
+  }
+
+  /// <summary>
+  /// Streams audio as AAC format.
+  /// </summary>
+  public async Task StreamAacAsync(HttpContext context)
+  {
+    await StreamAudioAsync(context, "aac");
+  }
+
+  /// <summary>
+  /// Streams audio as OGG format.
+  /// </summary>
+  public async Task StreamOggAsync(HttpContext context)
+  {
+    await StreamAudioAsync(context, "ogg");
+  }
+
+  /// <summary>
+  /// Streams audio as OPUS format.
+  /// </summary>
+  public async Task StreamOpusAsync(HttpContext context)
+  {
+    await StreamAudioAsync(context, "opus");
   }
 }
