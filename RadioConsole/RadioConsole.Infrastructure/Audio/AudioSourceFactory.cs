@@ -264,8 +264,8 @@ public class AudioSourceFactory : IAudioSourceFactory, IDisposable
   private string GenerateSourceId(string prefix)
   {
     var counter = Interlocked.Increment(ref _sourceCounter);
-    var timestamp = DateTime.UtcNow.Ticks.ToString("X");
-    return $"{prefix}-{counter:D4}-{timestamp[^8..]}";
+    var guid = Guid.NewGuid().ToString("N").Substring(0, 8);
+    return $"{prefix}-{counter:D4}-{guid}";
   }
 
   private void TrackSource(ISoundFlowAudioSource source)

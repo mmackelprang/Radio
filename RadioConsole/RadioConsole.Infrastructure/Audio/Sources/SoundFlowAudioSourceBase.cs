@@ -41,15 +41,18 @@ public abstract class SoundFlowAudioSourceBase : ISoundFlowAudioSource
     }
     protected set
     {
-      var oldStatus = _status;
+      AudioSourceStatus oldStatus;
+      bool statusChanged = false;
       lock (_stateLock)
       {
+        oldStatus = _status;
         if (_status != value)
         {
           _status = value;
+          statusChanged = true;
         }
       }
-      if (oldStatus != value)
+      if (statusChanged)
       {
         OnStatusChanged(oldStatus, value);
       }
