@@ -46,6 +46,12 @@ public static class AudioServiceExtensions
     // Register audio source manager as singleton
     services.AddSingleton<IAudioSourceManager, AudioSourceManager>();
 
+    // Register MixerService as singleton (Phase 2)
+    services.AddSingleton<IMixerService, MixerService>();
+
+    // Register AudioSourceFactory as singleton (Phase 2)
+    services.AddSingleton<IAudioSourceFactory, AudioSourceFactory>();
+
     // Register TTS factory as singleton
     services.AddSingleton<TextToSpeechFactory>();
 
