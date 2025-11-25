@@ -14,6 +14,7 @@ public static class AudioServiceExtensions
 {
   /// <summary>
   /// Adds audio services (SoundFlow implementations) to the service collection.
+  /// Configures SoundFlow with settings from the "SoundFlow" configuration section.
   /// </summary>
   /// <param name="services">The service collection.</param>
   /// <param name="configuration">The configuration instance.</param>
@@ -29,6 +30,8 @@ public static class AudioServiceExtensions
         configuration.GetSection("AudioVisualization"));
       services.Configure<TextToSpeechOptions>(
         configuration.GetSection("TextToSpeech"));
+      services.Configure<SoundFlowOptions>(
+        configuration.GetSection("SoundFlow"));
     }
 
     // Register audio player as singleton to maintain state across requests

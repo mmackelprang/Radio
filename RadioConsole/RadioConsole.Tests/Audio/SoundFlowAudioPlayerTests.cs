@@ -1,11 +1,17 @@
 using Xunit;
 using Moq;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using RadioConsole.Core.Configuration;
 using RadioConsole.Core.Interfaces.Audio;
 using RadioConsole.Infrastructure.Audio;
 
 namespace RadioConsole.Tests.Audio;
 
+/// <summary>
+/// Unit tests for SoundFlowAudioPlayer.
+/// Tests initialization, playback, volume control, and configuration.
+/// </summary>
 public class SoundFlowAudioPlayerTests
 {
   private readonly Mock<ILogger<SoundFlowAudioPlayer>> _mockLogger;
@@ -40,6 +46,28 @@ public class SoundFlowAudioPlayerTests
   }
 
   [Fact]
+  public void Constructor_ShouldInitialize_WithCustomOptions()
+  {
+    // Arrange
+    var options = Options.Create(new SoundFlowOptions
+    {
+      SampleRate = 48000,
+      BitDepth = 16,
+      Channels = 2,
+      BufferSize = 1024,
+      ExclusiveMode = true
+    });
+
+    // Act
+    var player = new SoundFlowAudioPlayer(_mockLogger.Object, options, _mockVisualizationService.Object);
+
+    // Assert
+    Assert.NotNull(player);
+    Assert.False(player.IsInitialized);
+    Assert.Equal(48000, player.GetOptions().SampleRate);
+  }
+
+  [Fact]
   public async Task InitializeAsync_ShouldSetIsInitializedToTrue()
   {
     if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
@@ -51,6 +79,26 @@ public class SoundFlowAudioPlayerTests
 
     // Assert
     Assert.True(player.IsInitialized);
+  }
+
+  [Fact]
+  public async Task InitializeAsync_ShouldUseConfiguredSampleRate()
+  {
+    if (!TestHardwareHelper.AudioHardwareAvailable()) { return; }
+    // Arrange
+    var options = Options.Create(new SoundFlowOptions
+    {
+      SampleRate = 48000,
+      BitDepth = 16
+    });
+    var player = new SoundFlowAudioPlayer(_mockLogger.Object, options, _mockVisualizationService.Object);
+
+    // Act
+    await player.InitializeAsync("default");
+
+    // Assert
+    Assert.True(player.IsInitialized);
+    Assert.Equal(48000, player.GetOptions().SampleRate);
   }
 
   [Fact]
@@ -221,5 +269,27 @@ public class SoundFlowAudioPlayerTests
 
     // Assert
     // Verify that stop was called (no exception, logging occurs)
+  }
+
+  [Fact]
+  public void GetOptions_ShouldReturnConfiguredOptions()
+  {
+    // Arrange
+    var expectedOptions = new SoundFlowOptions
+    {
+      SampleRate = 44100,
+      BitDepth = 24,
+      BufferSize = 512
+    };
+    var options = Options.Create(expectedOptions);
+    var player = new SoundFlowAudioPlayer(_mockLogger.Object, options, null);
+
+    // Act
+    var actualOptions = player.GetOptions();
+
+    // Assert
+    Assert.Equal(44100, actualOptions.SampleRate);
+    Assert.Equal(24, actualOptions.BitDepth);
+    Assert.Equal(512, actualOptions.BufferSize);
   }
 }
