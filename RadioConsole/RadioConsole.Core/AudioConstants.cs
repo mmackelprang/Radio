@@ -21,9 +21,9 @@ public static class AudioConstants
   public const string LocalDeviceType = "local";
 
   /// <summary>
-  /// Default sample rate for audio (CD quality).
+  /// Default sample rate for audio (48kHz for low latency).
   /// </summary>
-  public const int DefaultSampleRate = 44100;
+  public const int DefaultSampleRate = 48000;
 
   /// <summary>
   /// Default number of audio channels (stereo).
