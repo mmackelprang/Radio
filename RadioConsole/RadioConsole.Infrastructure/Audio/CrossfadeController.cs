@@ -11,6 +11,9 @@ namespace RadioConsole.Infrastructure.Audio;
 /// </summary>
 public class CrossfadeController : ICrossfadeController
 {
+  private const int MaxCrossfadeDurationMs = 10000; // Maximum 10 seconds
+  private const int DefaultUpdateIntervalMs = 16; // ~60fps update rate
+
   private readonly ILogger<CrossfadeController> _logger;
   private readonly IMixerService _mixerService;
   private readonly object _lock = new();
@@ -105,7 +108,7 @@ public class CrossfadeController : ICrossfadeController
     }
 
     // Clamp duration to valid range
-    durationMs = Math.Clamp(durationMs, 0, 10000);
+    durationMs = Math.Clamp(durationMs, 0, MaxCrossfadeDurationMs);
 
     await CancelTransitionAsync();
 
@@ -306,8 +309,7 @@ public class CrossfadeController : ICrossfadeController
 
   private async Task PerformCrossfadeAsync(string outgoing, string incoming, int durationMs, CancellationToken cancellationToken)
   {
-    const int updateIntervalMs = 16; // ~60fps update rate
-    var steps = Math.Max(1, durationMs / updateIntervalMs);
+    var steps = Math.Max(1, durationMs / DefaultUpdateIntervalMs);
     var stopwatch = Stopwatch.StartNew();
 
     // Start incoming at 0
@@ -338,7 +340,7 @@ public class CrossfadeController : ICrossfadeController
 
       if (i < steps)
       {
-        await Task.Delay(updateIntervalMs, cancellationToken);
+        await Task.Delay(DefaultUpdateIntervalMs, cancellationToken);
       }
     }
 
@@ -354,8 +356,7 @@ public class CrossfadeController : ICrossfadeController
 
   private async Task PerformFadeAsync(string sourceId, float fromVolume, float toVolume, int durationMs, CancellationToken cancellationToken)
   {
-    const int updateIntervalMs = 16;
-    var steps = Math.Max(1, durationMs / updateIntervalMs);
+    var steps = Math.Max(1, durationMs / DefaultUpdateIntervalMs);
     var stopwatch = Stopwatch.StartNew();
 
     for (int i = 0; i <= steps; i++)
@@ -381,7 +382,7 @@ public class CrossfadeController : ICrossfadeController
 
       if (i < steps)
       {
-        await Task.Delay(updateIntervalMs, cancellationToken);
+        await Task.Delay(DefaultUpdateIntervalMs, cancellationToken);
       }
     }
 

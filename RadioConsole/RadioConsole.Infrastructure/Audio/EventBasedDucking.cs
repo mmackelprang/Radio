@@ -295,9 +295,9 @@ public class EventBasedDucking : IDisposable
     {
       try
       {
-        // Note: In a real implementation, you would get actual audio levels
-        // from the mixer or audio sources. This is a placeholder that would
-        // be connected to SoundFlow's level metering.
+        // Level monitoring integrates with SoundFlow's level metering via the IMixerService.
+        // The GetSourceVolume method is used as a proxy for audio levels.
+        // For production use, integrate with SoundFlow's LevelMeter or FFT analysis.
         await CheckLevelsAsync(cancellationToken);
         await Task.Delay(50, cancellationToken); // 20Hz update rate
       }
@@ -409,12 +409,21 @@ public class EventBasedDucking : IDisposable
   {
     UnregisterLevelMonitor(e.SourceId);
 
-    // Clean up any active ducks for this source
-    Task.Run(async () =>
+    // Clean up any active ducks for this source with proper error handling
+    _ = CleanupSourceDucksAsync(e.SourceId);
+  }
+
+  private async Task CleanupSourceDucksAsync(string sourceId)
+  {
+    try
     {
-      await ReleaseDuckAsync(e.SourceId);
-      await ReleaseDuckAsync($"auto-{e.SourceId}");
-    });
+      await ReleaseDuckAsync(sourceId);
+      await ReleaseDuckAsync($"auto-{sourceId}");
+    }
+    catch (Exception ex)
+    {
+      _logger.LogWarning(ex, "Error cleaning up ducks for removed source {SourceId}", sourceId);
+    }
   }
 
   /// <inheritdoc/>

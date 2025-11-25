@@ -25,6 +25,9 @@ public class DuckingManager : IDuckingService
   private readonly DuckingMetrics _metrics;
   private readonly Stopwatch _stopwatch;
 
+  // Cached index of channel pairs by target channel for performance
+  private Dictionary<MixerChannel, List<ChannelPairDuckingSettings>> _channelPairsByTarget;
+
   /// <inheritdoc/>
   public bool IsInitialized => _isInitialized;
 
@@ -72,6 +75,7 @@ public class DuckingManager : IDuckingService
     _activeDucks = new Dictionary<string, ActiveDuck>();
     _metrics = new DuckingMetrics();
     _stopwatch = Stopwatch.StartNew();
+    _channelPairsByTarget = new Dictionary<MixerChannel, List<ChannelPairDuckingSettings>>();
 
     _logger.LogInformation("DuckingManager created");
   }
@@ -86,10 +90,29 @@ public class DuckingManager : IDuckingService
     }
 
     _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+    RebuildChannelPairIndex();
     _isInitialized = true;
 
     _logger.LogInformation("DuckingManager initialized with preset {Preset}", configuration.ActivePreset);
     await Task.CompletedTask;
+  }
+
+  /// <summary>
+  /// Rebuilds the channel pair index for faster lookups.
+  /// </summary>
+  private void RebuildChannelPairIndex()
+  {
+    _channelPairsByTarget.Clear();
+
+    foreach (var pair in _configuration.ChannelPairSettings.Values)
+    {
+      if (!_channelPairsByTarget.TryGetValue(pair.TargetChannel, out var list))
+      {
+        list = new List<ChannelPairDuckingSettings>();
+        _channelPairsByTarget[pair.TargetChannel] = list;
+      }
+      list.Add(pair);
+    }
   }
 
   /// <inheritdoc/>
@@ -259,6 +282,7 @@ public class DuckingManager : IDuckingService
 
     var oldPreset = _configuration.ActivePreset;
     _configuration = configuration;
+    RebuildChannelPairIndex();
 
     ConfigurationChanged?.Invoke(this, new DuckingConfigurationChangedEventArgs
     {
@@ -291,6 +315,7 @@ public class DuckingManager : IDuckingService
 
     var key = $"{settings.TriggerChannel}-{settings.TargetChannel}";
     _configuration.ChannelPairSettings[key] = settings;
+    RebuildChannelPairIndex();
 
     _logger.LogInformation("Updated channel pair settings for {Key}", key);
     await Task.CompletedTask;
@@ -460,11 +485,17 @@ public class DuckingManager : IDuckingService
 
   private float CalculateTargetDuckLevel(MixerChannel channel)
   {
+    // Use cached index for faster lookup
+    if (!_channelPairsByTarget.TryGetValue(channel, out var pairs))
+    {
+      return 1.0f;
+    }
+
     // Find the lowest duck level from all active ducks affecting this channel
     var minLevel = 1.0f;
-    foreach (var pair in _configuration.ChannelPairSettings.Values)
+    foreach (var pair in pairs)
     {
-      if (pair.TargetChannel == channel && pair.Enabled)
+      if (pair.Enabled)
       {
         minLevel = Math.Min(minLevel, pair.Timing.DuckLevel);
       }
@@ -474,16 +505,24 @@ public class DuckingManager : IDuckingService
 
   private DuckingTimingSettings? GetTimingForChannel(MixerChannel channel)
   {
-    // Find the first matching pair for this target channel
-    var pair = _configuration.ChannelPairSettings.Values
-      .FirstOrDefault(p => p.TargetChannel == channel && p.Enabled);
-    return pair?.Timing;
+    // Use cached index for faster lookup
+    if (!_channelPairsByTarget.TryGetValue(channel, out var pairs))
+    {
+      return null;
+    }
+
+    return pairs.FirstOrDefault(p => p.Enabled)?.Timing;
   }
 
   private void UpdateAttackMetrics(long attackTimeMs)
   {
     // Simple running average calculation
     var count = _metrics.TotalDuckingEvents;
+    if (count <= 0)
+    {
+      return; // Avoid division by zero
+    }
+
     _metrics.AverageAttackTimeMs =
       ((_metrics.AverageAttackTimeMs * (count - 1)) + attackTimeMs) / count;
     _metrics.MaxAttackTimeMs = Math.Max(_metrics.MaxAttackTimeMs, attackTimeMs);

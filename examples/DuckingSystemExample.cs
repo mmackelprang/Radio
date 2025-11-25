@@ -28,8 +28,9 @@ public static class DuckingSystemExample
     var mixerService = provider.GetRequiredService<IMixerService>();
     var duckingService = provider.GetRequiredService<IDuckingService>();
 
-    // Initialize the mixer (would normally connect to audio device)
-    // await mixerService.InitializeAsync("default");
+    // Note: In a real application, you would initialize the mixer with an audio device.
+    // This example uses a mock mixer service, so initialization is skipped.
+    // Production code: await mixerService.InitializeAsync("default");
 
     // Create a default ducking configuration
     var config = DuckingConfiguration.CreateDefault();
